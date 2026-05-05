@@ -1,0 +1,142 @@
+/* ================================================
+   EVOLUCIÓN DETALLE — Vista completa de evolución
+   ================================================ */
+
+/* ── Volver ── */
+.evol-detalle__volver {
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 20px;
+  display: inline-block;
+  transition: color 0.2s ease;
+  font-family: inherit;
+}
+
+.evol-detalle__volver:hover {
+  color: #11352A;
+}
+
+/* ── Título ── */
+.evol-detalle__titulo {
+  margin: 0 0 8px 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+/* ── Meta (fecha + tags) ── */
+.evol-detalle__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.evol-detalle__fecha {
+  font-size: 0.82rem;
+  color: #777;
+}
+
+.evol-detalle__tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.evol-detalle__tag {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background-color: #F0F4F2;
+  color: #555;
+  border: 1px solid #E0E4E2;
+}
+
+/* ── Profesional card ── */
+.evol-detalle__profesional-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  margin-bottom: 8px;
+  border-top: 1px solid #F0F2F1;
+  border-bottom: 1px solid #F0F2F1;
+}
+
+.evol-detalle__profesional-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #11352A;
+  color: #259A5E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.evol-detalle__profesional-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.evol-detalle__profesional-nombre {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #11352A;
+}
+
+.evol-detalle__profesional-rol {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+/* ── Secciones de contenido ── */
+.evol-detalle__seccion {
+  margin-top: 20px;
+}
+
+.evol-detalle__seccion-titulo {
+  margin: 0 0 8px 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.evol-detalle__seccion-contenido {
+  background-color: #FAFBFA;
+  border: 1px solid #E8ECE9;
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 0.85rem;
+  color: #444;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+/* ── Vacío ── */
+.evol-detalle__vacio {
+  background-color: #FAFBFA;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  padding: 50px 30px;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.evol-detalle__vacio p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #888;
+}

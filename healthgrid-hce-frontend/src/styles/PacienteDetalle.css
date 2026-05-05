@@ -1,0 +1,617 @@
+/* ================================================
+   PACIENTE DETALLE — Estilos de la vista de detalle
+   ================================================ */
+
+/* ── Contenedor principal ── */
+.detalle-page {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #F4F7F6;
+}
+
+/* ── Barra superior ── */
+.detalle-topbar {
+  background-color: #ffffff;
+  border-bottom: 1px solid #E0E0E0;
+  padding: 0 30px;
+  display: flex;
+  align-items: center;
+  height: 56px;
+  gap: 30px;
+  flex-shrink: 0;
+}
+
+.detalle-topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detalle-topbar__search-icon {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.detalle-topbar__search {
+  padding: 8px 14px;
+  width: 240px;
+  border-radius: 6px;
+  border: 1px solid #E0E0E0;
+  background-color: #F9FAFA;
+  font-size: 0.85rem;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.detalle-topbar__search:focus {
+  border-color: #259A5E;
+}
+
+/* Tabs */
+.detalle-topbar__tabs {
+  display: flex;
+  gap: 0;
+  margin-left: 10px;
+}
+
+.detalle-tab {
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: #777;
+  cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.detalle-tab:hover {
+  color: #11352A;
+}
+
+.detalle-tab--activa {
+  color: #11352A;
+  font-weight: 700;
+  border-bottom-color: #11352A;
+}
+
+/* Botón siguiente paciente */
+.detalle-topbar__btn-siguiente {
+  margin-left: auto;
+  padding: 8px 18px;
+  background-color: #259A5E;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.2s ease;
+}
+
+.detalle-topbar__btn-siguiente:hover {
+  background-color: #1e8a50;
+}
+
+/* ── Contenido scrolleable ── */
+.detalle-content {
+  padding: 20px 30px 40px 30px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+/* ── Volver a búsqueda ── */
+.detalle-volver {
+  background: none;
+  border: none;
+  color: #777;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+  display: inline-block;
+  transition: color 0.2s ease;
+  font-family: inherit;
+}
+
+.detalle-volver:hover {
+  color: #11352A;
+}
+
+/* ── Card de paciente (header con avatar) ── */
+.detalle-paciente-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.detalle-paciente-card__left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.detalle-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #11352A;
+  color: #259A5E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+}
+
+.detalle-paciente-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detalle-paciente-nombre {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.detalle-paciente-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.detalle-meta-item {
+  font-size: 0.78rem;
+  color: #666;
+}
+
+.detalle-meta-item strong {
+  color: #333;
+}
+
+.detalle-meta-badge {
+  font-size: 0.75rem;
+  color: #259A5E;
+  font-weight: 600;
+}
+
+/* Botones de acción del paciente */
+.detalle-paciente-card__right {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.detalle-btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.detalle-btn--editar {
+  background-color: transparent;
+  border: 1.5px solid #D4DAD7;
+  color: #444;
+}
+
+.detalle-btn--editar:hover {
+  border-color: #259A5E;
+  color: #259A5E;
+  background-color: #F0F9F4;
+}
+
+.detalle-btn--nuevo {
+  background-color: #11352A;
+  border: 1.5px solid #11352A;
+  color: white;
+}
+
+.detalle-btn--nuevo:hover {
+  background-color: #1a4a3a;
+  box-shadow: 0 3px 10px rgba(17, 53, 42, 0.2);
+}
+
+/* ── Grid de 2 columnas ── */
+.detalle-grid-2cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* ── Card genérica de contenido ── */
+.detalle-card {
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  transition: box-shadow 0.2s ease;
+}
+
+.detalle-card:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.detalle-grid-2cols .detalle-card {
+  margin-bottom: 0;
+}
+
+.detalle-card__titulo {
+  margin: 0 0 16px 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #11352A;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detalle-card__icono {
+  font-size: 0.9rem;
+}
+
+.detalle-card__subtitulo {
+  margin: -8px 0 12px 0;
+  font-size: 0.8rem;
+  color: #999;
+  font-style: italic;
+}
+
+/* ── Lista de datos (key-value) ── */
+.detalle-datos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.detalle-dato {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 9px 0;
+  border-bottom: 1px solid #F2F4F3;
+}
+
+.detalle-dato:last-child {
+  border-bottom: none;
+}
+
+.detalle-dato__label {
+  font-size: 0.82rem;
+  color: #777;
+}
+
+.detalle-dato__valor {
+  font-size: 0.85rem;
+  color: #222;
+  font-weight: 500;
+  text-align: right;
+  max-width: 60%;
+  word-break: break-word;
+}
+
+.detalle-dato__valor--destacado {
+  color: #11352A;
+  font-weight: 600;
+}
+
+/* ── Tags (consideraciones / antecedentes) ── */
+.detalle-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detalle-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.detalle-tag__icon {
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.detalle-tag--vacio {
+  background-color: #F5F5F5;
+  color: #999;
+  border: 1px solid #E0E0E0;
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* ── Observaciones box ── */
+.detalle-observaciones-box {
+  background-color: #FAFBFA;
+  border: 1px solid #E8ECE9;
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-size: 0.85rem;
+  color: #444;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ── Episodios Section ── */
+.episodios-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.episodios-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.episodios-header__titulo {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.episodios-header__subtitulo {
+  margin: 3px 0 0 0;
+  font-size: 0.82rem;
+  color: #888;
+}
+
+/* ── Lista de episodios ── */
+.episodios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ── Episodio individual ── */
+.episodio-item {
+  display: flex;
+  align-items: center;
+  padding: 18px 24px;
+  gap: 16px;
+  border-bottom: 1px solid #F2F4F3;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.episodio-item:last-child {
+  border-bottom: none;
+}
+
+.episodio-item:hover {
+  background-color: #FAFBFA;
+}
+
+/* Icono izquierdo */
+.episodio-item__icono {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.episodio-item__icono--abierto {
+  background-color: #E8F5E9;
+  color: #259A5E;
+  border: 2px solid #C8E6C9;
+}
+
+.episodio-item__icono--cerrado {
+  background-color: #F0F2F1;
+  color: #888;
+  border: 2px solid #E0E0E0;
+}
+
+/* Info central */
+.episodio-item__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.episodio-item__titulo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+
+.episodio-item__titulo {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+/* Badge tipo episodio */
+.episodio-item__tipo-badge {
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.episodio-item__tipo-badge--ambulatorio {
+  background-color: #E8F5E9;
+  color: #259A5E;
+}
+
+.episodio-item__tipo-badge--internado {
+  background-color: #FFF3E0;
+  color: #E65100;
+}
+
+/* Badge estado */
+.episodio-item__estado-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.episodio-item__estado-badge--abierto {
+  color: #259A5E;
+}
+
+.episodio-item__estado-badge--cerrado {
+  color: #999;
+}
+
+.episodio-item__detalle {
+  font-size: 0.78rem;
+  color: #777;
+  margin-bottom: 2px;
+}
+
+.episodio-item__motivo {
+  font-size: 0.76rem;
+  color: #999;
+  font-style: italic;
+}
+
+/* Stats */
+.episodio-item__stats {
+  display: flex;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.episodio-item__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+}
+
+.episodio-item__stat-num {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.episodio-item__stat-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #AAA;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Flecha */
+.episodio-item__arrow {
+  font-size: 1.2rem;
+  color: #CCC;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.episodio-item:hover .episodio-item__arrow {
+  color: #259A5E;
+}
+
+/* Estado vacío */
+.episodios-vacio {
+  padding: 60px 40px;
+  text-align: center;
+}
+
+.episodios-vacio__icono {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.episodios-vacio__texto {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.episodios-vacio__subtexto {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #999;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .detalle-grid-2cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .detalle-topbar {
+    padding: 0 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .detalle-topbar__search {
+    width: 160px;
+  }
+
+  .detalle-content {
+    padding: 16px;
+  }
+
+  .detalle-paciente-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detalle-paciente-card__right {
+    width: 100%;
+  }
+
+  .detalle-btn {
+    flex: 1;
+    text-align: center;
+  }
+}

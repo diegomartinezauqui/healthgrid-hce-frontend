@@ -1,7 +1,15 @@
 // src/pages/Home.jsx
-import React from 'react';
+import React, { useState } from 'react';
+import NuevaFichaMedica from './NuevaFichaMedica';
 
-const Home = () => {
+const Home = ({ onGuardarPaciente }) => {
+  const [mostrarModal, setMostrarModal] = useState(false);
+
+  const handleGuardar = (data) => {
+    onGuardarPaciente(data);
+    setMostrarModal(false);
+  };
+
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#F4F7F6' }}>
       
@@ -49,13 +57,24 @@ const Home = () => {
             </div>
             <h3 style={{ margin: '0 0 10px 0' }}>¿Paciente no registrado?</h3>
             <p style={{ margin: '0 0 20px 0', color: '#666', fontSize: '0.9rem' }}>Si el paciente es nuevo o no cuenta con historia previa, puede iniciar el registro ahora.</p>
-            <button style={{ backgroundColor: '#11352A', color: 'white', padding: '12px 25px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button 
+              onClick={() => setMostrarModal(true)}
+              style={{ backgroundColor: '#11352A', color: 'white', padding: '12px 25px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
+            >
               + NUEVA FICHA MÉDICA
             </button>
           </div>
         </div>
 
       </main>
+
+      {/* Modal de Nueva Ficha Médica */}
+      {mostrarModal && (
+        <NuevaFichaMedica
+          onCerrar={() => setMostrarModal(false)}
+          onGuardar={handleGuardar}
+        />
+      )}
     </div>
   );
 };

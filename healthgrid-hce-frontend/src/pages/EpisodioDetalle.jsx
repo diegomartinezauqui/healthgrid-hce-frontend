@@ -1,6 +1,7 @@
 // src/pages/EpisodioDetalle.jsx
 import React, { useState } from 'react';
 import NuevaEvolucion from './NuevaEvolucion';
+import NuevaReceta from './NuevaReceta';
 import '../styles/EpisodioDetalle.css';
 
 // Helpers
@@ -34,18 +35,11 @@ const tipoConsultaLabel = (tipo) => {
 
 const obtenerInicialesProfesional = (nombre) => {
   if (!nombre) return '??';
-  // Extract name part before the dash
   const partes = nombre.replace(/^(Dr\.|Dra\.)\s*/i, '').split('—')[0].trim().split(/\s+/);
   if (partes.length >= 2) {
     return (partes[0][0] + partes[1][0]).toUpperCase();
   }
   return partes[0].substring(0, 2).toUpperCase();
-};
-
-const obtenerNombreProfesional = (profesional) => {
-  if (!profesional) return 'Profesional';
-  const partes = profesional.split('—');
-  return partes[0].replace(/^(Dr\.|Dra\.)\s*/i, '').trim();
 };
 
 const obtenerRolProfesional = (profesional) => {
@@ -63,9 +57,12 @@ const EpisodioDetalle = ({
   onAgregarEvolucion,
   onVerEvolucion,
   onDarDeAlta,
+  onAgregarReceta,
+  onCambiarEstadoReceta,
 }) => {
   const [subTab, setSubTab] = useState('evoluciones');
   const [mostrarModalEvolucion, setMostrarModalEvolucion] = useState(false);
+  const [mostrarModalReceta, setMostrarModalReceta] = useState(false);
 
   if (!episodio) return null;
 
@@ -78,6 +75,11 @@ const EpisodioDetalle = ({
   const handleGuardarEvolucion = (data) => {
     onAgregarEvolucion(pacienteIndex, episodioIndex, data);
     setMostrarModalEvolucion(false);
+  };
+
+  const handleGuardarReceta = (data) => {
+    onAgregarReceta(pacienteIndex, episodioIndex, data);
+    setMostrarModalReceta(false);
   };
 
   const handleDarDeAlta = () => {
@@ -231,11 +233,87 @@ const EpisodioDetalle = ({
           <div className="ep-detalle__seccion-header">
             <div>
               <h3 className="ep-detalle__seccion-titulo">Recetas</h3>
-              <p className="ep-detalle__seccion-sub">{recetas.length} registro{recetas.length !== 1 ? 's' : ''} en este episodio</p>
+              <p className="ep-detalle__seccion-sub">{recetas.length} receta{recetas.length !== 1 ? 's' : ''} en este episodio</p>
             </div>
+            {esAbierto && (
+              <button
+                className="ep-detalle__btn-nueva"
+                onClick={() => setMostrarModalReceta(true)}
+              >
+                + Nueva Receta
+              </button>
+            )}
           </div>
-          <div className="ep-detalle__vacio">
-            <p>📋 La gestión de recetas estará disponible próximamente.</p>
+
+          {/* Lista de recetas */}
+          <div className="recetas-lista">
+            {recetas.length > 0 ? (
+              recetas.map((rec, i) => {
+                const esVigente = rec.estado === 'vigente';
+                // Find linked evolution info
+                const evolVinculada = rec.evolucionVinculada !== '' && rec.evolucionVinculada !== undefined
+                  ? evoluciones[parseInt(rec.evolucionVinculada)]
+                  : null;
+
+                return (
+                  <div key={rec.id || i} className="receta-card">
+                    {/* Header de la receta */}
+                    <div className="receta-card__header">
+                      <div className="receta-card__header-left">
+                        <span className="receta-card__numero">RECETA #{rec.numero}</span>
+                        <span className="receta-card__fecha">{formatearFechaLarga(rec.fecha)}</span>
+                      </div>
+                      <span className={`receta-card__estado ${esVigente ? 'receta-card__estado--vigente' : 'receta-card__estado--vencida'}`}>
+                        {esVigente ? 'Vigente' : 'Vencida'}
+                      </span>
+                    </div>
+
+                    {/* Lista de medicamentos */}
+                    <div className="receta-card__medicamentos">
+                      {(rec.medicamentos || []).filter(m => m.nombre).map((med, mi) => (
+                        <div key={mi} className="receta-card__medicamento">
+                          <div className="receta-card__med-icon">✓</div>
+                          <div className="receta-card__med-info">
+                            <span className="receta-card__med-nombre">{med.nombre}</span>
+                            {med.indicaciones && (
+                              <span className="receta-card__med-indicacion">{med.indicaciones}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Observaciones */}
+                    {rec.observaciones && (
+                      <div className="receta-card__observaciones">
+                        <strong>Observaciones:</strong> {rec.observaciones}
+                      </div>
+                    )}
+
+                    {/* Footer: evolución vinculada + cambiar estado */}
+                    <div className="receta-card__footer">
+                      <div className="receta-card__footer-left">
+                        {evolVinculada && (
+                          <span className="receta-card__evol-link">
+                            ◇ Evolución #{evolVinculada.numero} — {tipoConsultaLabel(evolVinculada.tipoConsulta)}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        className="receta-card__btn-estado"
+                        onClick={() => onCambiarEstadoReceta(pacienteIndex, episodioIndex, i)}
+                      >
+                        Cambiar estado
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="ep-detalle__vacio">
+                <p>No hay recetas registradas en este episodio.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -262,6 +340,17 @@ const EpisodioDetalle = ({
           onGuardar={handleGuardarEvolucion}
           pacienteNombre={paciente?.nombreApellido || 'Paciente'}
           pacienteHC={paciente?.numeroHistoriaClinica || '—'}
+        />
+      )}
+
+      {/* Modal Nueva Receta */}
+      {mostrarModalReceta && (
+        <NuevaReceta
+          onCerrar={() => setMostrarModalReceta(false)}
+          onGuardar={handleGuardarReceta}
+          pacienteNombre={paciente?.nombreApellido || 'Paciente'}
+          pacienteHC={paciente?.numeroHistoriaClinica || '—'}
+          evoluciones={evoluciones}
         />
       )}
     </div>

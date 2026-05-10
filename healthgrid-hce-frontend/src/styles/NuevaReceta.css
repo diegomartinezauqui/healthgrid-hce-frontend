@@ -1,0 +1,253 @@
+/* ================================================
+   NUEVA RECETA — Modal de formulario
+   ================================================ */
+
+.receta-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 1000;
+  padding: 30px 20px;
+  overflow-y: auto;
+  animation: recetaFadeIn 0.2s ease-out;
+}
+
+@keyframes recetaFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.receta-modal {
+  background-color: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 540px;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.25),
+    0 6px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: recetaSlideUp 0.25s ease-out;
+}
+
+@keyframes recetaSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.receta-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 22px 24px 14px 24px;
+  border-bottom: 1px solid #F0F2F1;
+}
+
+.receta-modal__titulo {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.receta-modal__subtitulo {
+  margin: 3px 0 0 0;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.receta-modal__cerrar {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #999;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  line-height: 1;
+  font-family: inherit;
+}
+
+.receta-modal__cerrar:hover {
+  background-color: #F0F2F1;
+  color: #333;
+}
+
+/* Form */
+.receta-form {
+  padding: 20px 24px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.receta-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.receta-form__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #2D3B34;
+}
+
+.receta-form__input {
+  padding: 9px 12px;
+  border: 1px solid #D4DAD7;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  color: #333;
+  background-color: #FAFBFA;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.receta-form__input:focus {
+  border-color: #259A5E;
+  box-shadow: 0 0 0 3px rgba(37, 154, 94, 0.1);
+}
+
+.receta-form__input--indicacion {
+  font-size: 0.82rem;
+  color: #555;
+}
+
+.receta-form__select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.receta-form__textarea {
+  padding: 9px 12px;
+  border: 1px solid #D4DAD7;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  color: #333;
+  background-color: #FAFBFA;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.receta-form__textarea::placeholder { color: #A0ADA6; }
+
+.receta-form__textarea:focus {
+  border-color: #259A5E;
+  box-shadow: 0 0 0 3px rgba(37, 154, 94, 0.1);
+}
+
+/* Medicamentos dinámicos */
+.receta-form__medicamentos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.receta-form__medicamento-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.receta-form__medicamento-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.receta-form__btn-quitar {
+  padding: 6px 12px;
+  border: 1px solid #FFCCCC;
+  background-color: #FFF0F0;
+  color: #CC3333;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  margin-top: 4px;
+  transition: all 0.15s ease;
+}
+
+.receta-form__btn-quitar:hover {
+  background-color: #FFE0E0;
+  border-color: #CC3333;
+}
+
+.receta-form__btn-agregar {
+  padding: 8px 0;
+  background: none;
+  border: 1.5px dashed #C8D0CC;
+  border-radius: 7px;
+  color: #259A5E;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+
+.receta-form__btn-agregar:hover {
+  border-color: #259A5E;
+  background-color: #F0F9F4;
+}
+
+/* Botones */
+.receta-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.receta-form__btn {
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.receta-form__btn--cancelar {
+  background-color: transparent;
+  border: 1.5px solid #D4DAD7;
+  color: #555;
+}
+
+.receta-form__btn--cancelar:hover {
+  border-color: #999;
+  background-color: #F5F5F5;
+}
+
+.receta-form__btn--guardar {
+  background-color: #11352A;
+  border: 1.5px solid #11352A;
+  color: white;
+}
+
+.receta-form__btn--guardar:hover {
+  background-color: #1a4a3a;
+  box-shadow: 0 3px 10px rgba(17, 53, 42, 0.2);
+}
+
+@media (max-width: 520px) {
+  .receta-form__medicamento-row {
+    flex-direction: column;
+  }
+}

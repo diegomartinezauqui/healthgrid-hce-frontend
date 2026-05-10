@@ -104,6 +104,49 @@ function App() {
     });
   };
 
+  // Agregar receta a un episodio
+  const agregarReceta = (pacienteIdx, episodioIdx, recetaData) => {
+    setPacientes(prev => {
+      const actualizados = [...prev];
+      const paciente = { ...actualizados[pacienteIdx] };
+      const episodios = [...(paciente.episodios || [])];
+      const episodio = { ...episodios[episodioIdx] };
+
+      const nuevaReceta = {
+        ...recetaData,
+        id: Date.now(),
+        numero: (episodio.recetasData?.length || 0) + 1,
+        estado: 'vigente',
+      };
+
+      episodio.recetasData = [...(episodio.recetasData || []), nuevaReceta];
+      episodios[episodioIdx] = episodio;
+      paciente.episodios = episodios;
+      actualizados[pacienteIdx] = paciente;
+      return actualizados;
+    });
+  };
+
+  // Cambiar estado de receta (vigente <-> vencida)
+  const cambiarEstadoReceta = (pacienteIdx, episodioIdx, recetaIdx) => {
+    setPacientes(prev => {
+      const actualizados = [...prev];
+      const paciente = { ...actualizados[pacienteIdx] };
+      const episodios = [...(paciente.episodios || [])];
+      const episodio = { ...episodios[episodioIdx] };
+      const recetas = [...(episodio.recetasData || [])];
+      recetas[recetaIdx] = {
+        ...recetas[recetaIdx],
+        estado: recetas[recetaIdx].estado === 'vigente' ? 'vencida' : 'vigente',
+      };
+      episodio.recetasData = recetas;
+      episodios[episodioIdx] = episodio;
+      paciente.episodios = episodios;
+      actualizados[pacienteIdx] = paciente;
+      return actualizados;
+    });
+  };
+
   // Volver al Home desde detalle
   const volverAHome = () => {
     setVistaActual('home');
@@ -127,6 +170,8 @@ function App() {
             onAgregarEpisodio={agregarEpisodio}
             onAgregarEvolucion={agregarEvolucion}
             onDarDeAlta={darDeAlta}
+            onAgregarReceta={agregarReceta}
+            onCambiarEstadoReceta={cambiarEstadoReceta}
           />
         )}
       </div>

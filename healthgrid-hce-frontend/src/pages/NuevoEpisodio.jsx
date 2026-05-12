@@ -1,6 +1,6 @@
-// src/pages/NuevoEpisodio.jsx
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import Swal from 'sweetalert2';
 import '../styles/NuevoEpisodio.css';
 
 const NuevoEpisodio = ({ onCerrar, onCrear, pacienteNombre, pacienteHC }) => {
@@ -14,6 +14,15 @@ const NuevoEpisodio = ({ onCerrar, onCrear, pacienteNombre, pacienteHC }) => {
 
   const onSubmit = (data) => {
     onCrear(data);
+    Swal.fire({
+      title: '¡Episodio creado!',
+      text: 'El nuevo episodio se ha creado exitosamente.',
+      icon: 'success',
+      confirmButtonColor: '#259A5E',
+      timer: 2000,
+      showConfirmButton: false
+    });
+    onCerrar();
   };
 
   const handleOverlayClick = (e) => {

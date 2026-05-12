@@ -1,0 +1,156 @@
+// src/pages/PedidoEstudioDetalle.jsx
+import React from 'react';
+import '../styles/PedidoEstudioDetalle.css';
+
+const formatearFechaLarga = (fecha) => {
+  if (!fecha) return '—';
+  const d = new Date(fecha);
+  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
+};
+
+const tipoEstudioLabel = (tipo) => {
+  const mapa = {
+    laboratorio: 'LABORATORIO',
+    imagenes: 'IMÁGENES',
+    cardiologia: 'CARDIOLOGÍA',
+    neurologia: 'NEUROLOGÍA',
+    otro: 'OTRO',
+  };
+  return mapa[tipo] || 'ESTUDIO';
+};
+
+const tipoEstudioColor = (tipo) => {
+  const colores = {
+    laboratorio: { bg: '#E8F5E9', text: '#2E7D32', border: '#C8E6C9' },
+    imagenes: { bg: '#E3F2FD', text: '#1565C0', border: '#BBDEFB' },
+    cardiologia: { bg: '#FCE4EC', text: '#C62828', border: '#F8BBD0' },
+    neurologia: { bg: '#F3E5F5', text: '#6A1B9A', border: '#E1BEE7' },
+    otro: { bg: '#F5F5F5', text: '#616161', border: '#E0E0E0' },
+  };
+  return colores[tipo] || colores.otro;
+};
+
+const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
+  if (!estudio) return null;
+
+  const color = tipoEstudioColor(estudio.tipoEstudio);
+  const esCompletado = estudio.estado === 'completado';
+  const resultado = estudio.resultado || {};
+
+  return (
+    <div className="ped-detalle">
+
+      {/* Volver */}
+      <button className="ped-detalle__volver" onClick={onVolver}>
+        ‹ Volver a pedidos de estudios
+      </button>
+
+      {/* Header de la orden */}
+      <div className="ped-detalle__header">
+        <div className="ped-detalle__header-left">
+          <div className="ped-detalle__titulo-row">
+            <h2 className="ped-detalle__titulo">Orden #{estudio.numero}</h2>
+            <span
+              className="ped-detalle__tipo-badge"
+              style={{ backgroundColor: color.bg, color: color.text, border: `1px solid ${color.border}` }}
+            >
+              {tipoEstudioLabel(estudio.tipoEstudio)}
+            </span>
+            <span className={`ped-detalle__estado-badge ${esCompletado ? 'ped-detalle__estado-badge--completado' : 'ped-detalle__estado-badge--pendiente'}`}>
+              {esCompletado ? 'Completado' : 'Pendiente'}
+            </span>
+          </div>
+          <p className="ped-detalle__fecha">
+            📅 Fecha de solicitud: {formatearFechaLarga(estudio.fechaSolicitud)}
+          </p>
+        </div>
+      </div>
+
+      {/* Descripción del pedido */}
+      <div className="ped-detalle__seccion">
+        <h3 className="ped-detalle__seccion-label">DESCRIPCIÓN DEL PEDIDO</h3>
+        <div className="ped-detalle__seccion-box">
+          {estudio.descripcion || 'Sin descripción.'}
+        </div>
+      </div>
+
+      {/* Resultado del estudio (solo si completado y hay datos) */}
+      {esCompletado && (
+        <div className="ped-detalle__resultado">
+          <h3 className="ped-detalle__resultado-titulo">
+            📋 Resultado del estudio
+          </h3>
+
+          {/* Metadata del resultado */}
+          <div className="ped-detalle__resultado-meta">
+            <div className="ped-detalle__resultado-meta-item">
+              <span className="ped-detalle__resultado-meta-label">Código externo</span>
+              <span className="ped-detalle__resultado-meta-valor">{resultado.codigoExterno || '—'}</span>
+            </div>
+            <div className="ped-detalle__resultado-meta-item">
+              <span className="ped-detalle__resultado-meta-label">Profesional firmante</span>
+              <span className="ped-detalle__resultado-meta-valor">{resultado.profesionalFirmante || '—'}</span>
+            </div>
+            <div className="ped-detalle__resultado-meta-item">
+              <span className="ped-detalle__resultado-meta-label">Fecha del resultado</span>
+              <span className="ped-detalle__resultado-meta-valor">{formatearFechaLarga(resultado.fechaResultado) || '—'}</span>
+            </div>
+          </div>
+
+          {/* Informe */}
+          {resultado.informe && (
+            <div className="ped-detalle__seccion" style={{ marginTop: 16 }}>
+              <h3 className="ped-detalle__seccion-label">INFORME</h3>
+              <div className="ped-detalle__seccion-box">
+                {resultado.informe}
+              </div>
+            </div>
+          )}
+
+          {/* Archivos adjuntos */}
+          {resultado.archivosAdjuntos && resultado.archivosAdjuntos.length > 0 && (
+            <div className="ped-detalle__adjuntos">
+              <h3 className="ped-detalle__seccion-label">ARCHIVOS ADJUNTOS</h3>
+              <div className="ped-detalle__adjuntos-lista">
+                {resultado.archivosAdjuntos.map((archivo, i) => (
+                  <div key={i} className="ped-detalle__adjunto-card">
+                    <div className="ped-detalle__adjunto-icon">📄</div>
+                    <div className="ped-detalle__adjunto-info">
+                      <span className="ped-detalle__adjunto-nombre">{archivo.nombre}</span>
+                      {archivo.url && (
+                        <a
+                          className="ped-detalle__adjunto-url"
+                          href={archivo.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {archivo.url.length > 70 ? archivo.url.substring(0, 70) + '...' : archivo.url}
+                        </a>
+                      )}
+                    </div>
+                    <span className="ped-detalle__adjunto-tipo">{archivo.tipo || 'PDF'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Estado pendiente sin resultados */}
+      {!esCompletado && (
+        <div className="ped-detalle__pendiente">
+          <div className="ped-detalle__pendiente-icon">⏳</div>
+          <p className="ped-detalle__pendiente-texto">
+            Este estudio se encuentra pendiente de resultados.
+          </p>
+          <p className="ped-detalle__pendiente-sub">
+            Los resultados estarán disponibles una vez que el laboratorio o servicio complete el estudio.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PedidoEstudioDetalle;

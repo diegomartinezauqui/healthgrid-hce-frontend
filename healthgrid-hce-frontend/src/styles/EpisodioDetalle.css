@@ -517,6 +517,122 @@
   background-color: #F0F0F0;
 }
 
+/* ================================================
+   ESTUDIOS — Cards de pedidos de estudio
+   ================================================ */
+
+.estudios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.estudio-item {
+  padding: 16px 22px;
+  border-bottom: 1px solid #F2F4F3;
+  transition: background-color 0.15s ease;
+}
+
+.estudio-item:last-child {
+  border-bottom: none;
+}
+
+.estudio-item:hover {
+  background-color: #FAFBFA;
+}
+
+.estudio-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.estudio-item__header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.estudio-item__tipo-badge {
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.estudio-item__numero {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.estudio-item__header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.estudio-item__fecha {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.estudio-item__estado {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.estudio-item__estado--completado {
+  color: #259A5E;
+}
+
+.estudio-item__estado--pendiente {
+  color: #E67E22;
+}
+
+.estudio-item__descripcion {
+  margin: 0 0 10px 0;
+  font-size: 0.84rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.estudio-item__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.estudio-item__resultado-info {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.estudio-item__ver-detalle {
+  background: none;
+  border: none;
+  color: #259A5E;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.estudio-item__ver-detalle:hover {
+  color: #1e8a50;
+  text-decoration: underline;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .ep-detalle__card {
@@ -552,4 +668,16 @@
     gap: 8px;
     align-items: flex-start;
   }
+
+  .estudio-item__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .estudio-item__footer {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
 }
+

@@ -2,7 +2,10 @@
 import React, { useState } from 'react';
 import NuevaEvolucion from './NuevaEvolucion';
 import NuevaReceta from './NuevaReceta';
+import NuevoPedidoEstudio from './NuevoPedidoEstudio';
 import '../styles/EpisodioDetalle.css';
+
+import Swal from 'sweetalert2';
 
 // Helpers
 const formatearFechaLarga = (fecha) => {
@@ -59,10 +62,13 @@ const EpisodioDetalle = ({
   onDarDeAlta,
   onAgregarReceta,
   onCambiarEstadoReceta,
+  onAgregarEstudio,
+  onVerEstudio,
 }) => {
   const [subTab, setSubTab] = useState('evoluciones');
   const [mostrarModalEvolucion, setMostrarModalEvolucion] = useState(false);
   const [mostrarModalReceta, setMostrarModalReceta] = useState(false);
+  const [mostrarModalEstudio, setMostrarModalEstudio] = useState(false);
 
   if (!episodio) return null;
 
@@ -82,10 +88,32 @@ const EpisodioDetalle = ({
     setMostrarModalReceta(false);
   };
 
+  const handleGuardarEstudio = (data) => {
+    onAgregarEstudio(pacienteIndex, episodioIndex, data);
+    setMostrarModalEstudio(false);
+  };
+
   const handleDarDeAlta = () => {
-    if (window.confirm('¿Está seguro que desea dar de alta este episodio?')) {
-      onDarDeAlta(pacienteIndex, episodioIndex);
-    }
+    Swal.fire({
+      title: '¿Dar de alta episodio?',
+      text: "El episodio se marcará como cerrado y no se podrán agregar más evoluciones de forma regular.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#259A5E',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, dar de alta',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        onDarDeAlta(pacienteIndex, episodioIndex);
+        Swal.fire({
+          title: '¡Alta exitosa!',
+          text: 'El episodio ha sido cerrado correctamente.',
+          icon: 'success',
+          confirmButtonColor: '#259A5E'
+        });
+      }
+    });
   };
 
   return (
@@ -324,11 +352,73 @@ const EpisodioDetalle = ({
           <div className="ep-detalle__seccion-header">
             <div>
               <h3 className="ep-detalle__seccion-titulo">Pedidos de Estudios</h3>
-              <p className="ep-detalle__seccion-sub">{estudios.length} registro{estudios.length !== 1 ? 's' : ''} en este episodio</p>
+              <p className="ep-detalle__seccion-sub">{estudios.length} orden{estudios.length !== 1 ? 'es' : ''} en este episodio</p>
             </div>
+            {esAbierto && (
+              <button
+                className="ep-detalle__btn-nueva"
+                onClick={() => setMostrarModalEstudio(true)}
+              >
+                + Nuevo Pedido
+              </button>
+            )}
           </div>
-          <div className="ep-detalle__vacio">
-            <p>🔬 La gestión de pedidos de estudios estará disponible próximamente.</p>
+
+          {/* Lista de estudios */}
+          <div className="estudios-lista">
+            {estudios.length > 0 ? (
+              estudios.map((est, i) => {
+                const esCompletado = est.estado === 'completado';
+                const tipoLabel = { laboratorio: 'LABORATORIO', imagenes: 'IMÁGENES', cardiologia: 'CARDIOLOGÍA', neurologia: 'NEUROLOGÍA', otro: 'OTRO' }[est.tipoEstudio] || 'ESTUDIO';
+                const tipoColor = { laboratorio: { bg: '#E8F5E9', text: '#2E7D32', border: '#C8E6C9' }, imagenes: { bg: '#E3F2FD', text: '#1565C0', border: '#BBDEFB' }, cardiologia: { bg: '#FCE4EC', text: '#C62828', border: '#F8BBD0' }, neurologia: { bg: '#F3E5F5', text: '#6A1B9A', border: '#E1BEE7' }, otro: { bg: '#F5F5F5', text: '#616161', border: '#E0E0E0' } }[est.tipoEstudio] || { bg: '#F5F5F5', text: '#616161', border: '#E0E0E0' };
+                const tieneResultado = est.resultado && est.resultado.informe;
+                const tieneAdjuntos = est.resultado && est.resultado.archivosAdjuntos && est.resultado.archivosAdjuntos.length > 0;
+
+                return (
+                  <div key={est.id || i} className="estudio-item">
+                    <div className="estudio-item__header">
+                      <div className="estudio-item__header-left">
+                        <span className="estudio-item__tipo-badge" style={{ backgroundColor: tipoColor.bg, color: tipoColor.text, border: `1px solid ${tipoColor.border}` }}>
+                          {tipoLabel}
+                        </span>
+                        <span className="estudio-item__numero">Orden #{est.numero}</span>
+                      </div>
+                      <div className="estudio-item__header-right">
+                        <span className="estudio-item__fecha">{formatearFechaCorta(est.fechaSolicitud)}</span>
+                        <span className={`estudio-item__estado ${esCompletado ? 'estudio-item__estado--completado' : 'estudio-item__estado--pendiente'}`}>
+                          {esCompletado ? 'Completado' : 'Pendiente'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {est.descripcion && (
+                      <p className="estudio-item__descripcion">
+                        {est.descripcion.length > 120 ? est.descripcion.substring(0, 120) + '...' : est.descripcion}
+                      </p>
+                    )}
+
+                    <div className="estudio-item__footer">
+                      <span className="estudio-item__resultado-info">
+                        {esCompletado
+                          ? `Resultado disponible${tieneAdjuntos ? ' · ' + est.resultado.archivosAdjuntos.length + ' archivo adjunto' : ''}`
+                          : 'Resultado pendiente'
+                        }
+                      </span>
+                      <button
+                        className="estudio-item__ver-detalle"
+                        onClick={() => onVerEstudio(episodioIndex, i)}
+                      >
+                        Ver detalle →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="ep-detalle__vacio">
+                <p>No hay pedidos de estudios registrados en este episodio.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -348,6 +438,17 @@ const EpisodioDetalle = ({
         <NuevaReceta
           onCerrar={() => setMostrarModalReceta(false)}
           onGuardar={handleGuardarReceta}
+          pacienteNombre={paciente?.nombreApellido || 'Paciente'}
+          pacienteHC={paciente?.numeroHistoriaClinica || '—'}
+          evoluciones={evoluciones}
+        />
+      )}
+
+      {/* Modal Nuevo Pedido de Estudio */}
+      {mostrarModalEstudio && (
+        <NuevoPedidoEstudio
+          onCerrar={() => setMostrarModalEstudio(false)}
+          onGuardar={handleGuardarEstudio}
           pacienteNombre={paciente?.nombreApellido || 'Paciente'}
           pacienteHC={paciente?.numeroHistoriaClinica || '—'}
           evoluciones={evoluciones}

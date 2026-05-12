@@ -1,6 +1,6 @@
-// src/pages/NuevaEvolucion.jsx
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import Swal from 'sweetalert2';
 import '../styles/NuevaEvolucion.css';
 
 const NuevaEvolucion = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC }) => {
@@ -18,6 +18,15 @@ const NuevaEvolucion = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC }) => 
 
   const onSubmit = (data) => {
     onGuardar(data);
+    Swal.fire({
+      title: '¡Evolución guardada!',
+      text: 'La evolución clínica ha sido registrada exitosamente.',
+      icon: 'success',
+      confirmButtonColor: '#259A5E',
+      timer: 2000,
+      showConfirmButton: false
+    });
+    onCerrar();
   };
 
   const handleOverlayClick = (e) => {

@@ -4,6 +4,7 @@ import NuevaFichaMedica from './NuevaFichaMedica';
 import NuevoEpisodio from './NuevoEpisodio';
 import EpisodioDetalle from './EpisodioDetalle';
 import EvolucionDetalle from './EvolucionDetalle';
+import PedidoEstudioDetalle from './PedidoEstudioDetalle';
 import '../styles/PacienteDetalle.css';
 
 // Helpers
@@ -73,15 +74,16 @@ const getTagColor = (tipo) => {
   return colores[tipo] || colores.otro;
 };
 
-const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAgregarEpisodio, onAgregarEvolucion, onDarDeAlta, onAgregarReceta, onCambiarEstadoReceta }) => {
+const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAgregarEpisodio, onAgregarEvolucion, onDarDeAlta, onAgregarReceta, onCambiarEstadoReceta, onAgregarEstudio }) => {
   const [tabActiva, setTabActiva] = useState('ficha');
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEpisodio, setMostrarModalEpisodio] = useState(false);
 
   // Sub-navegación de episodios
-  const [subVistaEpisodio, setSubVistaEpisodio] = useState('lista'); // 'lista' | 'detalle' | 'evolucionDetalle'
+  const [subVistaEpisodio, setSubVistaEpisodio] = useState('lista'); // 'lista' | 'detalle' | 'evolucionDetalle' | 'estudioDetalle'
   const [episodioSeleccionadoIdx, setEpisodioSeleccionadoIdx] = useState(null);
   const [evolucionSeleccionadaIdx, setEvolucionSeleccionadaIdx] = useState(null);
+  const [estudioSeleccionadoIdx, setEstudioSeleccionadoIdx] = useState(null);
 
   if (!paciente) return null;
 
@@ -115,6 +117,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
     setSubVistaEpisodio('lista');
     setEpisodioSeleccionadoIdx(null);
     setEvolucionSeleccionadaIdx(null);
+    setEstudioSeleccionadoIdx(null);
   };
 
   const abrirEvolucion = (episodioIdx, evolucionIdx) => {
@@ -126,6 +129,13 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
   const volverAEpisodioDetalle = () => {
     setSubVistaEpisodio('detalle');
     setEvolucionSeleccionadaIdx(null);
+    setEstudioSeleccionadoIdx(null);
+  };
+
+  const abrirEstudio = (episodioIdx, estudioIdx) => {
+    setEpisodioSeleccionadoIdx(episodioIdx);
+    setEstudioSeleccionadoIdx(estudioIdx);
+    setSubVistaEpisodio('estudioDetalle');
   };
 
   // Al cambiar de tab, resetear sub-navegación
@@ -135,6 +145,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
       setSubVistaEpisodio('lista');
       setEpisodioSeleccionadoIdx(null);
       setEvolucionSeleccionadaIdx(null);
+      setEstudioSeleccionadoIdx(null);
     }
   };
 
@@ -146,6 +157,10 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
   // Evolución seleccionada
   const evolucionActual = episodioActual && evolucionSeleccionadaIdx !== null
     ? (episodioActual.evolucionesData || [])[evolucionSeleccionadaIdx]
+    : null;
+  // Estudio seleccionado
+  const estudioActual = episodioActual && estudioSeleccionadoIdx !== null
+    ? (episodioActual.estudiosData || [])[estudioSeleccionadoIdx]
     : null;
 
   // Determinar texto del link "volver" según contexto
@@ -491,6 +506,8 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
                 onDarDeAlta={onDarDeAlta}
                 onAgregarReceta={onAgregarReceta}
                 onCambiarEstadoReceta={onCambiarEstadoReceta}
+                onAgregarEstudio={onAgregarEstudio}
+                onVerEstudio={abrirEstudio}
               />
             )}
 
@@ -498,6 +515,14 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
             {subVistaEpisodio === 'evolucionDetalle' && evolucionActual && (
               <EvolucionDetalle
                 evolucion={evolucionActual}
+                onVolver={volverAEpisodioDetalle}
+              />
+            )}
+
+            {/* Sub-vista: Detalle de un pedido de estudio */}
+            {subVistaEpisodio === 'estudioDetalle' && estudioActual && (
+              <PedidoEstudioDetalle
+                estudio={estudioActual}
                 onVolver={volverAEpisodioDetalle}
               />
             )}

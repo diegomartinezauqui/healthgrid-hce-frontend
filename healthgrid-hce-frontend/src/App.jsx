@@ -147,6 +147,35 @@ function App() {
     });
   };
 
+  // Agregar pedido de estudio a un episodio
+  const agregarEstudio = (pacienteIdx, episodioIdx, estudioData) => {
+    setPacientes(prev => {
+      const actualizados = [...prev];
+      const paciente = { ...actualizados[pacienteIdx] };
+      const episodios = [...(paciente.episodios || [])];
+      const episodio = { ...episodios[episodioIdx] };
+
+      const nuevoEstudio = {
+        ...estudioData,
+        id: Date.now(),
+        numero: (episodio.estudiosData?.length || 0) + 1,
+        resultado: estudioData.estado === 'completado' ? {
+          codigoExterno: '',
+          profesionalFirmante: '',
+          fechaResultado: '',
+          informe: '',
+          archivosAdjuntos: [],
+        } : null,
+      };
+
+      episodio.estudiosData = [...(episodio.estudiosData || []), nuevoEstudio];
+      episodios[episodioIdx] = episodio;
+      paciente.episodios = episodios;
+      actualizados[pacienteIdx] = paciente;
+      return actualizados;
+    });
+  };
+
   // Volver al Home desde detalle
   const volverAHome = () => {
     setVistaActual('home');
@@ -172,6 +201,7 @@ function App() {
             onDarDeAlta={darDeAlta}
             onAgregarReceta={agregarReceta}
             onCambiarEstadoReceta={cambiarEstadoReceta}
+            onAgregarEstudio={agregarEstudio}
           />
         )}
       </div>

@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import NuevaEvolucion from './NuevaEvolucion';
 import NuevaReceta from './NuevaReceta';
 import NuevoPedidoEstudio from './NuevoPedidoEstudio';
+import SolicitarInternacion from './SolicitarInternacion';
+import NuevaSolicitudPase from './NuevaSolicitudPase';
 import '../styles/EpisodioDetalle.css';
 
 import Swal from 'sweetalert2';
@@ -64,11 +66,14 @@ const EpisodioDetalle = ({
   onCambiarEstadoReceta,
   onAgregarEstudio,
   onVerEstudio,
+  onAgregarSolicitudPase,
 }) => {
   const [subTab, setSubTab] = useState('evoluciones');
   const [mostrarModalEvolucion, setMostrarModalEvolucion] = useState(false);
   const [mostrarModalReceta, setMostrarModalReceta] = useState(false);
   const [mostrarModalEstudio, setMostrarModalEstudio] = useState(false);
+  const [mostrarModalInternacion, setMostrarModalInternacion] = useState(false);
+  const [mostrarModalSolicitudPase, setMostrarModalSolicitudPase] = useState(false);
 
   if (!episodio) return null;
 
@@ -77,6 +82,7 @@ const EpisodioDetalle = ({
   const evoluciones = episodio.evolucionesData || [];
   const recetas = episodio.recetasData || [];
   const estudios = episodio.estudiosData || [];
+  const solicitudesPase = episodio.solicitudesPaseData || [];
 
   const handleGuardarEvolucion = (data) => {
     onAgregarEvolucion(pacienteIndex, episodioIndex, data);
@@ -91,6 +97,16 @@ const EpisodioDetalle = ({
   const handleGuardarEstudio = (data) => {
     onAgregarEstudio(pacienteIndex, episodioIndex, data);
     setMostrarModalEstudio(false);
+  };
+
+  const handleEnviarInternacion = (_data) => {
+    // Cuando haya backend: llamar a la API para registrar la solicitud
+    setMostrarModalInternacion(false);
+  };
+
+  const handleGuardarSolicitudPase = (data) => {
+    onAgregarSolicitudPase(pacienteIndex, episodioIndex, data);
+    setMostrarModalSolicitudPase(false);
   };
 
   const handleDarDeAlta = () => {
@@ -149,15 +165,15 @@ const EpisodioDetalle = ({
               <button className="ep-detalle__btn ep-detalle__btn--alta" onClick={handleDarDeAlta}>
                 ↕ Dar de Alta
               </button>
-              <button className="ep-detalle__btn ep-detalle__btn--solicitar">
-                📋 Solicitar Internación
+              <button className="ep-detalle__btn ep-detalle__btn--solicitar" onClick={() => setMostrarModalInternacion(true)}>
+                🏥 Solicitar Internación
               </button>
             </>
           )}
         </div>
       </div>
 
-      {/* Sub-tabs: Evoluciones | Recetas | Pedidos de Estudios */}
+      {/* Sub-tabs: Evoluciones | Recetas | Pedidos de Estudios | Solicitudes de Pase */}
       <div className="ep-detalle__subtabs">
         <button
           className={`ep-detalle__subtab ${subTab === 'evoluciones' ? 'ep-detalle__subtab--activa' : ''}`}
@@ -176,6 +192,12 @@ const EpisodioDetalle = ({
           onClick={() => setSubTab('estudios')}
         >
           Pedidos de Estudios
+        </button>
+        <button
+          className={`ep-detalle__subtab ${subTab === 'solicitudespase' ? 'ep-detalle__subtab--activa' : ''}`}
+          onClick={() => setSubTab('solicitudespase')}
+        >
+          Solicitudes de Pase
         </button>
       </div>
 
@@ -423,7 +445,73 @@ const EpisodioDetalle = ({
         </div>
       )}
 
+      {/* ── SUB-TAB: SOLICITUDES DE PASE ── */}
+      {subTab === 'solicitudespase' && (
+        <div className="ep-detalle__seccion">
+          <div className="ep-detalle__seccion-header">
+            <div>
+              <h3 className="ep-detalle__seccion-titulo">Solicitudes de Pase de Cama</h3>
+              <p className="ep-detalle__seccion-sub">{solicitudesPase.length} solicitud{solicitudesPase.length !== 1 ? 'es' : ''} registrada{solicitudesPase.length !== 1 ? 's' : ''}</p>
+            </div>
+            {esAbierto && (
+              <button
+                className="ep-detalle__btn-nueva"
+                onClick={() => setMostrarModalSolicitudPase(true)}
+              >
+                + Nueva Solicitud
+              </button>
+            )}
+          </div>
+
+          <div className="pase-lista">
+            {solicitudesPase.length > 0 ? (
+              solicitudesPase.map((sol, i) => {
+                const esPendiente = sol.estado === 'pendiente';
+                const esCompletado = sol.estado === 'completado';
+                return (
+                  <div key={sol.id || i} className="pase-item">
+                    <div className={`pase-item__dot ${esPendiente ? 'pase-item__dot--pendiente' : esCompletado ? 'pase-item__dot--completado' : 'pase-item__dot--cancelado'}`} />
+                    <div className="pase-item__contenido">
+                      <div className="pase-item__header">
+                        <span className="pase-item__titulo">Solicitud de Pase</span>
+                        <span className="pase-item__fecha">{formatearFechaCorta(sol.fechaHoraSugerida)}</span>
+                      </div>
+                      <p className="pase-item__destino">
+                        Destino: <strong>{sol.sector}</strong>
+                      </p>
+                      {sol.motivo && (
+                        <p className="pase-item__motivo">
+                          Motivo: {sol.motivo.length > 100 ? sol.motivo.substring(0, 100) + '...' : sol.motivo}
+                        </p>
+                      )}
+                      <span className={`pase-item__estado-badge ${esPendiente ? 'pase-item__estado-badge--pendiente' : esCompletado ? 'pase-item__estado-badge--completado' : 'pase-item__estado-badge--cancelado'}`}>
+                        {esPendiente ? 'Pendiente' : esCompletado ? 'Completado' : 'Cancelado'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="ep-detalle__vacio">
+                <p>No hay solicitudes de pase registradas en este episodio.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Nueva Solicitud de Pase */}
+      {mostrarModalSolicitudPase && (
+        <NuevaSolicitudPase
+          onCerrar={() => setMostrarModalSolicitudPase(false)}
+          onGuardar={handleGuardarSolicitudPase}
+          pacienteNombre={paciente?.nombreApellido || 'Paciente'}
+          pacienteHC={paciente?.numeroHistoriaClinica || '—'}
+        />
+      )}
+
       {/* Modal Nueva Evolución */}
+
       {mostrarModalEvolucion && (
         <NuevaEvolucion
           onCerrar={() => setMostrarModalEvolucion(false)}
@@ -452,6 +540,16 @@ const EpisodioDetalle = ({
           pacienteNombre={paciente?.nombreApellido || 'Paciente'}
           pacienteHC={paciente?.numeroHistoriaClinica || '—'}
           evoluciones={evoluciones}
+        />
+      )}
+
+      {/* Modal Solicitar Internación */}
+      {mostrarModalInternacion && (
+        <SolicitarInternacion
+          onCerrar={() => setMostrarModalInternacion(false)}
+          onEnviar={handleEnviarInternacion}
+          pacienteNombre={paciente?.nombreApellido || 'Paciente'}
+          pacienteHC={paciente?.numeroHistoriaClinica || '—'}
         />
       )}
     </div>

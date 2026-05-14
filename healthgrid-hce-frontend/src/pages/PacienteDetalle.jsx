@@ -74,7 +74,7 @@ const getTagColor = (tipo) => {
   return colores[tipo] || colores.otro;
 };
 
-const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAgregarEpisodio, onAgregarEvolucion, onDarDeAlta, onAgregarReceta, onCambiarEstadoReceta, onAgregarEstudio }) => {
+const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAgregarEpisodio, onAgregarEvolucion, onDarDeAlta, onAgregarReceta, onCambiarEstadoReceta, onAgregarEstudio, onAgregarSolicitudPase }) => {
   const [tabActiva, setTabActiva] = useState('ficha');
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEpisodio, setMostrarModalEpisodio] = useState(false);
@@ -508,6 +508,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
                 onCambiarEstadoReceta={onCambiarEstadoReceta}
                 onAgregarEstudio={onAgregarEstudio}
                 onVerEstudio={abrirEstudio}
+                onAgregarSolicitudPase={onAgregarSolicitudPase}
               />
             )}
 

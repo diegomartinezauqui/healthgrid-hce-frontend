@@ -1,5 +1,6 @@
 // src/components/Sidebar.jsx
 import React from 'react';
+import '../styles/Sidebar.css';
 
 const Sidebar = () => {
   // Cuando tengan backend, estos datos vendrán de una API o del JWT
@@ -8,6 +9,91 @@ const Sidebar = () => {
     nombre: "Dr. Santiago Rossi",
     rol: "Jefe de Guardia"
   };
+
+  const navItems = [
+    {
+      name: 'Historia Clínica',
+      active: true,
+      icon: (
+        <svg viewBox="0 0 24 24">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="12" y1="18" x2="12" y2="12"></line>
+          <line x1="9" y1="15" x2="15" y2="15"></line>
+        </svg>
+      )
+    },
+    {
+      name: 'Farmacia e Insumos',
+      active: false,
+      icon: (
+        <svg viewBox="0 0 24 24">
+          <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"></path>
+        </svg>
+      )
+    },
+    {
+      name: 'Laboratorio',
+      active: false,
+      icon: (
+        <svg viewBox="0 0 24 24">
+          <path d="M9 3v11l-4 5h14l-4-5V3"></path>
+          <line x1="9" y1="3" x2="15" y2="3"></line>
+        </svg>
+      )
+    },
+    {
+      name: 'Imágenes',
+      active: false,
+      icon: (
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      )
+    },
+    {
+      name: 'Internación y Camas',
+      active: false,
+      icon: (
+        <svg viewBox="0 0 24 24">
+          <path d="M2 20h20M2 20V10l9-7 9 7v10"></path>
+          <path d="M7 20v-5h10v5"></path>
+        </svg>
+      )
+    },
+    {
+      name: 'Facturación',
+      active: false,
+      icon: (
+        <svg viewBox="0 0 24 24">
+          <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+          <line x1="2" y1="10" x2="22" y2="10"></line>
+        </svg>
+      )
+    },
+    {
+      name: 'Portal Paciente',
+      active: false,
+      icon: (
+        <svg viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      )
+    },
+    {
+      name: 'Configuración',
+      active: false,
+      icon: (
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+        </svg>
+      )
+    }
+  ];
 
   return (
     <aside style={{
@@ -31,25 +117,16 @@ const Sidebar = () => {
           </div>
         </div>
 
-        {/* Buscador lateral */}
-        <div style={{ padding: '0 20px', marginBottom: '20px' }}>
-          <input 
-            type="text" 
-            placeholder="Buscar por DNI o Nombre..." 
-            style={{ width: '100%', padding: '10px', borderRadius: '5px', border: 'none', backgroundColor: '#1C4A3C', color: 'white' }}
-          />
-        </div>
 
         {/* Opciones de Menú */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px', padding: '0 10px' }}>
-          {/* Opción Activa */}
-          <div style={{ backgroundColor: '#259A5E', padding: '12px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-            + Historia Clínica
-          </div>
-          {/* Opciones Inactivas */}
-          {['Farmacia e Insumos', 'Laboratorio', 'Imágenes', 'Internación y Camas', 'Facturación', 'Portal Paciente', 'Configuración'].map(item => (
-            <div key={item} style={{ padding: '12px 20px', borderRadius: '8px', cursor: 'pointer', color: '#A0B8B0' }}>
-              {item}
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <div 
+              key={item.name} 
+              className={`nav-item ${item.active ? 'active' : ''}`}
+            >
+              {item.icon}
+              {item.name}
             </div>
           ))}
         </nav>

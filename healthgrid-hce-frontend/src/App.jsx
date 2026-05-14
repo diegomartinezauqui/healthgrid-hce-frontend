@@ -176,6 +176,28 @@ function App() {
     });
   };
 
+  // Agregar solicitud de pase a un episodio
+  const agregarSolicitudPase = (pacienteIdx, episodioIdx, paseData) => {
+    setPacientes(prev => {
+      const actualizados = [...prev];
+      const paciente = { ...actualizados[pacienteIdx] };
+      const episodios = [...(paciente.episodios || [])];
+      const episodio = { ...episodios[episodioIdx] };
+
+      const nuevaSolicitud = {
+        ...paseData,
+        id: Date.now(),
+        estado: 'pendiente',
+      };
+
+      episodio.solicitudesPaseData = [...(episodio.solicitudesPaseData || []), nuevaSolicitud];
+      episodios[episodioIdx] = episodio;
+      paciente.episodios = episodios;
+      actualizados[pacienteIdx] = paciente;
+      return actualizados;
+    });
+  };
+
   // Volver al Home desde detalle
   const volverAHome = () => {
     setVistaActual('home');
@@ -202,6 +224,7 @@ function App() {
             onAgregarReceta={agregarReceta}
             onCambiarEstadoReceta={cambiarEstadoReceta}
             onAgregarEstudio={agregarEstudio}
+            onAgregarSolicitudPase={agregarSolicitudPase}
           />
         )}
       </div>

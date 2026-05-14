@@ -122,14 +122,14 @@
 }
 
 .ep-detalle__btn--solicitar {
-  background-color: #259A5E;
-  border: 1.5px solid #259A5E;
+  background-color: #C0392B;
+  border: 1.5px solid #C0392B;
   color: white;
 }
 
 .ep-detalle__btn--solicitar:hover {
-  background-color: #1e8a50;
-  box-shadow: 0 3px 10px rgba(37, 154, 94, 0.2);
+  background-color: #a93226;
+  box-shadow: 0 3px 10px rgba(192, 57, 43, 0.3);
 }
 
 /* ── Sub-tabs ── */
@@ -633,7 +633,123 @@
   text-decoration: underline;
 }
 
+/* ================================================
+   SOLICITUDES DE PASE — Lista de solicitudes
+   ================================================ */
+
+.pase-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pase-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 22px;
+  border-bottom: 1px solid #F2F4F3;
+  transition: background-color 0.15s ease;
+}
+
+.pase-item:last-child {
+  border-bottom: none;
+}
+
+.pase-item:hover {
+  background-color: #FAFBFA;
+}
+
+.pase-item__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.pase-item__dot--pendiente  { background-color: #E67E22; }
+.pase-item__dot--completado { background-color: #259A5E; }
+.pase-item__dot--cancelado  { background-color: #999; }
+
+.pase-item__contenido {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pase-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pase-item__titulo {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #259A5E;
+}
+
+.pase-item__fecha {
+  font-size: 0.76rem;
+  color: #999;
+  white-space: nowrap;
+}
+
+.pase-item__destino {
+  margin: 0;
+  font-size: 0.83rem;
+  color: #333;
+}
+
+.pase-item__destino strong {
+  color: #259A5E;
+}
+
+.pase-item__motivo {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.pase-item__estado-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.pase-item__estado-badge--pendiente {
+  background-color: #FEF3E2;
+  color: #C47A0E;
+  border: 1px solid #F9D78C;
+}
+
+.pase-item__estado-badge--completado {
+  background-color: #E8F5E9;
+  color: #259A5E;
+  border: 1px solid #C8E6C9;
+}
+
+.pase-item__estado-badge--cancelado {
+  background-color: #F5F5F5;
+  color: #777;
+  border: 1px solid #E0E0E0;
+}
+
 /* ── Responsive ── */
+
 @media (max-width: 768px) {
   .ep-detalle__card {
     flex-direction: column;

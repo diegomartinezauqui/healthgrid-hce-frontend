@@ -109,11 +109,21 @@ const Sidebar = () => {
       {/* Parte Superior: Logo y Menú */}
       <div>
         {/* Logo */}
-        <div style={{ padding: '0 20px', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '30px', height: '30px', backgroundColor: '#259A5E', borderRadius: '5px' }}></div>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '1.2rem' }}>Health Grid</h2>
-            <span style={{ fontSize: '0.7rem', color: '#88A39A', letterSpacing: '1px' }}>CLINICAL EDITORIAL</span>
+        <div style={{ padding: '0 20px', marginBottom: '40px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+            <h2 style={{ margin: 0, fontSize: '2.2rem', fontFamily: 'Georgia, "Times New Roman", serif', color: '#C8E6C9', lineHeight: '1.1', fontWeight: 'bold' }}>
+              Health<br/>Grid
+            </h2>
+            <div style={{ width: '34px', height: '34px', backgroundColor: '#C8E6C9', borderRadius: '6px', marginBottom: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              {/* Icono EKG */}
+              <svg viewBox="0 0 24 24" width="24" height="24" stroke="#11352A" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '15px' }}>
+            <div style={{ height: '1px', backgroundColor: '#3A5A4E', width: '25px' }}></div>
+            <span style={{ fontSize: '0.7rem', color: '#6A8A7E', letterSpacing: '3px', fontWeight: 'bold' }}>SISTEMA DE CLINICA</span>
           </div>
         </div>
 

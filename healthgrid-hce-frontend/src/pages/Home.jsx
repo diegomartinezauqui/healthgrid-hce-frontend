@@ -15,23 +15,45 @@ const Home = ({ onGuardarPaciente }) => {
       
       {/* Barra de Navegación Superior */}
       <header style={{ backgroundColor: 'white', padding: '15px 30px', display: 'flex', alignItems: 'center', borderBottom: '1px solid #E0E0E0' }}>
-        <input 
-          type="text" 
-          placeholder="Buscar por DNI o Nombre..." 
-          style={{ padding: '10px 15px', width: '300px', borderRadius: '5px', border: '1px solid #E0E0E0', backgroundColor: '#F9FAFA' }}
-        />
-        {/* Ignoramos el botón azul de "Siguiente Paciente" como pediste */}
+        <div style={{ display: 'flex', border: '2.5px solid #11352A', borderRadius: '10px', overflow: 'hidden', width: '380px' }}>
+          <input 
+            type="text" 
+            placeholder="Buscar por DNI o Nombre..." 
+            style={{ flexGrow: 1, padding: '10px 15px', border: 'none', outline: 'none', fontSize: '0.9rem', color: '#333', backgroundColor: 'transparent' }}
+          />
+          <button style={{ backgroundColor: '#11352A', color: 'white', padding: '0 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.2s ease' }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1a4a3a'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#11352A'}
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="10.5" cy="10.5" r="7.5"></circle>
+              <line x1="21" y1="21" x2="15.8" y2="15.8"></line>
+            </svg>
+          </button>
+        </div>
       </header>
 
       {/* Contenido Principal */}
       <main style={{ padding: '30px', flexGrow: 1, overflowY: 'auto' }}>
         
         {/* Banner Verde */}
-        <div style={{ backgroundColor: '#11352A', color: 'white', padding: '40px', borderRadius: '15px', marginBottom: '30px', position: 'relative', overflow: 'hidden' }}>
-          <h1 style={{ margin: '0 0 10px 0', fontSize: '2rem' }}>Bienvenido al <span style={{ color: '#259A5E' }}>Portal Clínico</span></h1>
-          <p style={{ margin: 0, maxWidth: '500px', color: '#A0B8B0', lineHeight: '1.5' }}>
-            Acceda de manera segura a la información de sus pacientes. El historial clínico digital unificado le permite tomar decisiones informadas con precisión quirúrgica.
-          </p>
+        <div style={{ backgroundColor: '#11352A', color: 'white', padding: '50px 40px', borderRadius: '15px', marginBottom: '30px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          
+          {/* Círculos decorativos de fondo (derecha) */}
+          <div style={{ position: 'absolute', right: '-80px', top: '50%', transform: 'translateY(-50%)', opacity: 0.8, pointerEvents: 'none' }}>
+            <div style={{ width: '380px', height: '380px', borderRadius: '50%', border: '40px solid #164636', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ width: '220px', height: '220px', borderRadius: '50%', border: '40px solid #1a5441' }}></div>
+            </div>
+          </div>
+
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <h1 style={{ margin: '0 0 15px 0', fontSize: '2.4rem', fontFamily: 'Georgia, "Times New Roman", serif', letterSpacing: '0.5px' }}>
+              Bienvenido al <span style={{ color: '#259A5E', fontWeight: 'bold' }}>Portal Clínico</span>
+            </h1>
+            <p style={{ margin: 0, maxWidth: '550px', color: '#A0B8B0', lineHeight: '1.6', fontSize: '0.95rem' }}>
+              Acceda de manera segura a la información de sus pacientes. El historial clínico digital unificado le permite tomar decisiones informadas con precisión quirúrgica.
+            </p>
+          </div>
         </div>
 
         {/* Tarjeta Blanca de Búsqueda */}
@@ -39,14 +61,20 @@ const Home = ({ onGuardarPaciente }) => {
           <h2 style={{ margin: '0 0 5px 0', fontSize: '1.2rem' }}>Búsqueda de Pacientes</h2>
           <p style={{ margin: '0 0 20px 0', color: '#666', fontSize: '0.9rem' }}>Inicie un nuevo proceso clínico ingresando la identidad del paciente.</p>
           
-          <div style={{ display: 'flex', gap: '15px', marginBottom: '50px' }}>
+          <div style={{ display: 'flex', marginBottom: '50px', border: '2px solid #11352A', borderRadius: '10px', overflow: 'hidden', backgroundColor: 'white' }}>
             <input 
               type="text" 
               placeholder="Ingrese DNI o Nro. de Historia Clínica" 
-              style={{ flexGrow: 1, padding: '15px', borderRadius: '8px', border: '1px solid #E0E0E0', backgroundColor: '#F9FAFA' }}
+              style={{ flexGrow: 1, padding: '12px 18px', border: 'none', outline: 'none', fontSize: '0.9rem', color: '#333', backgroundColor: 'transparent', fontFamily: 'inherit' }}
             />
-            <button style={{ backgroundColor: '#11352A', color: 'white', padding: '0 30px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
-              BUSCAR
+            <button style={{ backgroundColor: '#11352A', color: 'white', padding: '0 25px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.2s ease' }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1a4a3a'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#11352A'}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="10.5" cy="10.5" r="7.5"></circle>
+                <line x1="21" y1="21" x2="15.8" y2="15.8"></line>
+              </svg>
             </button>
           </div>
 

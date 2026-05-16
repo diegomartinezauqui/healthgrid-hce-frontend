@@ -178,12 +178,19 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
       {/* Barra superior con búsqueda y tabs */}
       <header className="detalle-topbar">
         <div className="detalle-topbar__left">
-          <div className="detalle-topbar__search-icon">🔍</div>
-          <input
-            type="text"
-            placeholder="Buscar por DNI o Nombre..."
-            className="detalle-topbar__search"
-          />
+          <div className="detalle-topbar__search-wrapper">
+            <input
+              type="text"
+              placeholder="Buscar por DNI o Nombre..."
+              className="detalle-topbar__search"
+            />
+            <button className="detalle-topbar__search-btn">
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="10.5" cy="10.5" r="7.5"></circle>
+                <line x1="21" y1="21" x2="15.8" y2="15.8"></line>
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="detalle-topbar__tabs">
           <button

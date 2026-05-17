@@ -132,22 +132,25 @@
   box-shadow: 0 3px 10px rgba(192, 57, 43, 0.3);
 }
 
-/* ── Sub-tabs ── */
+/* ── Sub-tabs (Pill style segmented control) ── */
 .ep-detalle__subtabs {
-  display: flex;
-  gap: 0;
-  margin-bottom: 4px;
+  display: inline-flex;
+  background-color: #F0F4F2;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 
 .ep-detalle__subtab {
-  padding: 10px 18px;
-  background: none;
+  padding: 8px 16px;
+  background: transparent;
   border: none;
   font-size: 0.85rem;
   font-weight: 500;
   color: #888;
   cursor: pointer;
-  border-bottom: 2.5px solid transparent;
+  border-radius: 6px;
   transition: all 0.2s ease;
   font-family: inherit;
 }
@@ -157,9 +160,10 @@
 }
 
 .ep-detalle__subtab--activa {
-  color: #259A5E;
-  font-weight: 700;
-  border-bottom-color: #259A5E;
+  background-color: white;
+  color: #11352A;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Sección de contenido ── */
@@ -340,6 +344,11 @@
   border-radius: 12px;
   padding: 50px 30px;
   text-align: center;
+}
+
+.ep-detalle__vacio-icono {
+  margin-bottom: 12px;
+  color: #c0ccc6;
 }
 
 .ep-detalle__vacio p {

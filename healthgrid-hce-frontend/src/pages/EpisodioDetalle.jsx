@@ -5,6 +5,8 @@ import NuevaReceta from './NuevaReceta';
 import NuevoPedidoEstudio from './NuevoPedidoEstudio';
 import SolicitarInternacion from './SolicitarInternacion';
 import NuevaSolicitudPase from './NuevaSolicitudPase';
+import { FiActivity, FiFileText, FiLayers, FiSend, FiCheckCircle, FiPlusCircle } from 'react-icons/fi';
+import { FaBed } from 'react-icons/fa';
 import '../styles/EpisodioDetalle.css';
 
 import Swal from 'sweetalert2';
@@ -163,10 +165,10 @@ const EpisodioDetalle = ({
           {esAbierto && (
             <>
               <button className="ep-detalle__btn ep-detalle__btn--alta" onClick={handleDarDeAlta}>
-                ↕ Dar de Alta
+                <FiCheckCircle style={{ marginRight: '6px', verticalAlign: 'middle', fontSize: '1.1rem' }} /> Dar de Alta
               </button>
               <button className="ep-detalle__btn ep-detalle__btn--solicitar" onClick={() => setMostrarModalInternacion(true)}>
-                🏥 Solicitar Internación
+                <FaBed style={{ marginRight: '6px', verticalAlign: 'middle', fontSize: '1.1rem' }} /> Solicitar Internación
               </button>
             </>
           )}
@@ -214,7 +216,7 @@ const EpisodioDetalle = ({
                 className="ep-detalle__btn-nueva"
                 onClick={() => setMostrarModalEvolucion(true)}
               >
-                + Nueva Evolución
+                <FiPlusCircle style={{ marginRight: '5px', verticalAlign: 'middle' }} /> Nueva Evolución
               </button>
             )}
           </div>
@@ -270,7 +272,9 @@ const EpisodioDetalle = ({
               ))
             ) : (
               <div className="ep-detalle__vacio">
+                <FiActivity size={36} className="ep-detalle__vacio-icono" />
                 <p>No hay evoluciones registradas en este episodio.</p>
+                <p style={{ fontSize: '0.8rem', marginTop: '6px' }}>Cree la primera evolución clínica para comenzar el seguimiento.</p>
               </div>
             )}
           </div>
@@ -290,7 +294,7 @@ const EpisodioDetalle = ({
                 className="ep-detalle__btn-nueva"
                 onClick={() => setMostrarModalReceta(true)}
               >
-                + Nueva Receta
+                <FiPlusCircle style={{ marginRight: '5px', verticalAlign: 'middle' }} /> Nueva Receta
               </button>
             )}
           </div>
@@ -361,7 +365,9 @@ const EpisodioDetalle = ({
               })
             ) : (
               <div className="ep-detalle__vacio">
+                <FiFileText size={36} className="ep-detalle__vacio-icono" />
                 <p>No hay recetas registradas en este episodio.</p>
+                <p style={{ fontSize: '0.8rem', marginTop: '6px' }}>Aquí podrá ver las prescripciones médicas indicadas.</p>
               </div>
             )}
           </div>
@@ -381,7 +387,7 @@ const EpisodioDetalle = ({
                 className="ep-detalle__btn-nueva"
                 onClick={() => setMostrarModalEstudio(true)}
               >
-                + Nuevo Pedido
+                <FiPlusCircle style={{ marginRight: '5px', verticalAlign: 'middle' }} /> Nuevo Pedido
               </button>
             )}
           </div>
@@ -438,7 +444,9 @@ const EpisodioDetalle = ({
               })
             ) : (
               <div className="ep-detalle__vacio">
+                <FiLayers size={36} className="ep-detalle__vacio-icono" />
                 <p>No hay pedidos de estudios registrados en este episodio.</p>
+                <p style={{ fontSize: '0.8rem', marginTop: '6px' }}>Aquí aparecerán las órdenes para laboratorio e imágenes.</p>
               </div>
             )}
           </div>
@@ -458,7 +466,7 @@ const EpisodioDetalle = ({
                 className="ep-detalle__btn-nueva"
                 onClick={() => setMostrarModalSolicitudPase(true)}
               >
-                + Nueva Solicitud
+                <FiPlusCircle style={{ marginRight: '5px', verticalAlign: 'middle' }} /> Nueva Solicitud
               </button>
             )}
           </div>
@@ -493,7 +501,9 @@ const EpisodioDetalle = ({
               })
             ) : (
               <div className="ep-detalle__vacio">
+                <FiSend size={36} className="ep-detalle__vacio-icono" />
                 <p>No hay solicitudes de pase registradas en este episodio.</p>
+                <p style={{ fontSize: '0.8rem', marginTop: '6px' }}>Registre derivaciones a otros servicios u hospitales.</p>
               </div>
             )}
           </div>

@@ -68,34 +68,50 @@
   background-color: #1a4a3a;
 }
 
-/* Tabs */
+/* Tabs — Clipboard clip style */
 .detalle-topbar__tabs {
   display: flex;
-  gap: 0;
-  margin-left: 10px;
+  gap: 8px;
+  margin-left: 20px;
+  align-items: center;
+  height: 100%;
 }
 
 .detalle-tab {
-  padding: 16px 20px;
-  background: none;
+  padding: 10px 20px;
+  background-color: #E0E4E2;
   border: none;
-  font-size: 0.88rem;
-  font-weight: 500;
-  color: #777;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #6B7A73;
   cursor: pointer;
-  border-bottom: 2.5px solid transparent;
-  transition: all 0.2s ease;
   font-family: inherit;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .detalle-tab:hover {
+  background-color: #C8D6CE;
   color: #11352A;
 }
 
 .detalle-tab--activa {
-  color: #11352A;
-  font-weight: 700;
-  border-bottom-color: #11352A;
+  background-color: #259A5E;
+  color: white;
+  box-shadow: 0 -2px 8px rgba(37, 154, 94, 0.25);
+}
+
+.detalle-tab--activa:hover {
+  background-color: #22894f;
+  color: white;
+}
+
+.detalle-tab__icon {
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 /* Botón siguiente paciente */
@@ -228,6 +244,14 @@
   transition: all 0.2s ease;
   font-family: inherit;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.detalle-btn__icon {
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .detalle-btn--editar {
@@ -292,7 +316,11 @@
 }
 
 .detalle-card__icono {
-  font-size: 0.9rem;
+  font-size: 1rem;
+  vertical-align: middle;
+  margin-right: 6px;
+  color: #259A5E;
+  flex-shrink: 0;
 }
 
 .detalle-card__subtitulo {

@@ -1,5 +1,6 @@
 // src/pages/PacienteDetalle.jsx
 import React, { useState } from 'react';
+import { FiCalendar, FiCreditCard, FiFileText, FiUser, FiActivity, FiAlertTriangle, FiClipboard, FiEdit3, FiEdit2, FiPlusCircle, FiFolder } from 'react-icons/fi';
 import NuevaFichaMedica from './NuevaFichaMedica';
 import NuevoEpisodio from './NuevoEpisodio';
 import EpisodioDetalle from './EpisodioDetalle';
@@ -197,12 +198,14 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
             className={`detalle-tab ${tabActiva === 'ficha' ? 'detalle-tab--activa' : ''}`}
             onClick={() => cambiarTab('ficha')}
           >
+            <FiClipboard className="detalle-tab__icon" />
             Ficha Médica
           </button>
           <button
             className={`detalle-tab ${tabActiva === 'episodios' ? 'detalle-tab--activa' : ''}`}
             onClick={() => cambiarTab('episodios')}
           >
+            <FiFolder className="detalle-tab__icon" />
             Episodios
           </button>
         </div>
@@ -239,17 +242,17 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
               <div className="detalle-paciente-meta">
                 {tabActiva === 'ficha' && (
                   <>
-                    <span className="detalle-meta-item">🎂 {edad} años</span>
+                    <span className="detalle-meta-item"><FiCalendar style={{ marginRight: '4px', verticalAlign: 'middle' }} /> {edad} años</span>
                     <span className="detalle-meta-item">{formatearFecha(paciente.fechaNacimiento)}</span>
-                    <span className="detalle-meta-item">⚫ DNI <strong>{paciente.dni || '—'}</strong></span>
-                    <span className="detalle-meta-item">🏥 HC <strong>{paciente.numeroHistoriaClinica || '—'}</strong></span>
+                    <span className="detalle-meta-item"><FiCreditCard style={{ marginRight: '4px', verticalAlign: 'middle' }} /> DNI <strong>{paciente.dni || '—'}</strong></span>
+                    <span className="detalle-meta-item"><FiFileText style={{ marginRight: '4px', verticalAlign: 'middle' }} /> HC <strong>{paciente.numeroHistoriaClinica || '—'}</strong></span>
                     <span className="detalle-meta-badge">● Activo</span>
                   </>
                 )}
                 {tabActiva === 'episodios' && (
                   <>
-                    <span className="detalle-meta-item">🆔 DNI <strong>{paciente.dni || '—'}</strong></span>
-                    <span className="detalle-meta-item">🏥 HC <strong>{paciente.numeroHistoriaClinica || '—'}</strong></span>
+                    <span className="detalle-meta-item"><FiCreditCard style={{ marginRight: '4px', verticalAlign: 'middle' }} /> DNI <strong>{paciente.dni || '—'}</strong></span>
+                    <span className="detalle-meta-item"><FiFileText style={{ marginRight: '4px', verticalAlign: 'middle' }} /> HC <strong>{paciente.numeroHistoriaClinica || '—'}</strong></span>
                     <span className="detalle-meta-badge">● Activo</span>
                   </>
                 )}
@@ -263,10 +266,10 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
                 className="detalle-btn detalle-btn--editar"
                 onClick={() => setMostrarModalEdicion(true)}
               >
-                ✏ Actualizar / Editar Ficha
+                <FiEdit2 className="detalle-btn__icon" /> Actualizar / Editar Ficha
               </button>
               <button className="detalle-btn detalle-btn--nuevo">
-                + Nuevo Registro
+                <FiPlusCircle className="detalle-btn__icon" /> Nuevo Registro
               </button>
             </div>
           )}
@@ -280,7 +283,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
               {/* DATOS PERSONALES */}
               <section className="detalle-card">
                 <h2 className="detalle-card__titulo">
-                  <span className="detalle-card__icono">👤</span> DATOS PERSONALES
+                  <FiUser className="detalle-card__icono" /> DATOS PERSONALES
                 </h2>
                 <div className="detalle-datos-lista">
                   <div className="detalle-dato">
@@ -321,7 +324,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
               {/* RESUMEN CLÍNICO BÁSICO */}
               <section className="detalle-card">
                 <h2 className="detalle-card__titulo">
-                  <span className="detalle-card__icono">🩺</span> RESUMEN CLÍNICO BÁSICO
+                  <FiActivity className="detalle-card__icono" /> RESUMEN CLÍNICO BÁSICO
                 </h2>
                 <div className="detalle-datos-lista">
                   <div className="detalle-dato">
@@ -351,7 +354,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
               {/* CONSIDERACIONES */}
               <section className="detalle-card">
                 <h2 className="detalle-card__titulo">
-                  <span className="detalle-card__icono">⚠</span> CONSIDERACIONES
+                  <FiAlertTriangle className="detalle-card__icono" /> CONSIDERACIONES
                 </h2>
                 <div className="detalle-tags">
                   {(paciente.consideraciones || []).filter(c => c.tipo && c.descripcion).length > 0 ? (
@@ -380,7 +383,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
               {/* ANTECEDENTES */}
               <section className="detalle-card">
                 <h2 className="detalle-card__titulo">
-                  <span className="detalle-card__icono">📋</span> ANTECEDENTES
+                  <FiClipboard className="detalle-card__icono" /> ANTECEDENTES
                 </h2>
                 <div className="detalle-tags">
                   {(paciente.antecedentes || []).filter(a => a.tipo && a.nombreDescripcion).length > 0 ? (
@@ -409,7 +412,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
             {/* OBSERVACIONES */}
             <section className="detalle-card">
               <h2 className="detalle-card__titulo">
-                <span className="detalle-card__icono">📝</span> OBSERVACIONES
+                <FiEdit3 className="detalle-card__icono" /> OBSERVACIONES
               </h2>
               <p className="detalle-card__subtitulo">Notas generales</p>
               <div className="detalle-observaciones-box">
@@ -491,7 +494,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
                     })
                   ) : (
                     <div className="episodios-vacio">
-                      <div className="episodios-vacio__icono">📋</div>
+                      <div className="episodios-vacio__icono"><FiClipboard size={32} /></div>
                       <p className="episodios-vacio__texto">No hay episodios registrados para este paciente.</p>
                       <p className="episodios-vacio__subtexto">Cree el primer episodio clínico para comenzar el seguimiento.</p>
                     </div>

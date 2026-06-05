@@ -1,7 +1,7 @@
 // src/pages/NuevaReceta.jsx
-import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import '../styles/NuevaReceta.css';
+import { tipoConsultaLabel } from '../utils/helpers';
 
 const NuevaReceta = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evoluciones }) => {
   const { register, handleSubmit, control } = useForm({
@@ -24,19 +24,6 @@ const NuevaReceta = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evolucio
 
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) onCerrar();
-  };
-
-  // Helper para label de tipo consulta
-  const tipoConsultaLabel = (tipo) => {
-    const mapa = {
-      consulta_control: 'Consulta de Control',
-      consulta_urgencia: 'Consulta de Urgencia',
-      interconsulta: 'Interconsulta',
-      control_laboratorio: 'Control de Laboratorio',
-      seguimiento: 'Seguimiento',
-      otro: 'Otro',
-    };
-    return mapa[tipo] || tipo || 'Consulta';
   };
 
   return (

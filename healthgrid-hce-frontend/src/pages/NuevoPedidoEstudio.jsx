@@ -1,26 +1,8 @@
 // src/pages/NuevoPedidoEstudio.jsx
-import React from 'react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import '../styles/NuevoPedidoEstudio.css';
-
-const tipoConsultaLabel = (tipo) => {
-  const mapa = {
-    consulta_control: 'Consulta de Control',
-    consulta_urgencia: 'Consulta de Urgencia',
-    interconsulta: 'Interconsulta',
-    control_laboratorio: 'Control de Laboratorio',
-    seguimiento: 'Seguimiento',
-    otro: 'Otro',
-  };
-  return mapa[tipo] || tipo || 'Consulta';
-};
-
-const formatearFechaCorta = (fecha) => {
-  if (!fecha) return '';
-  const d = new Date(fecha);
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
+import { tipoConsultaLabel, formatearFechaCorta } from '../utils/helpers';
 
 const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evoluciones }) => {
   const { register, handleSubmit } = useForm({

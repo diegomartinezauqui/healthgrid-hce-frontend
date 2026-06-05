@@ -1,49 +1,12 @@
 // src/pages/EvolucionDetalle.jsx
-import React from 'react';
 import '../styles/EvolucionDetalle.css';
-
-// Helpers
-const formatearFechaHoraLarga = (fecha) => {
-  if (!fecha) return '—';
-  const d = new Date(fecha);
-  const dia = d.getDate().toString().padStart(2, '0');
-  const mes = d.toLocaleDateString('es-ES', { month: 'long' });
-  const anio = d.getFullYear();
-  const hora = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  return `${dia} de ${mes} de ${anio}, ${hora} hs`;
-};
-
-const tipoConsultaLabel = (tipo) => {
-  const mapa = {
-    consulta_control: 'Consulta de Control',
-    consulta_urgencia: 'Consulta de Urgencia',
-    interconsulta: 'Interconsulta',
-    control_laboratorio: 'Control de Laboratorio',
-    seguimiento: 'Seguimiento',
-    otro: 'Otro',
-  };
-  return mapa[tipo] || tipo || 'Consulta';
-};
-
-const obtenerInicialesProfesional = (nombre) => {
-  if (!nombre) return '??';
-  const partes = nombre.replace(/^(Dr\.|Dra\.)\s*/i, '').split('—')[0].trim().split(/\s+/);
-  if (partes.length >= 2) {
-    return (partes[0][0] + partes[1][0]).toUpperCase();
-  }
-  return partes[0].substring(0, 2).toUpperCase();
-};
-
-const obtenerNombreProfesional = (profesional) => {
-  if (!profesional) return 'Profesional';
-  return profesional.split('—')[0].replace(/^(Dr\.|Dra\.)\s*/i, '').trim();
-};
-
-const obtenerRolProfesional = (profesional) => {
-  if (!profesional) return '';
-  const partes = profesional.split('—');
-  return partes.length > 1 ? partes[1].trim() : '';
-};
+import {
+  formatearFechaHoraLarga,
+  tipoConsultaLabel,
+  obtenerInicialesProfesional,
+  obtenerNombreProfesional,
+  obtenerRolProfesional,
+} from '../utils/helpers';
 
 const EvolucionDetalle = ({ evolucion, onVolver }) => {
   if (!evolucion) return null;

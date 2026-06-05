@@ -1,5 +1,4 @@
 // src/pages/NuevaFichaMedica.jsx
-import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import '../styles/NuevaFichaMedica.css';
 

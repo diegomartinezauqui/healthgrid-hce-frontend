@@ -1,59 +1,23 @@
 // src/pages/EpisodioDetalle.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import NuevaEvolucion from './NuevaEvolucion';
 import NuevaReceta from './NuevaReceta';
 import NuevoPedidoEstudio from './NuevoPedidoEstudio';
 import SolicitarInternacion from './SolicitarInternacion';
 import NuevaSolicitudPase from './NuevaSolicitudPase';
+import CargarResultadoEstudio from './CargarResultadoEstudio';
 import { FiActivity, FiFileText, FiLayers, FiSend, FiCheckCircle, FiPlusCircle } from 'react-icons/fi';
 import { FaBed } from 'react-icons/fa';
 import '../styles/EpisodioDetalle.css';
+import {
+  formatearFechaLarga,
+  formatearFechaCorta,
+  tipoConsultaLabel,
+  obtenerInicialesProfesional,
+  obtenerRolProfesional,
+} from '../utils/helpers';
 
 import Swal from 'sweetalert2';
-
-// Helpers
-const formatearFechaLarga = (fecha) => {
-  if (!fecha) return '—';
-  const d = new Date(fecha);
-  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
-};
-
-const formatearFechaCorta = (fecha) => {
-  if (!fecha) return '—';
-  const d = new Date(fecha);
-  const dia = d.getDate().toString().padStart(2, '0');
-  const mes = d.toLocaleDateString('es-ES', { month: 'short' });
-  const anio = d.getFullYear();
-  const hora = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-  return `${dia} ${mes} ${anio} · ${hora}`;
-};
-
-const tipoConsultaLabel = (tipo) => {
-  const mapa = {
-    consulta_control: 'Consulta de Control',
-    consulta_urgencia: 'Consulta de Urgencia',
-    interconsulta: 'Interconsulta',
-    control_laboratorio: 'Control de Laboratorio',
-    seguimiento: 'Seguimiento',
-    otro: 'Otro',
-  };
-  return mapa[tipo] || tipo || 'Consulta';
-};
-
-const obtenerInicialesProfesional = (nombre) => {
-  if (!nombre) return '??';
-  const partes = nombre.replace(/^(Dr\.|Dra\.)\s*/i, '').split('—')[0].trim().split(/\s+/);
-  if (partes.length >= 2) {
-    return (partes[0][0] + partes[1][0]).toUpperCase();
-  }
-  return partes[0].substring(0, 2).toUpperCase();
-};
-
-const obtenerRolProfesional = (profesional) => {
-  if (!profesional) return '';
-  const partes = profesional.split('—');
-  return partes.length > 1 ? partes[1].trim() : '';
-};
 
 const EpisodioDetalle = ({
   episodio,
@@ -69,6 +33,8 @@ const EpisodioDetalle = ({
   onAgregarEstudio,
   onVerEstudio,
   onAgregarSolicitudPase,
+  onAgregarSolicitudInternacion,
+  onAgregarResultadoEstudio,
 }) => {
   const [subTab, setSubTab] = useState('evoluciones');
   const [mostrarModalEvolucion, setMostrarModalEvolucion] = useState(false);
@@ -76,6 +42,8 @@ const EpisodioDetalle = ({
   const [mostrarModalEstudio, setMostrarModalEstudio] = useState(false);
   const [mostrarModalInternacion, setMostrarModalInternacion] = useState(false);
   const [mostrarModalSolicitudPase, setMostrarModalSolicitudPase] = useState(false);
+  const [mostrarModalCargarResultado, setMostrarModalCargarResultado] = useState(false);
+  const [estudioSeleccionadoIndex, setEstudioSeleccionadoIndex] = useState(null);
 
   if (!episodio) return null;
 
@@ -85,6 +53,7 @@ const EpisodioDetalle = ({
   const recetas = episodio.recetasData || [];
   const estudios = episodio.estudiosData || [];
   const solicitudesPase = episodio.solicitudesPaseData || [];
+  const solicitudesInternacion = episodio.solicitudesInternacionData || [];
 
   const handleGuardarEvolucion = (data) => {
     onAgregarEvolucion(pacienteIndex, episodioIndex, data);
@@ -101,9 +70,18 @@ const EpisodioDetalle = ({
     setMostrarModalEstudio(false);
   };
 
-  const handleEnviarInternacion = (_data) => {
-    // Cuando haya backend: llamar a la API para registrar la solicitud
+  const handleEnviarInternacion = (data) => {
+    if (onAgregarSolicitudInternacion) {
+      onAgregarSolicitudInternacion(pacienteIndex, episodioIndex, data);
+    }
     setMostrarModalInternacion(false);
+  };
+
+  const handleGuardarResultadoEstudio = (data) => {
+    if (onAgregarResultadoEstudio) {
+      onAgregarResultadoEstudio(pacienteIndex, episodioIndex, estudioSeleccionadoIndex, data);
+    }
+    setMostrarModalCargarResultado(false);
   };
 
   const handleGuardarSolicitudPase = (data) => {
@@ -175,7 +153,7 @@ const EpisodioDetalle = ({
         </div>
       </div>
 
-      {/* Sub-tabs: Evoluciones | Recetas | Pedidos de Estudios | Solicitudes de Pase */}
+      {/* Sub-tabs: Evoluciones | Recetas | Pedidos de Estudios | Solicitudes de Pase | Solicitudes de Internación */}
       <div className="ep-detalle__subtabs">
         <button
           className={`ep-detalle__subtab ${subTab === 'evoluciones' ? 'ep-detalle__subtab--activa' : ''}`}
@@ -200,6 +178,12 @@ const EpisodioDetalle = ({
           onClick={() => setSubTab('solicitudespase')}
         >
           Solicitudes de Pase
+        </button>
+        <button
+          className={`ep-detalle__subtab ${subTab === 'internaciones' ? 'ep-detalle__subtab--activa' : ''}`}
+          onClick={() => setSubTab('internaciones')}
+        >
+          Internaciones
         </button>
       </div>
 
@@ -399,7 +383,6 @@ const EpisodioDetalle = ({
                 const esCompletado = est.estado === 'completado';
                 const tipoLabel = { laboratorio: 'LABORATORIO', imagenes: 'IMÁGENES', cardiologia: 'CARDIOLOGÍA', neurologia: 'NEUROLOGÍA', otro: 'OTRO' }[est.tipoEstudio] || 'ESTUDIO';
                 const tipoColor = { laboratorio: { bg: '#E8F5E9', text: '#2E7D32', border: '#C8E6C9' }, imagenes: { bg: '#E3F2FD', text: '#1565C0', border: '#BBDEFB' }, cardiologia: { bg: '#FCE4EC', text: '#C62828', border: '#F8BBD0' }, neurologia: { bg: '#F3E5F5', text: '#6A1B9A', border: '#E1BEE7' }, otro: { bg: '#F5F5F5', text: '#616161', border: '#E0E0E0' } }[est.tipoEstudio] || { bg: '#F5F5F5', text: '#616161', border: '#E0E0E0' };
-                const tieneResultado = est.resultado && est.resultado.informe;
                 const tieneAdjuntos = est.resultado && est.resultado.archivosAdjuntos && est.resultado.archivosAdjuntos.length > 0;
 
                 return (
@@ -432,12 +415,26 @@ const EpisodioDetalle = ({
                           : 'Resultado pendiente'
                         }
                       </span>
-                      <button
-                        className="estudio-item__ver-detalle"
-                        onClick={() => onVerEstudio(episodioIndex, i)}
-                      >
-                        Ver detalle →
-                      </button>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        {!esCompletado && esAbierto && (
+                          <button
+                            className="estudio-item__cargar-resultado"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEstudioSeleccionadoIndex(i);
+                              setMostrarModalCargarResultado(true);
+                            }}
+                          >
+                            Cargar Resultados
+                          </button>
+                        )}
+                        <button
+                          className="estudio-item__ver-detalle"
+                          onClick={() => onVerEstudio(episodioIndex, i)}
+                        >
+                          Ver detalle →
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -510,6 +507,59 @@ const EpisodioDetalle = ({
         </div>
       )}
 
+      {/* ── SUB-TAB: SOLICITUDES DE INTERNACIÓN ── */}
+      {subTab === 'internaciones' && (
+        <div className="ep-detalle__seccion">
+          <div className="ep-detalle__seccion-header">
+            <div>
+              <h3 className="ep-detalle__seccion-titulo">Solicitudes de Internación</h3>
+              <p className="ep-detalle__seccion-sub">{solicitudesInternacion.length} solicitud{solicitudesInternacion.length !== 1 ? 'es' : ''} registrada{solicitudesInternacion.length !== 1 ? 's' : ''}</p>
+            </div>
+            {esAbierto && (
+              <button
+                className="ep-detalle__btn-nueva"
+                onClick={() => setMostrarModalInternacion(true)}
+              >
+                <FiPlusCircle style={{ marginRight: '5px', verticalAlign: 'middle' }} /> Solicitar Internación
+              </button>
+            )}
+          </div>
+
+          <div className="pase-lista">
+            {solicitudesInternacion.length > 0 ? (
+              solicitudesInternacion.map((sol, i) => (
+                <div key={sol.id || i} className="pase-item">
+                  <div className="pase-item__dot pase-item__dot--pendiente" />
+                  <div className="pase-item__contenido">
+                    <div className="pase-item__header">
+                      <span className="pase-item__titulo" style={{ color: '#C0392B' }}>Solicitud de Internación</span>
+                      <span className="pase-item__fecha">{formatearFechaCorta(sol.fechaHoraSugerida)}</span>
+                    </div>
+                    <p className="pase-item__destino">
+                      Sector solicitado: <strong>{sol.sector}</strong>
+                    </p>
+                    {sol.motivo && (
+                      <p className="pase-item__motivo">
+                        Motivo: {sol.motivo.length > 100 ? sol.motivo.substring(0, 100) + '...' : sol.motivo}
+                      </p>
+                    )}
+                    <span className="pase-item__estado-badge pase-item__estado-badge--pendiente" style={{ backgroundColor: '#FADBD8', color: '#78281F', borderColor: '#F5B7B1' }}>
+                      Pendiente
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="ep-detalle__vacio">
+                <FaBed size={36} className="ep-detalle__vacio-icono" />
+                <p>No hay solicitudes de internación registradas en este episodio.</p>
+                <p style={{ fontSize: '0.8rem', marginTop: '6px' }}>Registre derivaciones a sectores de internación o unidades críticas.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Modal Nueva Solicitud de Pase */}
       {mostrarModalSolicitudPase && (
         <NuevaSolicitudPase
@@ -560,6 +610,20 @@ const EpisodioDetalle = ({
           onEnviar={handleEnviarInternacion}
           pacienteNombre={paciente?.nombreApellido || 'Paciente'}
           pacienteHC={paciente?.numeroHistoriaClinica || '—'}
+        />
+      )}
+
+      {/* Modal Cargar Resultado de Estudio */}
+      {mostrarModalCargarResultado && (
+        <CargarResultadoEstudio
+          onCerrar={() => {
+            setMostrarModalCargarResultado(false);
+            setEstudioSeleccionadoIndex(null);
+          }}
+          onGuardar={handleGuardarResultadoEstudio}
+          pacienteNombre={paciente?.nombreApellido || 'Paciente'}
+          pacienteHC={paciente?.numeroHistoriaClinica || '—'}
+          estudio={estudios[estudioSeleccionadoIndex]}
         />
       )}
     </div>

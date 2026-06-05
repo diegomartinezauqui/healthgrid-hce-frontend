@@ -756,6 +756,23 @@
   color: #777;
   border: 1px solid #E0E0E0;
 }
+.estudio-item__cargar-resultado {
+  background-color: transparent;
+  border: 1.5px solid #259A5E;
+  color: #259A5E;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.estudio-item__cargar-resultado:hover {
+  background-color: #259A5E;
+  color: white;
+}
 
 /* ── Responsive ── */
 

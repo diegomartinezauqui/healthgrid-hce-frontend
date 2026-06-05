@@ -1,5 +1,5 @@
 // src/pages/PacienteDetalle.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FiCalendar, FiCreditCard, FiFileText, FiUser, FiActivity, FiAlertTriangle, FiClipboard, FiEdit3, FiEdit2, FiPlusCircle, FiFolder } from 'react-icons/fi';
 import NuevaFichaMedica from './NuevaFichaMedica';
 import NuevoEpisodio from './NuevoEpisodio';
@@ -7,56 +7,13 @@ import EpisodioDetalle from './EpisodioDetalle';
 import EvolucionDetalle from './EvolucionDetalle';
 import PedidoEstudioDetalle from './PedidoEstudioDetalle';
 import '../styles/PacienteDetalle.css';
-
-// Helpers
-const calcularEdad = (fechaNacimiento) => {
-  if (!fechaNacimiento) return '—';
-  const hoy = new Date();
-  const nacimiento = new Date(fechaNacimiento);
-  let edad = hoy.getFullYear() - nacimiento.getFullYear();
-  const m = hoy.getMonth() - nacimiento.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
-  return edad;
-};
-
-const formatearFecha = (fecha) => {
-  if (!fecha) return '—';
-  const d = new Date(fecha);
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
-
-const formatearFechaLarga = (fecha) => {
-  if (!fecha) return '—';
-  const d = new Date(fecha);
-  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
-};
-
-const capitalizarTipo = (tipo) => {
-  if (!tipo) return '';
-  const mapa = {
-    alergia: 'Alergia',
-    implante: 'Implante',
-    condicion: 'Condición',
-    contraindicacion: 'Contraindicación',
-    quirurgico: 'Quirúrgico',
-    familiar: 'Familiar',
-    patologico: 'Patológico',
-    habito: 'Hábito',
-    internacion: 'Internación',
-    otro: 'Otro',
-  };
-  return mapa[tipo] || tipo;
-};
-
-// Obtener iniciales del nombre
-const obtenerIniciales = (nombre) => {
-  if (!nombre) return '??';
-  const partes = nombre.trim().split(/\s+/);
-  if (partes.length >= 2) {
-    return (partes[partes.length - 1][0] + partes[0][0]).toUpperCase();
-  }
-  return partes[0].substring(0, 2).toUpperCase();
-};
+import {
+  calcularEdad,
+  formatearFecha,
+  formatearFechaLarga,
+  capitalizarTipo,
+  obtenerIniciales,
+} from '../utils/helpers';
 
 // Color para tags según tipo
 const getTagColor = (tipo) => {
@@ -75,7 +32,7 @@ const getTagColor = (tipo) => {
   return colores[tipo] || colores.otro;
 };
 
-const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAgregarEpisodio, onAgregarEvolucion, onDarDeAlta, onAgregarReceta, onCambiarEstadoReceta, onAgregarEstudio, onAgregarSolicitudPase }) => {
+const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAgregarEpisodio, onAgregarEvolucion, onDarDeAlta, onAgregarReceta, onCambiarEstadoReceta, onAgregarEstudio, onAgregarSolicitudPase, onSiguiente }) => {
   const [tabActiva, setTabActiva] = useState('ficha');
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEpisodio, setMostrarModalEpisodio] = useState(false);
@@ -164,15 +121,6 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
     ? (episodioActual.estudiosData || [])[estudioSeleccionadoIdx]
     : null;
 
-  // Determinar texto del link "volver" según contexto
-  const getVolverTexto = () => {
-    if (tabActiva === 'episodios') {
-      if (subVistaEpisodio === 'evolucionDetalle') return null; // EvolucionDetalle tiene su propio volver
-      if (subVistaEpisodio === 'detalle') return null; // EpisodioDetalle tiene su propio volver
-    }
-    return 'Volver a búsqueda';
-  };
-
   return (
     <div className="detalle-page">
 
@@ -209,8 +157,8 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
             Episodios
           </button>
         </div>
-        <button className="detalle-topbar__btn-siguiente">
-          ← Siguiente Paciente
+        <button className="detalle-topbar__btn-siguiente" onClick={onSiguiente}>
+          Siguiente Paciente →
         </button>
       </header>
 

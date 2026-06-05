@@ -1,17 +1,25 @@
 // src/App.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import PacienteDetalle from './pages/PacienteDetalle';
 
 function App() {
-  // Estado global de pacientes en memoria
-  const [pacientes, setPacientes] = useState([]);
+  // Estado global de pacientes cargado desde localStorage
+  const [pacientes, setPacientes] = useState(() => {
+    const saved = localStorage.getItem('healthgrid_pacientes');
+    return saved ? JSON.parse(saved) : [];
+  });
   // Vista actual: 'home' | 'detalle'
   const [vistaActual, setVistaActual] = useState('home');
   // Índice del paciente que se está viendo en detalle
   const [pacienteActualIndex, setPacienteActualIndex] = useState(null);
+
+  // Sincronizar estado de pacientes con localStorage
+  useEffect(() => {
+    localStorage.setItem('healthgrid_pacientes', JSON.stringify(pacientes));
+  }, [pacientes]);
 
   // Guardar nuevo paciente y navegar al detalle
   const guardarPaciente = (data) => {
@@ -198,6 +206,64 @@ function App() {
     });
   };
 
+  // Agregar solicitud de internación a un episodio
+  const agregarSolicitudInternacion = (pacienteIdx, episodioIdx, internacionData) => {
+    setPacientes(prev => {
+      const actualizados = [...prev];
+      const paciente = { ...actualizados[pacienteIdx] };
+      const episodios = [...(paciente.episodios || [])];
+      const episodio = { ...episodios[episodioIdx] };
+
+      const nuevaSolicitud = {
+        ...internacionData,
+        id: Date.now(),
+        estado: 'pendiente',
+      };
+
+      episodio.solicitudesInternacionData = [...(episodio.solicitudesInternacionData || []), nuevaSolicitud];
+      episodios[episodioIdx] = episodio;
+      paciente.episodios = episodios;
+      actualizados[pacienteIdx] = paciente;
+      return actualizados;
+    });
+  };
+
+  // Cargar resultado de un estudio en un episodio
+  const agregarResultadoEstudio = (pacienteIdx, episodioIdx, estudioIdx, resultadoData) => {
+    setPacientes(prev => {
+      const actualizados = [...prev];
+      const paciente = { ...actualizados[pacienteIdx] };
+      const episodios = [...(paciente.episodios || [])];
+      const episodio = { ...episodios[episodioIdx] };
+      const estudios = [...(episodio.estudiosData || [])];
+
+      estudios[estudioIdx] = {
+        ...estudios[estudioIdx],
+        estado: 'completado',
+        resultado: {
+          codigoExterno: resultadoData.codigoExterno || '',
+          profesionalFirmante: resultadoData.profesionalFirmante || '',
+          fechaResultado: resultadoData.fechaResultado || new Date().toISOString().slice(0, 10),
+          informe: resultadoData.informe || '',
+          archivosAdjuntos: resultadoData.archivosAdjuntos || [],
+        },
+      };
+
+      episodio.estudiosData = estudios;
+      episodios[episodioIdx] = episodio;
+      paciente.episodios = episodios;
+      actualizados[pacienteIdx] = paciente;
+      return actualizados;
+    });
+  };
+
+  // Ver siguiente paciente
+  const verSiguientePaciente = () => {
+    if (pacientes.length > 1) {
+      setPacienteActualIndex(prev => (prev + 1) % pacientes.length);
+    }
+  };
+
   // Volver al Home desde detalle
   const volverAHome = () => {
     setVistaActual('home');
@@ -210,7 +276,14 @@ function App() {
 
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {vistaActual === 'home' && (
-          <Home onGuardarPaciente={guardarPaciente} />
+          <Home
+            pacientes={pacientes}
+            onSeleccionarPaciente={(idx) => {
+              setPacienteActualIndex(idx);
+              setVistaActual('detalle');
+            }}
+            onGuardarPaciente={guardarPaciente}
+          />
         )}
         {vistaActual === 'detalle' && pacienteActualIndex !== null && (
           <PacienteDetalle
@@ -225,6 +298,9 @@ function App() {
             onCambiarEstadoReceta={cambiarEstadoReceta}
             onAgregarEstudio={agregarEstudio}
             onAgregarSolicitudPase={agregarSolicitudPase}
+            onAgregarSolicitudInternacion={agregarSolicitudInternacion}
+            onAgregarResultadoEstudio={agregarResultadoEstudio}
+            onSiguiente={verSiguientePaciente}
           />
         )}
       </div>

@@ -4,6 +4,7 @@ import './App.css';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import PacienteDetalle from './pages/PacienteDetalle';
+import { actualizarEstadoTurno } from './services/mockSalaEspera';
 
 function App() {
   // Estado global de pacientes cargado desde localStorage
@@ -15,6 +16,8 @@ function App() {
   const [vistaActual, setVistaActual] = useState('home');
   // Índice del paciente que se está viendo en detalle
   const [pacienteActualIndex, setPacienteActualIndex] = useState(null);
+  // Turno actualmente en atención
+  const [turnoActivo, setTurnoActivo] = useState(null);
 
   // Sincronizar estado de pacientes con localStorage
   useEffect(() => {
@@ -22,7 +25,7 @@ function App() {
   }, [pacientes]);
 
   // Guardar nuevo paciente y navegar al detalle
-  const guardarPaciente = (data) => {
+  const guardarPaciente = (data, turnoAsociado = null) => {
     const nuevoPaciente = {
       ...data,
       id: Date.now(),
@@ -30,11 +33,66 @@ function App() {
       estado: 'Activo',
       episodios: [],
     };
+
+    if (turnoAsociado) {
+      actualizarEstadoTurno(turnoAsociado.id_espera, 'En atención');
+      nuevoPaciente.episodios = [{
+        id: Date.now(),
+        numero: 1,
+        fecha: new Date().toISOString(),
+        medico: turnoAsociado.id_profesional,
+        especialidad: turnoAsociado.sector,
+        motivoConsulta: turnoAsociado.motivo,
+        estado: 'abierto',
+        fechaAlta: null,
+        evolucionesData: [],
+        recetasData: [],
+        estudiosData: [],
+      }];
+    }
+
+    setPacientes(prev => [...prev, nuevoPaciente]);
+    setPacienteActualIndex(pacientes.length); // el nuevo índice será el tamaño actual del array
+
+    if (turnoAsociado) {
+      setTurnoActivo(turnoAsociado);
+    }
+
+    setVistaActual('detalle');
+  };
+
+  const iniciarAtencion = (turno, pacienteIdx) => {
+    setTurnoActivo(turno);
+    actualizarEstadoTurno(turno.id_espera, 'En atención');
+    setPacienteActualIndex(pacienteIdx);
+
+    // Si no tiene episodio abierto, crearlo automáticamente
     setPacientes(prev => {
-      const nuevos = [...prev, nuevoPaciente];
-      setPacienteActualIndex(nuevos.length - 1);
-      return nuevos;
+      const actualizados = [...prev];
+      const paciente = { ...actualizados[pacienteIdx] };
+      const episodios = paciente.episodios || [];
+      const tieneEpisodioAbierto = episodios.some(e => e.estado === 'abierto');
+
+      if (!tieneEpisodioAbierto) {
+        const nuevoEpisodio = {
+          id: Date.now(),
+          numero: episodios.length + 1,
+          fecha: new Date().toISOString(),
+          medico: turno.id_profesional,
+          especialidad: turno.sector,
+          motivoConsulta: turno.motivo,
+          estado: 'abierto',
+          fechaAlta: null,
+          evolucionesData: [],
+          recetasData: [],
+          estudiosData: [],
+        };
+        paciente.episodios = [...episodios, nuevoEpisodio];
+        actualizados[pacienteIdx] = paciente;
+      }
+      return actualizados;
     });
+
     setVistaActual('detalle');
   };
 
@@ -95,7 +153,7 @@ function App() {
     });
   };
 
-  // Dar de alta un episodio
+  // Dar de alta un episodio (Finaliza el episodio y el turno)
   const darDeAlta = (pacienteIdx, episodioIdx) => {
     setPacientes(prev => {
       const actualizados = [...prev];
@@ -110,6 +168,12 @@ function App() {
       actualizados[pacienteIdx] = paciente;
       return actualizados;
     });
+
+    if (turnoActivo) {
+      actualizarEstadoTurno(turnoActivo.id_espera, 'Atendido');
+      setTurnoActivo(null);
+    }
+    volverAHome();
   };
 
   // Agregar receta a un episodio
@@ -283,12 +347,14 @@ function App() {
               setVistaActual('detalle');
             }}
             onGuardarPaciente={guardarPaciente}
+            onIniciarAtencion={iniciarAtencion}
           />
         )}
         {vistaActual === 'detalle' && pacienteActualIndex !== null && (
           <PacienteDetalle
             paciente={pacientes[pacienteActualIndex]}
             pacienteIndex={pacienteActualIndex}
+            turnoActivo={turnoActivo}
             onVolver={volverAHome}
             onActualizar={actualizarPaciente}
             onAgregarEpisodio={agregarEpisodio}

@@ -1,0 +1,117 @@
+
+import { FiClipboard } from 'react-icons/fi';
+import { formatearFechaLarga } from '../../utils/helpers';
+
+/**
+ * PacienteEpisodiosTab renderiza el listado de episodios clínicos asociados al paciente,
+ * sus tipos, badges de estado, estadísticas y el botón de creación de episodios.
+ */
+const PacienteEpisodiosTab = ({
+  episodios = [],
+  onAbrirEpisodio,
+  onNuevoEpisodioClick,
+}) => {
+  return (
+    <div className="episodios-section">
+      <div className="episodios-header">
+        <div>
+          <h2 className="episodios-header__titulo">Episodios Médicos</h2>
+          <p className="episodios-header__subtitulo">Historial de interacciones clínicas del paciente</p>
+        </div>
+        <button
+          className="detalle-btn detalle-btn--nuevo"
+          onClick={onNuevoEpisodioClick}
+        >
+          + Nuevo Episodio
+        </button>
+      </div>
+
+      <div className="episodios-lista">
+        {episodios.length > 0 ? (
+          episodios.map((ep, i) => {
+            const esAbierto = ep.estado === 'abierto';
+            const esInternado = ep.tipoEpisodio === 'internado';
+            const numEvol = ep.evolucionesData?.length || 0;
+            const numRecetas = ep.recetasData?.length || 0;
+            const numEstudios = ep.estudiosData?.length || 0;
+            return (
+              <div
+                key={ep.id || i}
+                className="episodio-item"
+                onClick={() => onAbrirEpisodio(i)}
+              >
+                <div
+                  className={`episodio-item__icono ${
+                    esAbierto
+                      ? 'episodio-item__icono--abierto'
+                      : 'episodio-item__icono--cerrado'
+                  }`}
+                >
+                  {esAbierto ? '⊕' : '✓'}
+                </div>
+                <div className="episodio-item__info">
+                  <div className="episodio-item__titulo-row">
+                    <span className="episodio-item__titulo">Episodio #{ep.numero}</span>
+                    <span
+                      className={`episodio-item__tipo-badge ${
+                        esInternado
+                          ? 'episodio-item__tipo-badge--internado'
+                          : 'episodio-item__tipo-badge--ambulatorio'
+                      }`}
+                    >
+                      {esInternado ? 'Internado' : 'Ambulatorio'}
+                    </span>
+                    <span
+                      className={`episodio-item__estado-badge ${
+                        esAbierto
+                          ? 'episodio-item__estado-badge--abierto'
+                          : 'episodio-item__estado-badge--cerrado'
+                      }`}
+                    >
+                      {esAbierto ? '● Abierto' : 'Cerrado'}
+                    </span>
+                  </div>
+                  <div className="episodio-item__detalle">
+                    {esAbierto
+                      ? `Desde ${formatearFechaLarga(ep.fechaApertura)} — En curso`
+                      : `${formatearFechaLarga(ep.fechaApertura)} → Alta: ${formatearFechaLarga(
+                          ep.fechaAlta
+                        )}`}
+                  </div>
+                  {ep.motivo && <div className="episodio-item__motivo">{ep.motivo}</div>}
+                </div>
+                <div className="episodio-item__stats">
+                  <div className="episodio-item__stat">
+                    <span className="episodio-item__stat-num">{numEvol}</span>
+                    <span className="episodio-item__stat-label">EVOL.</span>
+                  </div>
+                  <div className="episodio-item__stat">
+                    <span className="episodio-item__stat-num">{numRecetas}</span>
+                    <span className="episodio-item__stat-label">RECETAS</span>
+                  </div>
+                  <div className="episodio-item__stat">
+                    <span className="episodio-item__stat-num">{numEstudios}</span>
+                    <span className="episodio-item__stat-label">ESTUDIOS</span>
+                  </div>
+                </div>
+                <div className="episodio-item__arrow">›</div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="episodios-vacio">
+            <div className="episodios-vacio__icono">
+              <FiClipboard size={32} />
+            </div>
+            <p className="episodios-vacio__texto">No hay episodios registrados para este paciente.</p>
+            <p className="episodios-vacio__subtexto">
+              Cree el primer episodio clínico para comenzar el seguimiento.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default PacienteEpisodiosTab;

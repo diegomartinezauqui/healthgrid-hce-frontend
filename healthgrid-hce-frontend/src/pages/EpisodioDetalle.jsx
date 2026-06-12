@@ -5,7 +5,10 @@ import NuevaReceta from './NuevaReceta';
 import NuevoPedidoEstudio from './NuevoPedidoEstudio';
 import SolicitarInternacion from './SolicitarInternacion';
 import NuevaSolicitudPase from './NuevaSolicitudPase';
-import { FiActivity, FiFileText, FiLayers, FiSend, FiCheckCircle, FiPlusCircle } from 'react-icons/fi';
+import NotificacionObligatoria from '../components/NotificacionObligatoria';
+import { detectarNotificacionObligatoria } from '../data/patologiasNotificables';
+import { emitirNotificacionObligatoria } from '../services/epidemiologia';
+import { FiActivity, FiFileText, FiLayers, FiSend, FiCheckCircle, FiPlusCircle, FiAlertTriangle } from 'react-icons/fi';
 import { FaBed } from 'react-icons/fa';
 import '../styles/EpisodioDetalle.css';
 
@@ -76,6 +79,7 @@ const EpisodioDetalle = ({
   const [mostrarModalEstudio, setMostrarModalEstudio] = useState(false);
   const [mostrarModalInternacion, setMostrarModalInternacion] = useState(false);
   const [mostrarModalSolicitudPase, setMostrarModalSolicitudPase] = useState(false);
+  const [notificacion, setNotificacion] = useState(null);
 
   if (!episodio) return null;
 
@@ -86,9 +90,42 @@ const EpisodioDetalle = ({
   const estudios = episodio.estudiosData || [];
   const solicitudesPase = episodio.solicitudesPaseData || [];
 
-  const handleGuardarEvolucion = (data) => {
-    onAgregarEvolucion(pacienteIndex, episodioIndex, data);
+  const handleGuardarEvolucion = async (data) => {
+    const patologia = detectarNotificacionObligatoria(
+      `${data.diagnostico || ''} ${data.motivoEstado || ''}`
+    );
+
+    const evolucionData = patologia
+      ? {
+          ...data,
+          notificacionObligatoria: {
+            codigo: patologia.codigo,
+            nombre: patologia.nombre,
+            modalidad: patologia.modalidad,
+          },
+        }
+      : data;
+
+    onAgregarEvolucion(pacienteIndex, episodioIndex, evolucionData);
     setMostrarModalEvolucion(false);
+
+    if (patologia) {
+      try {
+        const evento = await emitirNotificacionObligatoria({
+          paciente: paciente?.nombreApellido,
+          historiaClinica: paciente?.numeroHistoriaClinica,
+          episodioId: episodio?.id,
+          diagnostico: data.diagnostico,
+          patologia: patologia.codigo,
+          profesional: data.profesional,
+          fecha: new Date().toISOString(),
+        });
+        setNotificacion({ patologia, evento });
+      } catch (e) {
+        console.error('No se pudo emitir la notificación obligatoria:', e);
+        setNotificacion({ patologia, evento: null });
+      }
+    }
   };
 
   const handleGuardarReceta = (data) => {
@@ -257,6 +294,15 @@ const EpisodioDetalle = ({
                         {ev.diagnostico.split('·').map((tag, ti) => (
                           <span key={ti} className="evol-item__tag">{tag.trim()}</span>
                         ))}
+                        {ev.notificacionObligatoria && (
+                          <span
+                            className="evol-item__tag evol-item__tag--notif"
+                            title={`Evento de notificación obligatoria emitido a Epidemiología — ${ev.notificacionObligatoria.nombre}`}
+                          >
+                            <FiAlertTriangle style={{ marginRight: '4px', verticalAlign: '-2px' }} />
+                            Notif. obligatoria
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -560,6 +606,14 @@ const EpisodioDetalle = ({
           onEnviar={handleEnviarInternacion}
           pacienteNombre={paciente?.nombreApellido || 'Paciente'}
           pacienteHC={paciente?.numeroHistoriaClinica || '—'}
+        />
+      )}
+      {/* Toast: Notificación Obligatoria Emitida (evento asincrónico a Epidemiología) */}
+      {notificacion && (
+        <NotificacionObligatoria
+          patologia={notificacion.patologia}
+          evento={notificacion.evento}
+          onCerrar={() => setNotificacion(null)}
         />
       )}
     </div>

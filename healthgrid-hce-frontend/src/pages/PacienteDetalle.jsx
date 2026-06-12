@@ -1,5 +1,5 @@
 // src/pages/PacienteDetalle.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiCalendar, FiCreditCard, FiFileText, FiUser, FiActivity, FiAlertTriangle, FiClipboard, FiEdit3, FiEdit2, FiPlusCircle, FiFolder } from 'react-icons/fi';
 import NuevaFichaMedica from './NuevaFichaMedica';
 import NuevoEpisodio from './NuevoEpisodio';
@@ -75,10 +75,50 @@ const getTagColor = (tipo) => {
   return colores[tipo] || colores.otro;
 };
 
-const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAgregarEpisodio, onAgregarEvolucion, onDarDeAlta, onAgregarReceta, onCambiarEstadoReceta, onAgregarEstudio, onAgregarSolicitudPase }) => {
+const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSeleccionarPaciente, onVolver, onNuevoRegistro, onActualizar, onAgregarEpisodio, onAgregarEvolucion, onDarDeAlta, onAgregarReceta, onCambiarEstadoReceta, onAgregarEstudio, onAgregarSolicitudPase }) => {
   const [tabActiva, setTabActiva] = useState('ficha');
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEpisodio, setMostrarModalEpisodio] = useState(false);
+
+  // Búsqueda de pacientes en topbar
+  const [busquedaTopbar, setBusquedaTopbar] = useState('');
+  const [sugerencias, setSugerencias] = useState([]);
+  const searchContainerRef = useRef(null);
+
+  const handleBusquedaTopbar = (e) => {
+    const val = e.target.value;
+    setBusquedaTopbar(val);
+    const t = val.trim().toLowerCase();
+    if (!t) { setSugerencias([]); return; }
+    setSugerencias(
+      pacientes
+        .map((p, idx) => ({ ...p, _index: idx }))
+        .filter(p =>
+          (p.dni || '').toLowerCase().includes(t) ||
+          (p.nombreApellido || '').toLowerCase().includes(t) ||
+          (p.numeroHistoriaClinica || '').toLowerCase().includes(t)
+        )
+    );
+  };
+
+  const seleccionarSugerencia = (p) => {
+    setBusquedaTopbar('');
+    setSugerencias([]);
+    onSeleccionarPaciente(p._index);
+  };
+
+  // Click outside para cerrar sugerencias
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setSugerencias([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Sub-navegación de episodios
   const [subVistaEpisodio, setSubVistaEpisodio] = useState('lista'); // 'lista' | 'detalle' | 'evolucionDetalle' | 'estudioDetalle'
@@ -179,18 +219,42 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
       {/* Barra superior con búsqueda y tabs */}
       <header className="detalle-topbar">
         <div className="detalle-topbar__left">
-          <div className="detalle-topbar__search-wrapper">
-            <input
-              type="text"
-              placeholder="Buscar por DNI o Nombre..."
-              className="detalle-topbar__search"
-            />
-            <button className="detalle-topbar__search-btn">
-              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="10.5" cy="10.5" r="7.5"></circle>
-                <line x1="21" y1="21" x2="15.8" y2="15.8"></line>
-              </svg>
-            </button>
+          <div ref={searchContainerRef} style={{ position: 'relative' }}>
+            <div className="detalle-topbar__search-wrapper">
+              <input
+                type="text"
+                placeholder="Buscar por DNI o Nombre..."
+                className="detalle-topbar__search"
+                value={busquedaTopbar}
+                onChange={handleBusquedaTopbar}
+              />
+              <button className="detalle-topbar__search-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="10.5" cy="10.5" r="7.5"></circle>
+                  <line x1="21" y1="21" x2="15.8" y2="15.8"></line>
+                </svg>
+              </button>
+            </div>
+            {sugerencias.length > 0 && (
+              <div className="detalle-topbar__sugerencias">
+                {sugerencias.map((p) => (
+                  <div
+                    key={p.id}
+                    className="detalle-topbar__sugerencia-item"
+                    onClick={() => seleccionarSugerencia(p)}
+                  >
+                    <div className="detalle-topbar__sugerencia-avatar">
+                      {(p.nombreApellido || '??').split(/\s+/).slice(-1)[0]?.[0]?.toUpperCase() || '?'}
+                      {(p.nombreApellido || '??').split(/\s+/)[0]?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <div className="detalle-topbar__sugerencia-info">
+                      <span className="detalle-topbar__sugerencia-nombre">{p.nombreApellido}</span>
+                      <span className="detalle-topbar__sugerencia-meta">DNI {p.dni} · HC {p.numeroHistoriaClinica}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <div className="detalle-topbar__tabs">
@@ -268,7 +332,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, onVolver, onActualizar, onAg
               >
                 <FiEdit2 className="detalle-btn__icon" /> Actualizar / Editar Ficha
               </button>
-              <button className="detalle-btn detalle-btn--nuevo">
+              <button className="detalle-btn detalle-btn--nuevo" onClick={onNuevoRegistro}>
                 <FiPlusCircle className="detalle-btn__icon" /> Nuevo Registro
               </button>
             </div>

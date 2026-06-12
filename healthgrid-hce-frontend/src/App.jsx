@@ -4,14 +4,17 @@ import './App.css';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import PacienteDetalle from './pages/PacienteDetalle';
+import mockPacientes from './data/mockPacientes';
 
 function App() {
-  // Estado global de pacientes en memoria
-  const [pacientes, setPacientes] = useState([]);
+  // Estado global de pacientes en memoria (precargado con datos de prueba)
+  const [pacientes, setPacientes] = useState(mockPacientes);
   // Vista actual: 'home' | 'detalle'
   const [vistaActual, setVistaActual] = useState('home');
   // Índice del paciente que se está viendo en detalle
   const [pacienteActualIndex, setPacienteActualIndex] = useState(null);
+  // Flag para abrir modal de nueva ficha al volver a Home
+  const [abrirModalNuevo, setAbrirModalNuevo] = useState(false);
 
   // Guardar nuevo paciente y navegar al detalle
   const guardarPaciente = (data) => {
@@ -204,19 +207,41 @@ function App() {
     setPacienteActualIndex(null);
   };
 
+  // Nuevo Registro: volver a Home y abrir modal de nueva ficha
+  const nuevoRegistro = () => {
+    setVistaActual('home');
+    setPacienteActualIndex(null);
+    setAbrirModalNuevo(true);
+  };
+
+  // Seleccionar paciente existente desde búsqueda
+  const seleccionarPaciente = (index) => {
+    setPacienteActualIndex(index);
+    setVistaActual('detalle');
+  };
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif', margin: 0, padding: 0 }}>
       <Sidebar />
 
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {vistaActual === 'home' && (
-          <Home onGuardarPaciente={guardarPaciente} />
+          <Home
+            onGuardarPaciente={guardarPaciente}
+            pacientes={pacientes}
+            onSeleccionarPaciente={seleccionarPaciente}
+            abrirModalNuevo={abrirModalNuevo}
+            onModalNuevoCerrado={() => setAbrirModalNuevo(false)}
+          />
         )}
         {vistaActual === 'detalle' && pacienteActualIndex !== null && (
           <PacienteDetalle
             paciente={pacientes[pacienteActualIndex]}
             pacienteIndex={pacienteActualIndex}
+            pacientes={pacientes}
+            onSeleccionarPaciente={seleccionarPaciente}
             onVolver={volverAHome}
+            onNuevoRegistro={nuevoRegistro}
             onActualizar={actualizarPaciente}
             onAgregarEpisodio={agregarEpisodio}
             onAgregarEvolucion={agregarEvolucion}

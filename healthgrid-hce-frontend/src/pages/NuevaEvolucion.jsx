@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
+import ModalWrapper from '../components/ModalWrapper';
 import '../styles/NuevaEvolucion.css';
 
 const NuevaEvolucion = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC }) => {
@@ -28,13 +29,12 @@ const NuevaEvolucion = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC }) => 
     onCerrar();
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onCerrar();
-  };
-
   return (
-    <div className="evol-overlay" onClick={handleOverlayClick}>
-      <div className="evol-modal">
+    <ModalWrapper
+      onCerrar={onCerrar}
+      overlayClassName="evol-overlay"
+      modalClassName="evol-modal"
+    >
 
         {/* Header */}
         <div className="evol-modal__header">
@@ -135,8 +135,7 @@ const NuevaEvolucion = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC }) => 
           </div>
 
         </form>
-      </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

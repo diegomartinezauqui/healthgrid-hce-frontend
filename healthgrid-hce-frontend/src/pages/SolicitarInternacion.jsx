@@ -1,6 +1,7 @@
 // src/pages/SolicitarInternacion.jsx
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
+import ModalWrapper from '../components/ModalWrapper';
 import '../styles/SolicitarInternacion.css';
 
 const sectores = [
@@ -43,13 +44,12 @@ const SolicitarInternacion = ({ onCerrar, onEnviar, pacienteNombre, pacienteHC }
     onCerrar();
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onCerrar();
-  };
-
   return (
-    <div className="intern-overlay" onClick={handleOverlayClick}>
-      <div className="intern-modal">
+    <ModalWrapper
+      onCerrar={onCerrar}
+      overlayClassName="intern-overlay"
+      modalClassName="intern-modal"
+    >
 
         {/* Header */}
         <div className="intern-modal__header">
@@ -113,8 +113,7 @@ const SolicitarInternacion = ({ onCerrar, onEnviar, pacienteNombre, pacienteHC }
           </div>
 
         </form>
-      </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

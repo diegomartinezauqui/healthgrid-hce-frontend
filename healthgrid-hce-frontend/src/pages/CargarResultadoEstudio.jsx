@@ -1,6 +1,7 @@
 // src/pages/CargarResultadoEstudio.jsx
 import { useForm, useFieldArray } from 'react-hook-form';
 import Swal from 'sweetalert2';
+import ModalWrapper from '../components/ModalWrapper';
 import '../styles/CargarResultadoEstudio.css';
 
 const CargarResultadoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, estudio }) => {
@@ -37,13 +38,12 @@ const CargarResultadoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteH
     onCerrar();
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onCerrar();
-  };
-
   return (
-    <div className="cres-overlay animate-fade-in" onClick={handleOverlayClick}>
-      <div className="cres-modal animate-slide-up">
+    <ModalWrapper
+      onCerrar={onCerrar}
+      overlayClassName="cres-overlay animate-fade-in"
+      modalClassName="cres-modal animate-slide-up"
+    >
         {/* Header */}
         <div className="cres-modal__header">
           <div>
@@ -157,8 +157,7 @@ const CargarResultadoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteH
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

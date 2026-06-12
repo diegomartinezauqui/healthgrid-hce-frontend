@@ -1,6 +1,7 @@
 // src/pages/NuevoPedidoEstudio.jsx
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
+import ModalWrapper from '../components/ModalWrapper';
 import '../styles/NuevoPedidoEstudio.css';
 import { tipoConsultaLabel, formatearFechaCorta } from '../utils/helpers';
 
@@ -27,13 +28,12 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
     });
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onCerrar();
-  };
-
   return (
-    <div className="pedido-overlay" onClick={handleOverlayClick}>
-      <div className="pedido-modal">
+    <ModalWrapper
+      onCerrar={onCerrar}
+      overlayClassName="pedido-overlay"
+      modalClassName="pedido-modal"
+    >
 
         {/* Header */}
         <div className="pedido-modal__header">
@@ -111,8 +111,7 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
           </div>
 
         </form>
-      </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

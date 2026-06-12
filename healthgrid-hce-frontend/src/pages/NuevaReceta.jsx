@@ -1,5 +1,6 @@
 // src/pages/NuevaReceta.jsx
 import { useForm, useFieldArray } from 'react-hook-form';
+import ModalWrapper from '../components/ModalWrapper';
 import '../styles/NuevaReceta.css';
 import { tipoConsultaLabel } from '../utils/helpers';
 
@@ -22,13 +23,12 @@ const NuevaReceta = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evolucio
     onGuardar(data);
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onCerrar();
-  };
-
   return (
-    <div className="receta-overlay" onClick={handleOverlayClick}>
-      <div className="receta-modal">
+    <ModalWrapper
+      onCerrar={onCerrar}
+      overlayClassName="receta-overlay"
+      modalClassName="receta-modal"
+    >
 
         {/* Header */}
         <div className="receta-modal__header">
@@ -128,8 +128,7 @@ const NuevaReceta = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evolucio
           </div>
 
         </form>
-      </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

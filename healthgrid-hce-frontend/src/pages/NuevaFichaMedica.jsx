@@ -1,16 +1,10 @@
 // src/pages/NuevaFichaMedica.jsx
 import { useForm, useFieldArray } from 'react-hook-form';
+import ModalWrapper from '../components/ModalWrapper';
 import '../styles/NuevaFichaMedica.css';
 
 const valoresVacios = {
-  dni: '',
   numeroHistoriaClinica: '',
-  nombreApellido: '',
-  fechaNacimiento: '',
-  sexo: '',
-  telefono: '',
-  correo: '',
-  domicilio: '',
   grupoSanguineo: '',
   contactoEmergencia: '',
   consideraciones: [{ tipo: '', descripcion: '', detalleReaccion: '' }],
@@ -18,7 +12,7 @@ const valoresVacios = {
   observaciones: '',
 };
 
-const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null }) => {
+const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePatient = null }) => {
   // Si hay datos iniciales (modo edición), usarlos; sino, usar valores vacíos
   const defaultValues = datosIniciales
     ? {
@@ -67,16 +61,12 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null }) => {
     reset(valoresVacios);
   };
 
-  // Cerrar modal al hacer clic en el overlay (fuera del modal)
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onCerrar();
-    }
-  };
-
   return (
-    <div className="ficha-overlay" onClick={handleOverlayClick}>
-      <div className="ficha-modal">
+    <ModalWrapper
+      onCerrar={onCerrar}
+      overlayClassName="ficha-overlay"
+      modalClassName="ficha-modal"
+    >
 
         {/* Header verde oscuro */}
         <div className="ficha-header">
@@ -99,19 +89,15 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null }) => {
 
           {/* ─── SECCIÓN 1: IDENTIFICACIÓN DEL PACIENTE ─── */}
           <section className="ficha-section">
-            <h2 className="ficha-section__titulo">IDENTIFICACIÓN DEL PACIENTE</h2>
+            <h2 className="ficha-section__titulo">IDENTIFICACIÓN DEL PACIENTE (Datos desde Core)</h2>
 
             {/* Fila 1: DNI, Nro Historia, Nombre */}
             <div className="ficha-row ficha-row--3cols">
               <div className="ficha-field">
                 <label className="ficha-label">DNI</label>
-                <input
-                  type="text"
-                  placeholder="Ej: 28456123"
-                  className="ficha-input"
-                  {...register('dni')}
-                />
-                <span className="ficha-hint">Tipo: caja de texto numérica.</span>
+                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666' }}>
+                  {corePatient?.dni || '—'}
+                </div>
               </div>
               <div className="ficha-field">
                 <label className="ficha-label">Número de Historia Clínica</label>
@@ -125,73 +111,37 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null }) => {
               </div>
               <div className="ficha-field">
                 <label className="ficha-label">Nombre y Apellido</label>
-                <input
-                  type="text"
-                  placeholder="Ej: María Elena Martínez González"
-                  className="ficha-input"
-                  {...register('nombreApellido')}
-                />
-                <span className="ficha-hint">Tipo: caja de texto.</span>
+                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666', fontWeight: 'bold' }}>
+                  {corePatient?.nombreApellido || '—'}
+                </div>
               </div>
             </div>
 
-            {/* Fila 2: Fecha Nacimiento, Sexo, Teléfono, Correo */}
+            {/* Fila 2: Fecha Nacimiento, Sexo, Teléfono, Domicilio */}
             <div className="ficha-row ficha-row--4cols">
               <div className="ficha-field">
                 <label className="ficha-label">Fecha de Nacimiento</label>
-                <input
-                  type="date"
-                  className="ficha-input"
-                  {...register('fechaNacimiento')}
-                />
-                <span className="ficha-hint">Tipo: selector de fecha.</span>
+                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666' }}>
+                  {corePatient?.fechaNacimiento || '—'}
+                </div>
               </div>
               <div className="ficha-field">
                 <label className="ficha-label">Sexo</label>
-                <select
-                  className="ficha-input ficha-select"
-                  {...register('sexo')}
-                >
-                  <option value="">Seleccionar</option>
-                  <option value="masculino">Masculino</option>
-                  <option value="femenino">Femenino</option>
-                  <option value="otro">Otro</option>
-                </select>
-                <span className="ficha-hint">Tipo: lista desplegable.</span>
+                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666' }}>
+                  {corePatient?.sexo || '—'}
+                </div>
               </div>
               <div className="ficha-field">
                 <label className="ficha-label">Teléfono</label>
-                <input
-                  type="tel"
-                  placeholder="Ej: +54 11 4823-9017"
-                  className="ficha-input"
-                  {...register('telefono')}
-                />
-                <span className="ficha-hint">Tipo: caja de texto telefónica.</span>
+                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666' }}>
+                  {corePatient?.telefono || '—'}
+                </div>
               </div>
               <div className="ficha-field">
-                <label className="ficha-label">Correo</label>
-                <input
-                  type="email"
-                  placeholder="mail@dominio.com"
-                  className="ficha-input"
-                  {...register('correo')}
-                />
-                <span className="ficha-hint">Tipo: caja de texto email.</span>
-              </div>
-            </div>
-
-            {/* Fila 3: Domicilio */}
-            <div className="ficha-row">
-              <div className="ficha-field ficha-field--full">
                 <label className="ficha-label">Domicilio</label>
-                <textarea
-                  placeholder="Calle, número, ciudad y provincia"
-                  className="ficha-textarea"
-                  rows={3}
-                  {...register('domicilio')}
-                />
-                <span className="ficha-hint">Tipo: área de texto.</span>
+                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={corePatient?.direccion}>
+                  {corePatient?.direccion || '—'}
+                </div>
               </div>
             </div>
           </section>
@@ -403,8 +353,7 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null }) => {
           </div>
 
         </form>
-      </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

@@ -10,7 +10,69 @@ function App() {
   // Estado global de pacientes cargado desde localStorage
   const [pacientes, setPacientes] = useState(() => {
     const saved = localStorage.getItem('healthgrid_pacientes');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Si hay pacientes pero todos carecen de core_patient_id (datos antiguos corruptos que causaban el bug), los migramos/reseteamos
+        if (parsed.length > 0 && !parsed.some(p => p.core_patient_id)) {
+          console.warn("Datos antiguos de pacientes detectados sin core_patient_id. Inicializando mocks correctos.");
+        } else {
+          return parsed;
+        }
+      } catch (e) {
+        console.error("Error parseando healthgrid_pacientes del localStorage", e);
+      }
+    }
+
+    // Fichas clínicas iniciales (Mocks) por defecto para Juan Pérez (core-001) y María González (core-002)
+    return [
+      {
+        id: 101,
+        core_patient_id: "core-001",
+        nombreApellido: "Juan Perez",
+        dni: "30123456",
+        fechaNacimiento: "1985-05-15",
+        sexo: "Masculino",
+        telefono: "11-4567-8901",
+        direccion: "Av. Siempre Viva 123",
+        numeroHistoriaClinica: "482",
+        grupoSanguineo: "O+",
+        contactoEmergencia: "Laura Perez (Esposa) - 11-5555-5555",
+        consideraciones: [
+          { tipo: "alergia", descripcion: "Penicilina", detalleReaccion: "Urticaria leve" }
+        ],
+        antecedentes: [
+          { tipo: "quirurgico", nombreDescripcion: "Apendicectomía", fecha: "2010-08-12", observaciones: "Sin complicaciones" }
+        ],
+        observaciones: "Paciente hipertenso controlado de forma regular.",
+        fechaRegistro: new Date().toISOString(),
+        estado: "Activo",
+        episodios: []
+      },
+      {
+        id: 102,
+        core_patient_id: "core-002",
+        nombreApellido: "Maria Gonzalez",
+        dni: "28987654",
+        fechaNacimiento: "1980-11-20",
+        sexo: "Femenino",
+        telefono: "11-9876-5432",
+        direccion: "Calle Falsa 123",
+        numeroHistoriaClinica: "715",
+        grupoSanguineo: "A+",
+        contactoEmergencia: "Pedro Gonzalez (Hermano) - 11-4444-4444",
+        consideraciones: [
+          { tipo: "condicion", descripcion: "Diabetes Tipo 2", detalleReaccion: "Controlada con metformina" }
+        ],
+        antecedentes: [
+          { tipo: "familiar", nombreDescripcion: "Diabetes materna", fecha: "", observaciones: "" }
+        ],
+        observaciones: "Requiere controles periódicos de glucemia.",
+        fechaRegistro: new Date().toISOString(),
+        estado: "Activo",
+        episodios: []
+      }
+    ];
   });
   // Vista actual: 'home' | 'detalle'
   const [vistaActual, setVistaActual] = useState('home');

@@ -52,6 +52,22 @@ export const salaEsperaMock = [
     id_profesional: ID_PROFESIONAL_ACTUAL,
     nivel_triage: "Verde",
     id_enfermero_triage: null
+  },
+  {
+    id_espera: 104,
+    id_paciente: "core-004", 
+    nombreApellido: "Laura Fernandez",
+    dni: "35444555",
+    tipo_atencion: "Guardia",
+    sector: "Traumatología",
+    hora_llegada: new Date(new Date().setHours(10, 15)).toISOString(),
+    horario_turno: null, // Guardia (orden de llegada)
+    motivo: "Esguince de tobillo",
+    estado: "En espera",
+    id_turno_externo: null,
+    id_profesional: ID_PROFESIONAL_ACTUAL,
+    nivel_triage: "Amarillo",
+    id_enfermero_triage: null
   }
 ];
 
@@ -65,6 +81,7 @@ export const getAgendaDelDia = (idProfesional) => {
       return {
         ...turno,
         paciente: {
+          core_patient_id: turno.id_paciente,
           nombreApellido: turno.nombreApellido || pacienteInfo?.nombreApellido || 'Desconocido',
           dni: turno.dni || pacienteInfo?.dni || '—'
         }

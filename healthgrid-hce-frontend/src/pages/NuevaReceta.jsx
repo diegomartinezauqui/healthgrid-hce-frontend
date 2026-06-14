@@ -1,7 +1,8 @@
 // src/pages/NuevaReceta.jsx
-import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
+import ModalWrapper from '../components/ModalWrapper';
 import '../styles/NuevaReceta.css';
+import { tipoConsultaLabel } from '../utils/helpers';
 
 const NuevaReceta = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evoluciones }) => {
   const { register, handleSubmit, control } = useForm({
@@ -22,26 +23,12 @@ const NuevaReceta = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evolucio
     onGuardar(data);
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onCerrar();
-  };
-
-  // Helper para label de tipo consulta
-  const tipoConsultaLabel = (tipo) => {
-    const mapa = {
-      consulta_control: 'Consulta de Control',
-      consulta_urgencia: 'Consulta de Urgencia',
-      interconsulta: 'Interconsulta',
-      control_laboratorio: 'Control de Laboratorio',
-      seguimiento: 'Seguimiento',
-      otro: 'Otro',
-    };
-    return mapa[tipo] || tipo || 'Consulta';
-  };
-
   return (
-    <div className="receta-overlay" onClick={handleOverlayClick}>
-      <div className="receta-modal">
+    <ModalWrapper
+      onCerrar={onCerrar}
+      overlayClassName="receta-overlay"
+      modalClassName="receta-modal"
+    >
 
         {/* Header */}
         <div className="receta-modal__header">
@@ -141,8 +128,7 @@ const NuevaReceta = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evolucio
           </div>
 
         </form>
-      </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

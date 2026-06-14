@@ -1,11 +1,14 @@
 // src/pages/PacienteDetalle.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FiCalendar, FiCreditCard, FiFileText, FiUser, FiActivity, FiAlertTriangle, FiClipboard, FiEdit3, FiEdit2, FiPlusCircle, FiFolder } from 'react-icons/fi';
 import NuevaFichaMedica from './NuevaFichaMedica';
 import NuevoEpisodio from './NuevoEpisodio';
 import EpisodioDetalle from './EpisodioDetalle';
 import EvolucionDetalle from './EvolucionDetalle';
 import PedidoEstudioDetalle from './PedidoEstudioDetalle';
+import PacienteHeaderCard from '../components/paciente/PacienteHeaderCard';
+import PacienteFichaTab from '../components/paciente/PacienteFichaTab';
+import PacienteEpisodiosTab from '../components/paciente/PacienteEpisodiosTab';
 import '../styles/PacienteDetalle.css';
 
 // Helpers
@@ -75,7 +78,26 @@ const getTagColor = (tipo) => {
   return colores[tipo] || colores.otro;
 };
 
-const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSeleccionarPaciente, onVolver, onNuevoRegistro, onActualizar, onAgregarEpisodio, onAgregarEvolucion, onDarDeAlta, onAgregarReceta, onCambiarEstadoReceta, onAgregarEstudio, onAgregarSolicitudPase }) => {
+const PacienteDetalle = ({
+  paciente,
+  pacienteIndex,
+  pacientes = [],
+  onSeleccionarPaciente,
+  onVolver,
+  onNuevoRegistro,
+  onActualizar,
+  onAgregarEpisodio,
+  onAgregarEvolucion,
+  onDarDeAlta,
+  onAgregarReceta,
+  onCambiarEstadoReceta,
+  onAgregarEstudio,
+  onAgregarSolicitudPase,
+  onAgregarSolicitudInternacion,
+  onAgregarResultadoEstudio,
+  onSiguiente,
+  turnoActivo,
+}) => {
   const [tabActiva, setTabActiva] = useState('ficha');
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   const [mostrarModalEpisodio, setMostrarModalEpisodio] = useState(false);
@@ -128,13 +150,21 @@ const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSelecciona
 
   if (!paciente) return null;
 
-  const edad = calcularEdad(paciente.fechaNacimiento);
-  const iniciales = obtenerIniciales(paciente.nombreApellido);
+  const autoOpenedRef = useRef(false);
 
-  // Extraer alergias para el resumen clínico
-  const alergias = (paciente.consideraciones || [])
-    .filter(c => c.tipo === 'alergia' && c.descripcion)
-    .map(c => c.descripcion);
+  // Auto-abrir episodio si hay turno activo (SOLO UNA VEZ)
+  useEffect(() => {
+    if (turnoActivo && !autoOpenedRef.current) {
+      const episodios = paciente.episodios || [];
+      const openIdx = episodios.findIndex(e => e.estado === 'abierto');
+      if (openIdx !== -1) {
+        setTabActiva('episodios');
+        setEpisodioSeleccionadoIdx(openIdx);
+        setSubVistaEpisodio('detalle');
+        autoOpenedRef.current = true;
+      }
+    }
+  }, [turnoActivo, paciente.episodios]);
 
   // Handle guardar edición
   const handleGuardarEdicion = (data) => {
@@ -204,18 +234,8 @@ const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSelecciona
     ? (episodioActual.estudiosData || [])[estudioSeleccionadoIdx]
     : null;
 
-  // Determinar texto del link "volver" según contexto
-  const getVolverTexto = () => {
-    if (tabActiva === 'episodios') {
-      if (subVistaEpisodio === 'evolucionDetalle') return null; // EvolucionDetalle tiene su propio volver
-      if (subVistaEpisodio === 'detalle') return null; // EpisodioDetalle tiene su propio volver
-    }
-    return 'Volver a búsqueda';
-  };
-
   return (
     <div className="detalle-page">
-
       {/* Barra superior con búsqueda y tabs */}
       <header className="detalle-topbar">
         <div className="detalle-topbar__left">
@@ -273,14 +293,13 @@ const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSelecciona
             Episodios
           </button>
         </div>
-        <button className="detalle-topbar__btn-siguiente">
-          ← Siguiente Paciente
+        <button className="detalle-topbar__btn-siguiente" onClick={onSiguiente}>
+          Siguiente Paciente →
         </button>
       </header>
 
       {/* Contenido scrolleable */}
       <main className="detalle-content">
-
         {/* Link volver — solo en vistas de lista principal */}
         {tabActiva === 'ficha' && (
           <button className="detalle-volver" onClick={onVolver}>
@@ -294,196 +313,16 @@ const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSelecciona
         )}
 
         {/* ─── CARD PACIENTE (Header con avatar + info) ─── */}
-        <div className="detalle-paciente-card">
-          <div className="detalle-paciente-card__left">
-            <div className="detalle-avatar">
-              {iniciales}
-            </div>
-            <div className="detalle-paciente-info">
-              <h1 className="detalle-paciente-nombre">
-                {paciente.nombreApellido || 'Sin nombre'}
-              </h1>
-              <div className="detalle-paciente-meta">
-                {tabActiva === 'ficha' && (
-                  <>
-                    <span className="detalle-meta-item"><FiCalendar style={{ marginRight: '4px', verticalAlign: 'middle' }} /> {edad} años</span>
-                    <span className="detalle-meta-item">{formatearFecha(paciente.fechaNacimiento)}</span>
-                    <span className="detalle-meta-item"><FiCreditCard style={{ marginRight: '4px', verticalAlign: 'middle' }} /> DNI <strong>{paciente.dni || '—'}</strong></span>
-                    <span className="detalle-meta-item"><FiFileText style={{ marginRight: '4px', verticalAlign: 'middle' }} /> HC <strong>{paciente.numeroHistoriaClinica || '—'}</strong></span>
-                    <span className="detalle-meta-badge">● Activo</span>
-                  </>
-                )}
-                {tabActiva === 'episodios' && (
-                  <>
-                    <span className="detalle-meta-item"><FiCreditCard style={{ marginRight: '4px', verticalAlign: 'middle' }} /> DNI <strong>{paciente.dni || '—'}</strong></span>
-                    <span className="detalle-meta-item"><FiFileText style={{ marginRight: '4px', verticalAlign: 'middle' }} /> HC <strong>{paciente.numeroHistoriaClinica || '—'}</strong></span>
-                    <span className="detalle-meta-badge">● Activo</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          {/* Botones solo visibles en tab Ficha Médica */}
-          {tabActiva === 'ficha' && (
-            <div className="detalle-paciente-card__right">
-              <button
-                className="detalle-btn detalle-btn--editar"
-                onClick={() => setMostrarModalEdicion(true)}
-              >
-                <FiEdit2 className="detalle-btn__icon" /> Actualizar / Editar Ficha
-              </button>
-              <button className="detalle-btn detalle-btn--nuevo" onClick={onNuevoRegistro}>
-                <FiPlusCircle className="detalle-btn__icon" /> Nuevo Registro
-              </button>
-            </div>
-          )}
-        </div>
+        <PacienteHeaderCard
+          paciente={paciente}
+          tabActiva={tabActiva}
+          onEditarClick={() => setMostrarModalEdicion(true)}
+          onNuevoEpisodioClick={() => setMostrarModalEpisodio(true)}
+        />
 
         {/* ─── TAB: FICHA MÉDICA ─── */}
         {tabActiva === 'ficha' && (
-          <>
-            {/* Fila superior: Datos Personales + Resumen Clínico */}
-            <div className="detalle-grid-2cols">
-              {/* DATOS PERSONALES */}
-              <section className="detalle-card">
-                <h2 className="detalle-card__titulo">
-                  <FiUser className="detalle-card__icono" /> DATOS PERSONALES
-                </h2>
-                <div className="detalle-datos-lista">
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">DNI</span>
-                    <span className="detalle-dato__valor">{paciente.dni || '—'}</span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Nombre y apellido</span>
-                    <span className="detalle-dato__valor">{paciente.nombreApellido || '—'}</span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Fecha de nacimiento</span>
-                    <span className="detalle-dato__valor">{formatearFecha(paciente.fechaNacimiento)}</span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Sexo</span>
-                    <span className="detalle-dato__valor" style={{ textTransform: 'capitalize' }}>{paciente.sexo || '—'}</span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Nro. de Historia Clínica</span>
-                    <span className="detalle-dato__valor">{paciente.numeroHistoriaClinica || '—'}</span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Teléfono</span>
-                    <span className="detalle-dato__valor">{paciente.telefono || '—'}</span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Correo</span>
-                    <span className="detalle-dato__valor">{paciente.correo || '—'}</span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Domicilio</span>
-                    <span className="detalle-dato__valor">{paciente.domicilio || '—'}</span>
-                  </div>
-                </div>
-              </section>
-
-              {/* RESUMEN CLÍNICO BÁSICO */}
-              <section className="detalle-card">
-                <h2 className="detalle-card__titulo">
-                  <FiActivity className="detalle-card__icono" /> RESUMEN CLÍNICO BÁSICO
-                </h2>
-                <div className="detalle-datos-lista">
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Grupo sanguíneo</span>
-                    <span className="detalle-dato__valor detalle-dato__valor--destacado">{paciente.grupoSanguineo || '—'}</span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Alergias relevantes</span>
-                    <span className="detalle-dato__valor detalle-dato__valor--destacado">
-                      {alergias.length > 0 ? alergias.join(', ') : 'Ninguna registrada'}
-                    </span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Contacto de emergencia</span>
-                    <span className="detalle-dato__valor detalle-dato__valor--destacado">{paciente.contactoEmergencia || '—'}</span>
-                  </div>
-                  <div className="detalle-dato">
-                    <span className="detalle-dato__label">Última consulta</span>
-                    <span className="detalle-dato__valor detalle-dato__valor--destacado">{formatearFecha(paciente.fechaRegistro)}</span>
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            {/* Fila inferior: Consideraciones + Antecedentes */}
-            <div className="detalle-grid-2cols">
-              {/* CONSIDERACIONES */}
-              <section className="detalle-card">
-                <h2 className="detalle-card__titulo">
-                  <FiAlertTriangle className="detalle-card__icono" /> CONSIDERACIONES
-                </h2>
-                <div className="detalle-tags">
-                  {(paciente.consideraciones || []).filter(c => c.tipo && c.descripcion).length > 0 ? (
-                    (paciente.consideraciones || [])
-                      .filter(c => c.tipo && c.descripcion)
-                      .map((c, i) => {
-                        const color = getTagColor(c.tipo);
-                        return (
-                          <span
-                            key={i}
-                            className="detalle-tag"
-                            style={{ backgroundColor: color.bg, color: color.text, border: `1px solid ${color.border}` }}
-                          >
-                            {color.icon && <span className="detalle-tag__icon">{color.icon}</span>}
-                            {capitalizarTipo(c.tipo)}: {c.descripcion}
-                            {c.detalleReaccion ? ` (${c.detalleReaccion})` : ''}
-                          </span>
-                        );
-                      })
-                  ) : (
-                    <span className="detalle-tag detalle-tag--vacio">Sin consideraciones registradas</span>
-                  )}
-                </div>
-              </section>
-
-              {/* ANTECEDENTES */}
-              <section className="detalle-card">
-                <h2 className="detalle-card__titulo">
-                  <FiClipboard className="detalle-card__icono" /> ANTECEDENTES
-                </h2>
-                <div className="detalle-tags">
-                  {(paciente.antecedentes || []).filter(a => a.tipo && a.nombreDescripcion).length > 0 ? (
-                    (paciente.antecedentes || [])
-                      .filter(a => a.tipo && a.nombreDescripcion)
-                      .map((a, i) => {
-                        const color = getTagColor(a.tipo);
-                        return (
-                          <span
-                            key={i}
-                            className="detalle-tag"
-                            style={{ backgroundColor: color.bg, color: color.text, border: `1px solid ${color.border}` }}
-                          >
-                            {capitalizarTipo(a.tipo)}: {a.nombreDescripcion}
-                            {a.fecha ? ` (${formatearFecha(a.fecha)})` : ''}
-                          </span>
-                        );
-                      })
-                  ) : (
-                    <span className="detalle-tag detalle-tag--vacio">Sin antecedentes registrados</span>
-                  )}
-                </div>
-              </section>
-            </div>
-
-            {/* OBSERVACIONES */}
-            <section className="detalle-card">
-              <h2 className="detalle-card__titulo">
-                <FiEdit3 className="detalle-card__icono" /> OBSERVACIONES
-              </h2>
-              <p className="detalle-card__subtitulo">Notas generales</p>
-              <div className="detalle-observaciones-box">
-                {paciente.observaciones || 'Sin observaciones registradas.'}
-              </div>
-            </section>
-          </>
+          <PacienteFichaTab paciente={paciente} />
         )}
 
         {/* ─── TAB: EPISODIOS ─── */}
@@ -491,80 +330,11 @@ const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSelecciona
           <>
             {/* Sub-vista: Lista de episodios */}
             {subVistaEpisodio === 'lista' && (
-              <div className="episodios-section">
-                <div className="episodios-header">
-                  <div>
-                    <h2 className="episodios-header__titulo">Episodios Médicos</h2>
-                    <p className="episodios-header__subtitulo">Historial de interacciones clínicas del paciente</p>
-                  </div>
-                  <button
-                    className="detalle-btn detalle-btn--nuevo"
-                    onClick={() => setMostrarModalEpisodio(true)}
-                  >
-                    + Nuevo Episodio
-                  </button>
-                </div>
-
-                <div className="episodios-lista">
-                  {episodios.length > 0 ? (
-                    episodios.map((ep, i) => {
-                      const esAbierto = ep.estado === 'abierto';
-                      const esInternado = ep.tipoEpisodio === 'internado';
-                      const numEvol = ep.evolucionesData?.length || 0;
-                      const numRecetas = ep.recetasData?.length || 0;
-                      const numEstudios = ep.estudiosData?.length || 0;
-                      return (
-                        <div key={ep.id || i} className="episodio-item" onClick={() => abrirEpisodio(i)}>
-                          <div className={`episodio-item__icono ${esAbierto ? 'episodio-item__icono--abierto' : 'episodio-item__icono--cerrado'}`}>
-                            {esAbierto ? '⊕' : '✓'}
-                          </div>
-                          <div className="episodio-item__info">
-                            <div className="episodio-item__titulo-row">
-                              <span className="episodio-item__titulo">Episodio #{ep.numero}</span>
-                              <span className={`episodio-item__tipo-badge ${esInternado ? 'episodio-item__tipo-badge--internado' : 'episodio-item__tipo-badge--ambulatorio'}`}>
-                                {esInternado ? 'Internado' : 'Ambulatorio'}
-                              </span>
-                              <span className={`episodio-item__estado-badge ${esAbierto ? 'episodio-item__estado-badge--abierto' : 'episodio-item__estado-badge--cerrado'}`}>
-                                {esAbierto ? '● Abierto' : 'Cerrado'}
-                              </span>
-                            </div>
-                            <div className="episodio-item__detalle">
-                              {esAbierto
-                                ? `Desde ${formatearFechaLarga(ep.fechaApertura)} — En curso`
-                                : `${formatearFechaLarga(ep.fechaApertura)} → Alta: ${formatearFechaLarga(ep.fechaAlta)}`
-                              }
-                            </div>
-                            {ep.motivo && (
-                              <div className="episodio-item__motivo">{ep.motivo}</div>
-                            )}
-                          </div>
-                          <div className="episodio-item__stats">
-                            <div className="episodio-item__stat">
-                              <span className="episodio-item__stat-num">{numEvol}</span>
-                              <span className="episodio-item__stat-label">EVOL.</span>
-                            </div>
-                            <div className="episodio-item__stat">
-                              <span className="episodio-item__stat-num">{numRecetas}</span>
-                              <span className="episodio-item__stat-label">RECETAS</span>
-                            </div>
-                            <div className="episodio-item__stat">
-                              <span className="episodio-item__stat-num">{numEstudios}</span>
-                              <span className="episodio-item__stat-label">ESTUDIOS</span>
-                            </div>
-                          </div>
-                          <div className="episodio-item__arrow">›</div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="episodios-vacio">
-                      <div className="episodios-vacio__icono"><FiClipboard size={32} /></div>
-                      <p className="episodios-vacio__texto">No hay episodios registrados para este paciente.</p>
-                      <p className="episodios-vacio__subtexto">Cree el primer episodio clínico para comenzar el seguimiento.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <PacienteEpisodiosTab
+                episodios={episodios}
+                onAbrirEpisodio={abrirEpisodio}
+                onNuevoEpisodioClick={() => setMostrarModalEpisodio(true)}
+              />
             )}
 
             {/* Sub-vista: Detalle de un episodio */}
@@ -583,6 +353,8 @@ const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSelecciona
                 onAgregarEstudio={onAgregarEstudio}
                 onVerEstudio={abrirEstudio}
                 onAgregarSolicitudPase={onAgregarSolicitudPase}
+                onAgregarSolicitudInternacion={onAgregarSolicitudInternacion}
+                onAgregarResultadoEstudio={onAgregarResultadoEstudio}
               />
             )}
 
@@ -603,7 +375,6 @@ const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSelecciona
             )}
           </>
         )}
-
       </main>
 
       {/* Modal de edición de ficha */}
@@ -612,6 +383,7 @@ const PacienteDetalle = ({ paciente, pacienteIndex, pacientes = [], onSelecciona
           onCerrar={() => setMostrarModalEdicion(false)}
           onGuardar={handleGuardarEdicion}
           datosIniciales={paciente}
+          corePatient={paciente}
         />
       )}
 

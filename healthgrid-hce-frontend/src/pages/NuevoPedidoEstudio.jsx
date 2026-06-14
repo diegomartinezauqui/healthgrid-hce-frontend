@@ -1,26 +1,9 @@
 // src/pages/NuevoPedidoEstudio.jsx
-import React from 'react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
+import ModalWrapper from '../components/ModalWrapper';
 import '../styles/NuevoPedidoEstudio.css';
-
-const tipoConsultaLabel = (tipo) => {
-  const mapa = {
-    consulta_control: 'Consulta de Control',
-    consulta_urgencia: 'Consulta de Urgencia',
-    interconsulta: 'Interconsulta',
-    control_laboratorio: 'Control de Laboratorio',
-    seguimiento: 'Seguimiento',
-    otro: 'Otro',
-  };
-  return mapa[tipo] || tipo || 'Consulta';
-};
-
-const formatearFechaCorta = (fecha) => {
-  if (!fecha) return '';
-  const d = new Date(fecha);
-  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-};
+import { tipoConsultaLabel, formatearFechaCorta } from '../utils/helpers';
 
 const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evoluciones }) => {
   const { register, handleSubmit } = useForm({
@@ -45,13 +28,12 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
     });
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) onCerrar();
-  };
-
   return (
-    <div className="pedido-overlay" onClick={handleOverlayClick}>
-      <div className="pedido-modal">
+    <ModalWrapper
+      onCerrar={onCerrar}
+      overlayClassName="pedido-overlay"
+      modalClassName="pedido-modal"
+    >
 
         {/* Header */}
         <div className="pedido-modal__header">
@@ -129,8 +111,7 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
           </div>
 
         </form>
-      </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

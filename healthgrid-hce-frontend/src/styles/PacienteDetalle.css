@@ -341,6 +341,25 @@
   box-shadow: 0 3px 10px rgba(17, 53, 42, 0.2);
 }
 
+/* Botón deshabilitado */
+.detalle-btn:disabled,
+.detalle-btn--deshabilitado {
+  background-color: #A0ABA6 !important;
+  border-color: #A0ABA6 !important;
+  color: #E8ECE9 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+.detalle-btn:disabled:hover,
+.detalle-btn--deshabilitado:hover {
+  background-color: #A0ABA6 !important;
+  box-shadow: none !important;
+}
+
+
 /* ── Grid de 2 columnas ── */
 .detalle-grid-2cols {
   display: grid;

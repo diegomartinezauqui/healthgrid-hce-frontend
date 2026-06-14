@@ -1,6 +1,6 @@
-import React from 'react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
+import ModalWrapper from '../components/ModalWrapper';
 import '../styles/NuevoEpisodio.css';
 
 const NuevoEpisodio = ({ onCerrar, onCrear, pacienteNombre, pacienteHC }) => {
@@ -25,15 +25,12 @@ const NuevoEpisodio = ({ onCerrar, onCrear, pacienteNombre, pacienteHC }) => {
     onCerrar();
   };
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onCerrar();
-    }
-  };
-
   return (
-    <div className="episodio-overlay" onClick={handleOverlayClick}>
-      <div className="episodio-modal">
+    <ModalWrapper
+      onCerrar={onCerrar}
+      overlayClassName="episodio-overlay"
+      modalClassName="episodio-modal"
+    >
 
         {/* Header */}
         <div className="episodio-modal__header">
@@ -104,8 +101,7 @@ const NuevoEpisodio = ({ onCerrar, onCrear, pacienteNombre, pacienteHC }) => {
           </div>
 
         </form>
-      </div>
-    </div>
+    </ModalWrapper>
   );
 };
 

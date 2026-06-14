@@ -1,12 +1,6 @@
 // src/pages/PedidoEstudioDetalle.jsx
-import React from 'react';
 import '../styles/PedidoEstudioDetalle.css';
-
-const formatearFechaLarga = (fecha) => {
-  if (!fecha) return '—';
-  const d = new Date(fecha);
-  return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
-};
+import { formatearFechaLarga } from '../utils/helpers';
 
 const tipoEstudioLabel = (tipo) => {
   const mapa = {

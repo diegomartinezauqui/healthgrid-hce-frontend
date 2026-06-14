@@ -210,68 +210,145 @@
   box-shadow: 0 3px 10px rgba(17, 53, 42, 0.2);
 }
 
-/* ── Lista de evoluciones ── */
-.ep-detalle__evoluciones-lista {
+/* ── Timeline Unificado ── */
+.ep-timeline-container {
   background-color: #ffffff;
   border: 1px solid #E8ECE9;
   border-radius: 12px;
+  padding: 30px 24px;
   overflow: hidden;
 }
 
-/* ── Item de evolución ── */
-.evol-item {
+.ep-timeline {
+  position: relative;
   display: flex;
-  align-items: flex-start;
-  padding: 18px 24px;
-  gap: 14px;
-  border-bottom: 1px solid #F2F4F3;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Línea conectora central */
+.ep-timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 20px;
+  width: 2px;
+  background-color: #E8ECE9;
+  z-index: 0;
+}
+
+/* ── Item del Timeline ── */
+.ep-timeline-item {
+  display: flex;
+  position: relative;
+  gap: 20px;
+  z-index: 1;
+}
+
+.ep-timeline-item[onClick] {
   cursor: pointer;
-  transition: background-color 0.15s ease;
 }
 
-.evol-item:last-child {
-  border-bottom: none;
-}
-
-.evol-item:hover {
-  background-color: #FAFBFA;
-}
-
-/* Dot timeline */
-.evol-item__dot {
-  width: 10px;
-  height: 10px;
+/* Iconos circulares sobre la línea */
+.ep-timeline-item__icon {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background-color: #259A5E;
-  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
   flex-shrink: 0;
+  background-color: #ffffff;
+  border: 3px solid #ffffff; /* para tapar la línea debajo */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease;
 }
 
-/* Info */
-.evol-item__info {
+.ep-timeline-item:hover .ep-timeline-item__icon {
+  transform: scale(1.05);
+}
+
+/* Colores semánticos por tipo de evento */
+.ep-timeline-item__icon--evolucion {
+  background-color: #11352A;
+  color: #259A5E;
+}
+
+.ep-timeline-item__icon--receta {
+  background-color: #259A5E;
+  color: #ffffff;
+}
+
+.ep-timeline-item__icon--estudio {
+  background-color: #2E86AB;
+  color: #ffffff;
+}
+
+.ep-timeline-item__icon--pase {
+  background-color: #F39C12;
+  color: #ffffff;
+}
+
+.ep-timeline-item__icon--internacion {
+  background-color: #C0392B;
+  color: #ffffff;
+}
+
+/* Contenido de la tarjeta */
+.ep-timeline-item__content {
   flex: 1;
+  background-color: #FAFBFA;
+  border: 1px solid #F0F4F2;
+  border-radius: 12px;
+  padding: 18px 22px;
   min-width: 0;
+  transition: all 0.2s ease;
 }
 
-.evol-item__titulo {
-  margin: 0 0 6px 0;
-  font-size: 0.95rem;
+.ep-timeline-item[onClick]:hover .ep-timeline-item__content {
+  background-color: #ffffff;
+  border-color: #D4DAD7;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+/* Header del contenido */
+.ep-timeline-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.ep-timeline-item__titulo {
+  margin: 0;
+  font-size: 0.98rem;
   font-weight: 700;
   color: #11352A;
 }
 
-.evol-item__profesional {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
+.ep-timeline-item__fecha {
+  font-size: 0.78rem;
+  color: #999;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.evol-item__profesional-avatar {
+/* Profesional */
+.ep-timeline-item__profesional {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ep-timeline-item__profesional-avatar {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background-color: #11352A;
+  background-color: #E8F5E9;
   color: #259A5E;
   display: flex;
   align-items: center;
@@ -281,60 +358,39 @@
   flex-shrink: 0;
 }
 
-.evol-item__profesional-nombre {
-  font-size: 0.78rem;
-  color: #555;
-  font-weight: 500;
+.ep-timeline-item__profesional-nombre {
+  font-size: 0.8rem;
+  color: #444;
+  font-weight: 600;
 }
 
-.evol-item__profesional-rol {
+.ep-timeline-item__profesional-rol {
   font-size: 0.75rem;
-  color: #999;
+  color: #888;
 }
 
-.evol-item__descripcion {
-  margin: 0 0 8px 0;
-  font-size: 0.82rem;
-  color: #666;
+/* Descripción */
+.ep-timeline-item__descripcion {
+  margin: 0 0 12px 0;
+  font-size: 0.86rem;
+  color: #555;
   line-height: 1.5;
 }
 
-.evol-item__tags {
+/* Tags */
+.ep-timeline-item__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
-.evol-item__tag {
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 0.7rem;
+.ep-timeline-item__tag {
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 0.72rem;
   font-weight: 600;
-  background-color: #F0F4F2;
-  color: #555;
-  border: 1px solid #E0E4E2;
-}
-
-/* Fecha a la derecha */
-.evol-item__fecha {
-  font-size: 0.75rem;
-  color: #999;
-  white-space: nowrap;
-  text-align: right;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.evol-item__arrow {
-  font-size: 1.2rem;
-  color: #CCC;
-  flex-shrink: 0;
-  margin-top: 2px;
-  transition: color 0.15s ease;
-}
-
-.evol-item:hover .evol-item__arrow {
-  color: #259A5E;
+  background-color: #E8F5E9;
+  color: #11352A;
 }
 
 /* Estado vacío */
@@ -755,6 +811,23 @@
   background-color: #F5F5F5;
   color: #777;
   border: 1px solid #E0E0E0;
+}
+.estudio-item__cargar-resultado {
+  background-color: transparent;
+  border: 1.5px solid #259A5E;
+  color: #259A5E;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.estudio-item__cargar-resultado:hover {
+  background-color: #259A5E;
+  color: white;
 }
 
 /* ── Responsive ── */

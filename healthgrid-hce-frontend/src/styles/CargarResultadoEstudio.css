@@ -1,0 +1,223 @@
+/* src/styles/CargarResultadoEstudio.css */
+
+.cres-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(17, 53, 42, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.cres-modal {
+  background-color: var(--color-surface, #ffffff);
+  width: 650px;
+  max-width: 90%;
+  max-height: 90vh;
+  border-radius: var(--border-radius-lg, 15px);
+  box-shadow: var(--modal-shadow, 0 10px 25px rgba(0, 0, 0, 0.1));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cres-modal__header {
+  background-color: var(--color-primary-dark, #11352A);
+  color: white;
+  padding: 20px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cres-modal__titulo {
+  margin: 0;
+  font-size: 1.25rem;
+  font-family: var(--font-family-serif, Georgia, serif);
+  font-weight: bold;
+}
+
+.cres-modal__subtitulo {
+  margin: 4px 0 0 0;
+  font-size: 0.85rem;
+  color: #a0b8b0;
+}
+
+.cres-modal__cerrar {
+  background: none;
+  border: none;
+  color: #a0b8b0;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 4px;
+  transition: color var(--transition-fast, 0.2s);
+}
+
+.cres-modal__cerrar:hover {
+  color: white;
+}
+
+.cres-form {
+  padding: 25px 30px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cres-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.cres-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cres-form__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-primary-dark, #11352A);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cres-form__input,
+.cres-form__textarea {
+  padding: 10px 14px;
+  border: 1.5px solid #d4dad7;
+  border-radius: var(--border-radius-sm, 8px);
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  transition: all var(--transition-fast, 0.2s);
+}
+
+.cres-form__input:focus,
+.cres-form__textarea:focus {
+  border-color: var(--color-primary-accent, #259A5E);
+  box-shadow: 0 0 0 3px var(--color-primary-accent-light, #259a5e1c);
+}
+
+.cres-form__textarea {
+  resize: vertical;
+}
+
+.cres-form__error {
+  font-size: 0.75rem;
+  color: #cc3333;
+  font-weight: 500;
+}
+
+/* Archivos Adjuntos */
+.cres-form__adjuntos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cres-form__adjunto-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.cres-form__input--grow {
+  flex-grow: 1;
+}
+
+.cres-form__btn-quitar {
+  background-color: transparent;
+  border: 1px solid #cc3333;
+  color: #cc3333;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.2s);
+}
+
+.cres-form__btn-quitar:hover {
+  background-color: #cc3333;
+  color: white;
+}
+
+.cres-form__btn-agregar {
+  align-self: flex-start;
+  background-color: transparent;
+  border: 1px solid var(--color-primary-accent, #259A5E);
+  color: var(--color-primary-accent, #259A5E);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.2s);
+}
+
+.cres-form__btn-agregar:hover {
+  background-color: var(--color-primary-accent, #259A5E);
+  color: white;
+}
+
+/* Acciones */
+.cres-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+  border-top: 1px solid #f2f4f3;
+  padding-top: 20px;
+}
+
+.cres-form__btn {
+  padding: 10px 20px;
+  border-radius: var(--border-radius-sm, 8px);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast, 0.2s);
+  font-family: inherit;
+}
+
+.cres-form__btn--cancelar {
+  background-color: transparent;
+  border: 1.5px solid #d4dad7;
+  color: #555;
+}
+
+.cres-form__btn--cancelar:hover {
+  border-color: #999;
+  background-color: #f5f5f5;
+}
+
+.cres-form__btn--guardar {
+  background-color: var(--color-primary-accent, #259A5E);
+  border: 1.5px solid var(--color-primary-accent, #259A5E);
+  color: white;
+}
+
+.cres-form__btn--guardar:hover {
+  background-color: #1e8a50;
+  border-color: #1e8a50;
+  box-shadow: 0 3px 10px rgba(37, 154, 94, 0.2);
+}
+
+@media (max-width: 600px) {
+  .cres-form__row {
+    grid-template-columns: 1fr;
+  }
+  .cres-form__adjunto-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

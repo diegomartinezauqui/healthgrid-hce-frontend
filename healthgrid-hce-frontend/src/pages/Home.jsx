@@ -1,10 +1,19 @@
 // src/pages/Home.jsx
 import { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import NuevaFichaMedica from './NuevaFichaMedica';
 import { searchCorePatients } from '../services/mockCoreData';
 import { getAgendaDelDia } from '../services/mockSalaEspera';
 
-const Home = ({ pacientes = [], onSeleccionarPaciente, onGuardarPaciente, onIniciarAtencion }) => {
+const Home = ({ 
+  pacientes = [], 
+  onSeleccionarPaciente, 
+  onGuardarPaciente, 
+  onIniciarAtencion, 
+  abrirModalNuevo = false, 
+  onModalNuevoCerrado,
+  turnoActivo = null
+}) => {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [corePatientToCreate, setCorePatientToCreate] = useState(null);
   const [turnoPendiente, setTurnoPendiente] = useState(null);
@@ -16,12 +25,25 @@ const Home = ({ pacientes = [], onSeleccionarPaciente, onGuardarPaciente, onInic
   const [filtroEstado, setFiltroEstado] = useState('Todos');
   const [filtroTriage, setFiltroTriage] = useState('Todos');
 
+  // Búsqueda en main (Axios)
+  const [busqueda, setBusqueda] = useState('');
+  const [resultados, setResultados] = useState([]);
+  const [buscando, setBuscando] = useState(false);
+
   // Mock ID del profesional logueado
   const ID_PROFESIONAL_ACTUAL = "prof-001";
 
   useEffect(() => {
     setAgenda(getAgendaDelDia(ID_PROFESIONAL_ACTUAL));
   }, []);
+
+  // Abrir modal automáticamente si viene de "Nuevo Registro"
+  useEffect(() => {
+    if (abrirModalNuevo) {
+      setMostrarModal(true);
+      if (onModalNuevoCerrado) onModalNuevoCerrado();
+    }
+  }, [abrirModalNuevo]);
 
   const handleGuardar = (data) => {
     onGuardarPaciente({ ...corePatientToCreate, ...data, core_patient_id: corePatientToCreate?.core_patient_id }, turnoPendiente);
@@ -53,6 +75,7 @@ const Home = ({ pacientes = [], onSeleccionarPaciente, onGuardarPaciente, onInic
     switch (estado) {
       case 'En espera': return { bg: '#FFF3E0', color: '#E65100' };
       case 'En triage': return { bg: '#E3F2FD', color: '#1565C0' };
+      case 'En atención': return { bg: '#E0F2F1', color: '#00695C' };
       case 'Atendido': return { bg: '#E8F5E9', color: '#2E7D32' };
       default: return { bg: '#F5F5F5', color: '#616161' };
     }
@@ -84,6 +107,71 @@ const Home = ({ pacientes = [], onSeleccionarPaciente, onGuardarPaciente, onInic
     if (filtroTriage !== 'Todos' && turno.nivel_triage !== filtroTriage) return false;
     return true;
   });
+
+  const ejecutarBusqueda = (termino) => {
+    const t = (termino !== undefined ? termino : busqueda).trim().toLowerCase();
+    if (!t) {
+      setResultados([]);
+      setBuscando(false);
+      return;
+    }
+    setBuscando(true);
+    const encontrados = pacientes
+      .map((p, idx) => ({ ...p, _index: idx }))
+      .filter(p =>
+        (p.dni || '').toLowerCase().includes(t) ||
+        (p.nombreApellido || '').toLowerCase().includes(t) ||
+        (p.numeroHistoriaClinica || '').toLowerCase().includes(t)
+      );
+    setResultados(encontrados);
+  };
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setBusqueda(val);
+    ejecutarBusqueda(val);
+  };
+
+  const seleccionar = (paciente) => {
+    onSeleccionarPaciente(paciente._index);
+  };
+
+  const handleLlamarYAtender = (turno, tieneFicha, fichaMedicaIdx) => {
+    const proceder = () => {
+      if (tieneFicha) {
+        onIniciarAtencion(turno, fichaMedicaIdx);
+      } else {
+        if (turnoActivo) {
+          onIniciarAtencion(null, null); // Suspender paciente activo anterior de inmediato
+        }
+        setTurnoPendiente(turno);
+        setCorePatientToCreate(turno.paciente);
+        setMostrarModal(true);
+        // Refrescar la agenda local de inmediato para mostrar que el paciente anterior se liberó
+        setAgenda(getAgendaDelDia(ID_PROFESIONAL_ACTUAL));
+      }
+    };
+
+    if (turnoActivo && turnoActivo.id_espera !== turno.id_espera) {
+      Swal.fire({
+        title: 'Paciente en atención',
+        text: `Ya tienes al paciente "${turnoActivo.paciente.nombreApellido}" en atención. ¿Deseas suspender su atención actual para iniciar la consulta de "${turno.paciente.nombreApellido}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#259A5E',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, cambiar de paciente',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          proceder();
+        }
+      });
+    } else {
+      proceder();
+    }
+  };
+
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#F4F7F6' }}>
@@ -201,7 +289,8 @@ const Home = ({ pacientes = [], onSeleccionarPaciente, onGuardarPaciente, onInic
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {agendaFiltrada.length > 0 ? agendaFiltrada.map((turno) => {
                 const { fichaMedicaIdx, tieneFicha, fichaMedica } = renderFichaAction(turno.paciente);
-                const badgeColor = getBadgeColor(turno.estado);
+                const estaEnAtencion = turno.estado === 'En atención' || (turnoActivo && turnoActivo.id_espera === turno.id_espera);
+                const badgeColor = getBadgeColor(estaEnAtencion ? 'En atención' : turno.estado);
 
                 return (
                   <div key={turno.id_espera} style={{
@@ -228,7 +317,7 @@ const Home = ({ pacientes = [], onSeleccionarPaciente, onGuardarPaciente, onInic
                             fontSize: '0.7rem', fontWeight: 'bold', padding: '3px 8px', borderRadius: '12px',
                             backgroundColor: badgeColor.bg, color: badgeColor.color
                           }}>
-                            {turno.estado.toUpperCase()}
+                            {(estaEnAtencion ? 'En atención' : turno.estado).toUpperCase()}
                           </span>
                         </div>
                         <div style={{ display: 'flex', gap: '15px', fontSize: '0.85rem', color: '#666', flexWrap: 'wrap' }}>
@@ -250,27 +339,7 @@ const Home = ({ pacientes = [], onSeleccionarPaciente, onGuardarPaciente, onInic
                     </div>
 
                     <div>
-                      {turno.estado !== 'Atendido' ? (
-                        <button
-                          onClick={() => {
-                            if (tieneFicha) {
-                              onIniciarAtencion(turno, fichaMedicaIdx);
-                            } else {
-                              setTurnoPendiente(turno);
-                              setCorePatientToCreate(turno.paciente);
-                              setMostrarModal(true);
-                            }
-                          }}
-                          style={{
-                            backgroundColor: '#259A5E', color: 'white', padding: '12px 24px', borderRadius: '8px', 
-                            border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem',
-                            display: 'flex', alignItems: 'center', gap: '8px'
-                          }}
-                        >
-                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                          LLAMAR Y ATENDER
-                        </button>
-                      ) : (
+                      {turno.estado === 'Atendido' ? (
                         <button
                           onClick={() => {
                             if (tieneFicha) {
@@ -282,11 +351,66 @@ const Home = ({ pacientes = [], onSeleccionarPaciente, onGuardarPaciente, onInic
                             }
                           }}
                           style={{
-                            backgroundColor: '#E0E0E0', color: '#666', padding: '12px 24px', borderRadius: '8px', 
-                            border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem',
+                            backgroundColor: tieneFicha ? '#E8F5E9' : '#E0E0E0', 
+                            color: tieneFicha ? '#2e7d32' : '#666', 
+                            padding: '12px 20px', borderRadius: '8px', 
+                            border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.88rem',
+                            transition: 'all 0.2s ease'
                           }}
                         >
                           {tieneFicha ? 'Ver Registro' : 'Completar Ficha'}
+                        </button>
+                      ) : estaEnAtencion ? (
+                        <button
+                          onClick={() => {
+                            if (tieneFicha) {
+                              onSeleccionarPaciente(fichaMedicaIdx);
+                            } else {
+                              setTurnoPendiente(turno);
+                              setCorePatientToCreate(turno.paciente);
+                              setMostrarModal(true);
+                            }
+                          }}
+                          style={{
+                            backgroundColor: '#E65100', 
+                            color: 'white', padding: '12px 20px', borderRadius: '8px', 
+                            border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.88rem',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.08)'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#BF360C'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#E65100'}
+                        >
+                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                          RETOMAR CONSULTA
+                        </button>
+                      ) : (
+
+                        <button
+                          onClick={() => handleLlamarYAtender(turno, tieneFicha, fichaMedicaIdx)}
+                          style={{
+                            backgroundColor: tieneFicha ? '#259A5E' : '#1976D2', 
+                            color: 'white', padding: '12px 20px', borderRadius: '8px', 
+                            border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.88rem',
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.08)'
+                          }}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = tieneFicha ? '#1e7b4b' : '#1565C0'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = tieneFicha ? '#259A5E' : '#1976D2'}
+                        >
+                          {tieneFicha ? (
+                            <>
+                              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                              LLAMAR Y ATENDER
+                            </>
+                          ) : (
+                            <>
+                              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                              CREAR FICHA Y ATENDER
+                            </>
+                          )}
                         </button>
                       )}
                     </div>

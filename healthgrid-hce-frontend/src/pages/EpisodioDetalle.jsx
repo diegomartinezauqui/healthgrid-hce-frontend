@@ -11,6 +11,11 @@ import EvolucionesTab from '../components/episodio/EvolucionesTab';
 import RecetasTab from '../components/episodio/RecetasTab';
 import EstudiosTab from '../components/episodio/EstudiosTab';
 import PasesYInternacionesTab from '../components/episodio/PasesYInternacionesTab';
+import NotificacionObligatoria from '../components/NotificacionObligatoria';
+import { detectarNotificacionObligatoria } from '../data/patologiasNotificables';
+import { emitirNotificacionObligatoria } from '../services/epidemiologia';
+import { FiActivity, FiFileText, FiLayers, FiSend, FiCheckCircle, FiPlusCircle, FiAlertTriangle } from 'react-icons/fi';
+import { FaBed } from 'react-icons/fa';
 import '../styles/EpisodioDetalle.css';
 import Swal from 'sweetalert2';
 
@@ -39,6 +44,7 @@ const EpisodioDetalle = ({
   const [mostrarModalSolicitudPase, setMostrarModalSolicitudPase] = useState(false);
   const [mostrarModalCargarResultado, setMostrarModalCargarResultado] = useState(false);
   const [estudioSeleccionadoIndex, setEstudioSeleccionadoIndex] = useState(null);
+  const [notificacion, setNotificacion] = useState(null);
 
   if (!episodio) return null;
 
@@ -49,9 +55,42 @@ const EpisodioDetalle = ({
   const solicitudesPase = episodio.solicitudesPaseData || [];
   const solicitudesInternacion = episodio.solicitudesInternacionData || [];
 
-  const handleGuardarEvolucion = (data) => {
-    onAgregarEvolucion(pacienteIndex, episodioIndex, data);
+  const handleGuardarEvolucion = async (data) => {
+    const patologia = detectarNotificacionObligatoria(
+      `${data.diagnostico || ''} ${data.motivoEstado || ''}`
+    );
+
+    const evolucionData = patologia
+      ? {
+          ...data,
+          notificacionObligatoria: {
+            codigo: patologia.codigo,
+            nombre: patologia.nombre,
+            modalidad: patologia.modalidad,
+          },
+        }
+      : data;
+
+    onAgregarEvolucion(pacienteIndex, episodioIndex, evolucionData);
     setMostrarModalEvolucion(false);
+
+    if (patologia) {
+      try {
+        const evento = await emitirNotificacionObligatoria({
+          paciente: paciente?.nombreApellido,
+          historiaClinica: paciente?.numeroHistoriaClinica,
+          episodioId: episodio?.id,
+          diagnostico: data.diagnostico,
+          patologia: patologia.codigo,
+          profesional: data.profesional,
+          fecha: new Date().toISOString(),
+        });
+        setNotificacion({ patologia, evento });
+      } catch (e) {
+        console.error('No se pudo emitir la notificación obligatoria:', e);
+        setNotificacion({ patologia, evento: null });
+      }
+    }
   };
 
   const handleGuardarReceta = (data) => {
@@ -268,7 +307,6 @@ const EpisodioDetalle = ({
           pacienteHC={paciente?.numeroHistoriaClinica || '—'}
         />
       )}
-
       {/* Modal Cargar Resultado de Estudio */}
       {mostrarModalCargarResultado && (
         <CargarResultadoEstudio
@@ -280,6 +318,15 @@ const EpisodioDetalle = ({
           pacienteNombre={paciente?.nombreApellido || 'Paciente'}
           pacienteHC={paciente?.numeroHistoriaClinica || '—'}
           estudio={estudios[estudioSeleccionadoIndex]}
+        />
+      )}
+
+      {/* Toast: Notificación Obligatoria Emitida (evento asincrónico a Epidemiología) */}
+      {notificacion && (
+        <NotificacionObligatoria
+          patologia={notificacion.patologia}
+          evento={notificacion.evento}
+          onCerrar={() => setNotificacion(null)}
         />
       )}
     </div>

@@ -79,12 +79,34 @@ function App() {
   // Índice del paciente que se está viendo en detalle
   const [pacienteActualIndex, setPacienteActualIndex] = useState(null);
   // Turno actualmente en atención
-  const [turnoActivo, setTurnoActivo] = useState(null);
+  const [turnoActivo, setTurnoActivo] = useState(() => {
+    const saved = localStorage.getItem('healthgrid_turno_activo');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parseando healthgrid_turno_activo del localStorage", e);
+      }
+    }
+    return null;
+  });
+  // Flag para abrir modal de nueva ficha al volver a Home
+  const [abrirModalNuevo, setAbrirModalNuevo] = useState(false);
 
   // Sincronizar estado de pacientes con localStorage
   useEffect(() => {
     localStorage.setItem('healthgrid_pacientes', JSON.stringify(pacientes));
   }, [pacientes]);
+
+  // Sincronizar estado de turnoActivo con localStorage
+  useEffect(() => {
+    if (turnoActivo) {
+      localStorage.setItem('healthgrid_turno_activo', JSON.stringify(turnoActivo));
+    } else {
+      localStorage.removeItem('healthgrid_turno_activo');
+    }
+  }, [turnoActivo]);
+
 
   // Guardar nuevo paciente y navegar al detalle
   const guardarPaciente = (data, turnoAsociado = null) => {
@@ -97,6 +119,9 @@ function App() {
     };
 
     if (turnoAsociado) {
+      if (turnoActivo && turnoActivo.id_espera !== turnoAsociado.id_espera) {
+        actualizarEstadoTurno(turnoActivo.id_espera, 'En espera');
+      }
       actualizarEstadoTurno(turnoAsociado.id_espera, 'En atención');
       nuevoPaciente.episodios = [{
         id: Date.now(),
@@ -124,39 +149,48 @@ function App() {
   };
 
   const iniciarAtencion = (turno, pacienteIdx) => {
+    if (turnoActivo && (!turno || turnoActivo.id_espera !== turno.id_espera)) {
+      actualizarEstadoTurno(turnoActivo.id_espera, 'En espera');
+    }
     setTurnoActivo(turno);
-    actualizarEstadoTurno(turno.id_espera, 'En atención');
-    setPacienteActualIndex(pacienteIdx);
+    
+    if (turno) {
+      actualizarEstadoTurno(turno.id_espera, 'En atención');
+      setPacienteActualIndex(pacienteIdx);
 
-    // Si no tiene episodio abierto, crearlo automáticamente
-    setPacientes(prev => {
-      const actualizados = [...prev];
-      const paciente = { ...actualizados[pacienteIdx] };
-      const episodios = paciente.episodios || [];
-      const tieneEpisodioAbierto = episodios.some(e => e.estado === 'abierto');
+      // Si no tiene episodio abierto, crearlo automáticamente
+      setPacientes(prev => {
+        const actualizados = [...prev];
+        const paciente = { ...actualizados[pacienteIdx] };
+        const episodios = paciente.episodios || [];
+        const tieneEpisodioAbierto = episodios.some(e => e.estado === 'abierto');
 
-      if (!tieneEpisodioAbierto) {
-        const nuevoEpisodio = {
-          id: Date.now(),
-          numero: episodios.length + 1,
-          fecha: new Date().toISOString(),
-          medico: turno.id_profesional,
-          especialidad: turno.sector,
-          motivoConsulta: turno.motivo,
-          estado: 'abierto',
-          fechaAlta: null,
-          evolucionesData: [],
-          recetasData: [],
-          estudiosData: [],
-        };
-        paciente.episodios = [...episodios, nuevoEpisodio];
-        actualizados[pacienteIdx] = paciente;
-      }
-      return actualizados;
-    });
+        if (!tieneEpisodioAbierto) {
+          const nuevoEpisodio = {
+            id: Date.now(),
+            numero: episodios.length + 1,
+            fecha: new Date().toISOString(),
+            medico: turno.id_profesional,
+            especialidad: turno.sector,
+            motivoConsulta: turno.motivo,
+            estado: 'abierto',
+            fechaAlta: null,
+            evolucionesData: [],
+            recetasData: [],
+            estudiosData: [],
+          };
+          paciente.episodios = [...episodios, nuevoEpisodio];
+          actualizados[pacienteIdx] = paciente;
+        }
+        return actualizados;
+      });
 
-    setVistaActual('detalle');
+      setVistaActual('detalle');
+    } else {
+      setPacienteActualIndex(null);
+    }
   };
+
 
   // Actualizar paciente existente (editar ficha)
   const actualizarPaciente = (index, data) => {
@@ -396,6 +430,19 @@ function App() {
     setPacienteActualIndex(null);
   };
 
+  // Nuevo Registro: volver a Home y abrir modal de nueva ficha
+  const nuevoRegistro = () => {
+    setVistaActual('home');
+    setPacienteActualIndex(null);
+    setAbrirModalNuevo(true);
+  };
+
+  // Seleccionar paciente existente desde búsqueda
+  const seleccionarPaciente = (index) => {
+    setPacienteActualIndex(index);
+    setVistaActual('detalle');
+  };
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif', margin: 0, padding: 0 }}>
       <Sidebar />
@@ -404,20 +451,23 @@ function App() {
         {vistaActual === 'home' && (
           <Home
             pacientes={pacientes}
-            onSeleccionarPaciente={(idx) => {
-              setPacienteActualIndex(idx);
-              setVistaActual('detalle');
-            }}
+            onSeleccionarPaciente={seleccionarPaciente}
             onGuardarPaciente={guardarPaciente}
             onIniciarAtencion={iniciarAtencion}
+            abrirModalNuevo={abrirModalNuevo}
+            onModalNuevoCerrado={() => setAbrirModalNuevo(false)}
+            turnoActivo={turnoActivo}
           />
         )}
         {vistaActual === 'detalle' && pacienteActualIndex !== null && (
           <PacienteDetalle
             paciente={pacientes[pacienteActualIndex]}
             pacienteIndex={pacienteActualIndex}
+            pacientes={pacientes}
+            onSeleccionarPaciente={seleccionarPaciente}
             turnoActivo={turnoActivo}
             onVolver={volverAHome}
+            onNuevoRegistro={nuevoRegistro}
             onActualizar={actualizarPaciente}
             onAgregarEpisodio={agregarEpisodio}
             onAgregarEvolucion={agregarEvolucion}

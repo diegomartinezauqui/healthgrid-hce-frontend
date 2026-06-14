@@ -68,6 +68,70 @@
   background-color: #1a4a3a;
 }
 
+/* Dropdown de sugerencias */
+.detalle-topbar__sugerencias {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #E0E4E2;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.detalle-topbar__sugerencia-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid #F0F4F2;
+}
+
+.detalle-topbar__sugerencia-item:last-child {
+  border-bottom: none;
+}
+
+.detalle-topbar__sugerencia-item:hover {
+  background-color: #F0F8F4;
+}
+
+.detalle-topbar__sugerencia-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #259A5E;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.detalle-topbar__sugerencia-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.detalle-topbar__sugerencia-nombre {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: #11352A;
+}
+
+.detalle-topbar__sugerencia-meta {
+  font-size: 0.72rem;
+  color: #888;
+}
+
 /* Tabs — Clipboard clip style */
 .detalle-topbar__tabs {
   display: flex;
@@ -276,6 +340,25 @@
   background-color: #1a4a3a;
   box-shadow: 0 3px 10px rgba(17, 53, 42, 0.2);
 }
+
+/* Botón deshabilitado */
+.detalle-btn:disabled,
+.detalle-btn--deshabilitado {
+  background-color: #A0ABA6 !important;
+  border-color: #A0ABA6 !important;
+  color: #E8ECE9 !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+.detalle-btn:disabled:hover,
+.detalle-btn--deshabilitado:hover {
+  background-color: #A0ABA6 !important;
+  box-shadow: none !important;
+}
+
 
 /* ── Grid de 2 columnas ── */
 .detalle-grid-2cols {

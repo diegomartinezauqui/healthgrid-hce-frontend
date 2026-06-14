@@ -61,22 +61,29 @@ const PacienteHeaderCard = ({
       </div>
       
       {/* Botones solo visibles en tab Ficha Médica */}
-      {tabActiva === 'ficha' && (
-        <div className="detalle-paciente-card__right">
-          <button
-            className="detalle-btn detalle-btn--editar"
-            onClick={onEditarClick}
-          >
-            <FiEdit2 className="detalle-btn__icon" /> Actualizar / Editar Ficha
-          </button>
-          <button 
-            className="detalle-btn detalle-btn--nuevo"
-            onClick={onNuevoEpisodioClick}
-          >
-            <FiPlusCircle className="detalle-btn__icon" /> Nuevo Episodio
-          </button>
-        </div>
-      )}
+      {tabActiva === 'ficha' && (() => {
+        const episodios = paciente?.episodios || [];
+        const tieneEpisodioAbierto = episodios.some(e => e.estado === 'abierto');
+        return (
+          <div className="detalle-paciente-card__right">
+            <button
+              className="detalle-btn detalle-btn--editar"
+              onClick={onEditarClick}
+            >
+              <FiEdit2 className="detalle-btn__icon" /> Actualizar / Editar Ficha
+            </button>
+            <button 
+              className={`detalle-btn detalle-btn--nuevo ${tieneEpisodioAbierto ? 'detalle-btn--deshabilitado' : ''}`}
+              onClick={tieneEpisodioAbierto ? undefined : onNuevoEpisodioClick}
+              disabled={tieneEpisodioAbierto}
+              title={tieneEpisodioAbierto ? "El paciente ya posee un episodio clínico abierto" : "Crear un nuevo episodio clínico"}
+            >
+              <FiPlusCircle className="detalle-btn__icon" /> Nuevo Episodio
+            </button>
+          </div>
+        );
+      })()}
+
     </div>
   );
 };

@@ -18,13 +18,21 @@ const PacienteEpisodiosTab = ({
           <h2 className="episodios-header__titulo">Episodios Médicos</h2>
           <p className="episodios-header__subtitulo">Historial de interacciones clínicas del paciente</p>
         </div>
-        <button
-          className="detalle-btn detalle-btn--nuevo"
-          onClick={onNuevoEpisodioClick}
-        >
-          + Nuevo Episodio
-        </button>
+        {(() => {
+          const tieneEpisodioAbierto = episodios.some(e => e.estado === 'abierto');
+          return (
+            <button
+              className={`detalle-btn detalle-btn--nuevo ${tieneEpisodioAbierto ? 'detalle-btn--deshabilitado' : ''}`}
+              onClick={tieneEpisodioAbierto ? undefined : onNuevoEpisodioClick}
+              disabled={tieneEpisodioAbierto}
+              title={tieneEpisodioAbierto ? "El paciente ya posee un episodio clínico abierto" : "Crear un nuevo episodio clínico"}
+            >
+              + Nuevo Episodio
+            </button>
+          );
+        })()}
       </div>
+
 
       <div className="episodios-lista">
         {episodios.length > 0 ? (

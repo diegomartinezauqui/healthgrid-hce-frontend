@@ -1,5 +1,6 @@
 // src/pages/EpisodioDetalle.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { pacienteService } from '../services/pacienteService';
 import NuevaEvolucion from './NuevaEvolucion';
 import NuevaReceta from './NuevaReceta';
 import NuevoPedidoEstudio from './NuevoPedidoEstudio';
@@ -35,6 +36,10 @@ const EpisodioDetalle = ({
   onAgregarSolicitudPase,
   onAgregarSolicitudInternacion,
   onAgregarResultadoEstudio,
+  esTurnoActivo,
+  onFinalizarAtencion,
+  turnoActivo,
+  onActualizarDetalleEpisodio,
 }) => {
   const [subTab, setSubTab] = useState('timeline');
   const [mostrarModalEvolucion, setMostrarModalEvolucion] = useState(false);
@@ -45,6 +50,37 @@ const EpisodioDetalle = ({
   const [mostrarModalCargarResultado, setMostrarModalCargarResultado] = useState(false);
   const [estudioSeleccionadoIndex, setEstudioSeleccionadoIndex] = useState(null);
   const [notificacion, setNotificacion] = useState(null);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
+
+  useEffect(() => {
+    const cargarDetalleEpisodio = async () => {
+      const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+      if (useMocks || !episodio || !episodio.id_episodio) return;
+
+      setLoadingDetalle(true);
+      try {
+        console.log(`[EpisodioDetalle] Cargando evoluciones y recetas reales del episodio ${episodio.id_episodio}...`);
+        const [evoluciones, todasLasRecetas] = await Promise.all([
+          pacienteService.obtenerEvoluciones(paciente.core_patient_id, episodio.id_episodio),
+          pacienteService.obtenerRecetas(paciente.core_patient_id)
+        ]);
+
+        if (evoluciones && todasLasRecetas) {
+          const idsEvoluciones = evoluciones.map(ev => ev.id_evolucion);
+          const recetasDelEpisodio = todasLasRecetas.filter(rec => idsEvoluciones.includes(rec.id_evolucion));
+
+          if (onActualizarDetalleEpisodio) {
+            onActualizarDetalleEpisodio(pacienteIndex, episodioIndex, evoluciones, recetasDelEpisodio);
+          }
+        }
+      } catch (err) {
+        console.error('[EpisodioDetalle] Error cargando detalle de evolución/recetas:', err);
+      } finally {
+        setLoadingDetalle(false);
+      }
+    };
+    cargarDetalleEpisodio();
+  }, [episodio?.id_episodio, paciente.core_patient_id, pacienteIndex, episodioIndex]);
 
   if (!episodio) return null;
 
@@ -145,6 +181,44 @@ const EpisodioDetalle = ({
     });
   };
 
+  const handleTerminarConsulta = () => {
+    Swal.fire({
+      title: '¿Terminar consulta sin dar de alta?',
+      text: "El consultorio quedará liberado en la sala de espera, pero el episodio clínico permanecerá ABIERTO para que el paciente pueda ser atendido nuevamente.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#0284c7',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, terminar consulta',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        onFinalizarAtencion(turnoActivo, false);
+        Swal.fire({
+          title: 'Turno finalizado',
+          text: 'El consultorio ha sido liberado. El episodio clínico permanece abierto.',
+          icon: 'success',
+          confirmButtonColor: '#259A5E'
+        });
+      }
+    });
+  };
+
+  if (loadingDetalle) {
+    return (
+      <div className="ep-detalle" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 20px' }}>
+        <div style={{ width: '40px', height: '40px', border: '3px solid rgba(37, 154, 94, 0.1)', borderTop: '3px solid #259A5E', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '20px' }} />
+        <p style={{ color: '#11352A', fontWeight: 'bold' }}>Recuperando evoluciones y recetas de este episodio...</p>
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}} />
+      </div>
+    );
+  }
+
   return (
     <div className="ep-detalle">
       {/* Volver */}
@@ -157,6 +231,8 @@ const EpisodioDetalle = ({
         episodio={episodio}
         onDarDeAlta={handleDarDeAlta}
         onSolicitarInternacionClick={() => setMostrarModalInternacion(true)}
+        esTurnoActivo={esTurnoActivo}
+        onTerminarConsultaClick={handleTerminarConsulta}
       />
 
       {/* Sub-tabs: Evoluciones | Recetas | Pedidos de Estudios | Solicitudes de Pase | Solicitudes de Internación */}

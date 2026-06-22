@@ -121,6 +121,18 @@
   background-color: #F5F5F5;
 }
 
+.ep-detalle__btn--terminar {
+  background-color: #0284c7;
+  border: 1.5px solid #0284c7;
+  color: white;
+}
+
+.ep-detalle__btn--terminar:hover {
+  background-color: #0369a1;
+  border-color: #0369a1;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.2);
+}
+
 .ep-detalle__btn--solicitar {
   background-color: #C0392B;
   border: 1.5px solid #C0392B;

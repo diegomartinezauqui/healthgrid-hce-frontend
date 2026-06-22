@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import NuevaFichaMedica from './NuevaFichaMedica';
-import { searchCorePatients } from '../services/mockCoreData';
-import { getAgendaDelDia } from '../services/mockSalaEspera';
+import { useSalaEspera } from '../hooks/useSalaEspera';
+import { pacienteService } from '../services/pacienteService';
 
 const Home = ({ 
   pacientes = [], 
@@ -12,30 +12,108 @@ const Home = ({
   onIniciarAtencion, 
   abrirModalNuevo = false, 
   onModalNuevoCerrado,
-  turnoActivo = null
+  turnoActivo = null,
+  fichasRecientes = [],
+  onGuardarPacienteSilencioso,
+  onFinalizarAtencion
 }) => {
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [corePatientToCreate, setCorePatientToCreate] = useState(null);
-  const [turnoPendiente, setTurnoPendiente] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [tabActiva, setTabActiva] = useState('agenda'); // 'agenda' | 'busqueda'
-  const [agenda, setAgenda] = useState([]);
-  
-  // Filtros
-  const [filtroEstado, setFiltroEstado] = useState('Todos');
-  const [filtroTriage, setFiltroTriage] = useState('Todos');
 
-  // Búsqueda en main (Axios)
-  const [busqueda, setBusqueda] = useState('');
-  const [resultados, setResultados] = useState([]);
-  const [buscando, setBuscando] = useState(false);
+  const {
+    agenda,
+    loading,
+    error,
+    searchTerm,
+    setSearchTerm,
+    coreResults,
+    buscando,
+    pagina,
+    setPagina,
+    tieneMas,
+    filtroEstado,
+    setFiltroEstado,
+    filtroTriage,
+    setFiltroTriage,
+    mostrarModal,
+    setMostrarModal,
+    corePatientToCreate,
+    setCorePatientToCreate,
+    handleLlamarPaciente,
+    handleIniciarAtencion,
+    handleMarcarAusente,
+    handleGuardarFicha,
+    obtenerAccionFicha
+  } = useSalaEspera({
+    pacientes,
+    turnoActivo,
+    onIniciarAtencion,
+    onGuardarPaciente,
+    onGuardarPacienteSilencioso
+  });
 
-  // Mock ID del profesional logueado
-  const ID_PROFESIONAL_ACTUAL = "prof-001";
+  const handleSeleccionarPacienteBusqueda = async (cp) => {
+    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+    if (useMocks) {
+      onSeleccionarPaciente(cp);
+      return;
+    }
 
-  useEffect(() => {
-    setAgenda(getAgendaDelDia(ID_PROFESIONAL_ACTUAL));
-  }, []);
+    const pacienteMemoria = pacientes.find(p => p.core_patient_id === cp.core_patient_id);
+    if (pacienteMemoria && pacienteMemoria.tieneFichaClinica !== undefined) {
+      if (pacienteMemoria.tieneFichaClinica) {
+        onSeleccionarPaciente(cp);
+      } else {
+        setCorePatientToCreate(cp);
+        setMostrarModal(true);
+      }
+      return;
+    }
+
+    try {
+      Swal.fire({
+        title: 'Verificando ficha médica...',
+        text: 'Conectando con el servidor HCE',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const ficha = await pacienteService.obtenerFicha(cp.core_patient_id);
+      Swal.close();
+
+      if (ficha) {
+        onGuardarPacienteSilencioso({
+          ...cp,
+          grupoSanguineo: ficha.grupo_sanguineo || 'O+',
+          observaciones: ficha.observaciones_generales || '',
+          peso_kg: ficha.peso_kg || null,
+          altura_cm: ficha.altura_cm || null,
+          antecedentes: ficha.antecedentes || [],
+          consideraciones: ficha.alertas_clinicas || [],
+          episodios: ficha.episodios || [],
+          tieneFichaClinica: true
+        });
+        onSeleccionarPaciente(cp);
+      } else {
+        onGuardarPacienteSilencioso({
+          ...cp,
+          tieneFichaClinica: false
+        });
+        setCorePatientToCreate(cp);
+        setMostrarModal(true);
+      }
+    } catch (err) {
+      Swal.close();
+      console.log(`[Home] Ficha no encontrada en el backend para ${cp.core_patient_id}. Abriendo creación.`);
+      onGuardarPacienteSilencioso({
+        ...cp,
+        tieneFichaClinica: false
+      });
+      setCorePatientToCreate(cp);
+      setMostrarModal(true);
+    }
+  };
 
   // Abrir modal automáticamente si viene de "Nuevo Registro"
   useEffect(() => {
@@ -44,27 +122,6 @@ const Home = ({
       if (onModalNuevoCerrado) onModalNuevoCerrado();
     }
   }, [abrirModalNuevo]);
-
-  const handleGuardar = (data) => {
-    onGuardarPaciente({ ...corePatientToCreate, ...data, core_patient_id: corePatientToCreate?.core_patient_id }, turnoPendiente);
-    setMostrarModal(false);
-    setCorePatientToCreate(null);
-    setTurnoPendiente(null);
-  };
-
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const coreResults = searchCorePatients(searchTerm);
-
-  const renderFichaAction = (cp) => {
-    const fichaMedicaIdx = (pacientes || []).findIndex(p => p.core_patient_id === cp.core_patient_id);
-    const tieneFicha = fichaMedicaIdx !== -1;
-    const fichaMedica = tieneFicha ? pacientes[fichaMedicaIdx] : null;
-
-    return { fichaMedicaIdx, tieneFicha, fichaMedica };
-  };
 
   const formatHora = (fechaIso) => {
     if (!fechaIso) return '—';
@@ -77,6 +134,8 @@ const Home = ({
       case 'En triage': return { bg: '#E3F2FD', color: '#1565C0' };
       case 'En atención': return { bg: '#E0F2F1', color: '#00695C' };
       case 'Atendido': return { bg: '#E8F5E9', color: '#2E7D32' };
+      case 'Llamado': return { bg: '#E3F2FD', color: '#0D47A1' };
+      case 'Ausente': return { bg: '#FFEBEE', color: '#C62828' };
       default: return { bg: '#F5F5F5', color: '#616161' };
     }
   };
@@ -98,80 +157,6 @@ const Home = ({
       default: return '#616161';
     }
   };
-
-  const agendaFiltrada = agenda.filter(turno => {
-    if (filtroEstado !== 'Todos') {
-      if (filtroEstado === 'Pendientes' && turno.estado === 'Atendido') return false;
-      if (filtroEstado === 'Atendidos' && turno.estado !== 'Atendido') return false;
-    }
-    if (filtroTriage !== 'Todos' && turno.nivel_triage !== filtroTriage) return false;
-    return true;
-  });
-
-  const ejecutarBusqueda = (termino) => {
-    const t = (termino !== undefined ? termino : busqueda).trim().toLowerCase();
-    if (!t) {
-      setResultados([]);
-      setBuscando(false);
-      return;
-    }
-    setBuscando(true);
-    const encontrados = pacientes
-      .map((p, idx) => ({ ...p, _index: idx }))
-      .filter(p =>
-        (p.dni || '').toLowerCase().includes(t) ||
-        (p.nombreApellido || '').toLowerCase().includes(t) ||
-        (p.numeroHistoriaClinica || '').toLowerCase().includes(t)
-      );
-    setResultados(encontrados);
-  };
-
-  const handleInputChange = (e) => {
-    const val = e.target.value;
-    setBusqueda(val);
-    ejecutarBusqueda(val);
-  };
-
-  const seleccionar = (paciente) => {
-    onSeleccionarPaciente(paciente._index);
-  };
-
-  const handleLlamarYAtender = (turno, tieneFicha, fichaMedicaIdx) => {
-    const proceder = () => {
-      if (tieneFicha) {
-        onIniciarAtencion(turno, fichaMedicaIdx);
-      } else {
-        if (turnoActivo) {
-          onIniciarAtencion(null, null); // Suspender paciente activo anterior de inmediato
-        }
-        setTurnoPendiente(turno);
-        setCorePatientToCreate(turno.paciente);
-        setMostrarModal(true);
-        // Refrescar la agenda local de inmediato para mostrar que el paciente anterior se liberó
-        setAgenda(getAgendaDelDia(ID_PROFESIONAL_ACTUAL));
-      }
-    };
-
-    if (turnoActivo && turnoActivo.id_espera !== turno.id_espera) {
-      Swal.fire({
-        title: 'Paciente en atención',
-        text: `Ya tienes al paciente "${turnoActivo.paciente.nombreApellido}" en atención. ¿Deseas suspender su atención actual para iniciar la consulta de "${turno.paciente.nombreApellido}"?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#259A5E',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Sí, cambiar de paciente',
-        cancelButtonText: 'Cancelar'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          proceder();
-        }
-      });
-    } else {
-      proceder();
-    }
-  };
-
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: '#F4F7F6' }}>
@@ -209,7 +194,7 @@ const Home = ({
               type="text" 
               placeholder="Buscar por DNI o Nombre..." 
               value={searchTerm}
-              onChange={handleSearchChange}
+              onChange={(e) => setSearchTerm(e.target.value)}
               style={{ flexGrow: 1, padding: '10px 15px', border: 'none', outline: 'none', fontSize: '0.9rem', color: '#333', backgroundColor: 'transparent' }}
             />
             <button style={{ backgroundColor: '#11352A', color: 'white', padding: '0 20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -225,7 +210,7 @@ const Home = ({
       {/* Contenido Principal */}
       <main style={{ padding: '30px', flexGrow: 1, overflowY: 'auto' }}>
         
-        {/* Banner Verde (Solo en Búsqueda Global o si se desea siempre) */}
+        {/* Banner Verde (Solo en Búsqueda Global) */}
         {tabActiva === 'busqueda' && (
           <div style={{ backgroundColor: '#11352A', color: 'white', padding: '50px 40px', borderRadius: '15px', marginBottom: '30px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             {/* Círculos decorativos */}
@@ -245,8 +230,20 @@ const Home = ({
           </div>
         )}
 
+        {/* Indicadores de carga y error */}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#11352A', fontWeight: 'bold' }}>
+            Cargando sala de espera...
+          </div>
+        )}
+        {error && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#c62828', fontWeight: 'bold' }}>
+            {error}
+          </div>
+        )}
+
         {/* CONTENIDO TAB AGENDA */}
-        {tabActiva === 'agenda' && (
+        {tabActiva === 'agenda' && !loading && (
           <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '30px' }}>
@@ -287,8 +284,8 @@ const Home = ({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {agendaFiltrada.length > 0 ? agendaFiltrada.map((turno) => {
-                const { fichaMedicaIdx, tieneFicha, fichaMedica } = renderFichaAction(turno.paciente);
+              {agenda.length > 0 ? agenda.map((turno) => {
+                const { fichaMedicaIdx, tieneFicha } = obtenerAccionFicha(turno.paciente);
                 const estaEnAtencion = turno.estado === 'En atención' || (turnoActivo && turnoActivo.id_espera === turno.id_espera);
                 const badgeColor = getBadgeColor(estaEnAtencion ? 'En atención' : turno.estado);
 
@@ -331,6 +328,11 @@ const Home = ({
                           }}>
                             Triage: {turno.nivel_triage}
                           </span>
+                          {turno.estado === 'Llamado' && turno.consultorio && (
+                            <span style={{ color: '#0D47A1', fontWeight: 'bold' }}>
+                              Consultorio: {turno.consultorio}
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '0.85rem', color: '#444', marginTop: '5px' }}>
                           Motivo: <strong>{turno.motivo}</strong>
@@ -338,14 +340,13 @@ const Home = ({
                       </div>
                     </div>
 
-                    <div>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                       {turno.estado === 'Atendido' ? (
                         <button
                           onClick={() => {
                             if (tieneFicha) {
                               onSeleccionarPaciente(fichaMedicaIdx);
                             } else {
-                              setTurnoPendiente(turno);
                               setCorePatientToCreate(turno.paciente);
                               setMostrarModal(true);
                             }
@@ -361,34 +362,141 @@ const Home = ({
                           {tieneFicha ? 'Ver Registro' : 'Completar Ficha'}
                         </button>
                       ) : estaEnAtencion ? (
+                        <>
+                          <button
+                            onClick={() => {
+                              if (tieneFicha) {
+                                onSeleccionarPaciente(fichaMedicaIdx);
+                              } else {
+                                setCorePatientToCreate(turno.paciente);
+                                setMostrarModal(true);
+                              }
+                            }}
+                            style={{
+                              backgroundColor: '#E65100', 
+                              color: 'white', padding: '12px 20px', borderRadius: '8px', 
+                              border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.88rem',
+                              display: 'flex', alignItems: 'center', gap: '8px',
+                              transition: 'all 0.2s ease',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.08)'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#BF360C'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#E65100'}
+                          >
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            RETOMAR CONSULTA
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              Swal.fire({
+                                title: '¿Terminar consulta sin dar de alta?',
+                                text: "El consultorio quedará liberado en la sala de espera, pero el episodio clínico permanecerá ABIERTO para que el paciente pueda ser atendido nuevamente.",
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#0284c7',
+                                cancelButtonColor: '#d33',
+                                confirmButtonText: 'Sí, terminar consulta',
+                                cancelButtonText: 'Cancelar'
+                              }).then((result) => {
+                                if (result.isConfirmed) {
+                                  onFinalizarAtencion(turno, false);
+                                  Swal.fire({
+                                    title: 'Turno finalizado',
+                                    text: 'El consultorio ha sido liberado. El episodio clínico permanece abierto.',
+                                    icon: 'success',
+                                    confirmButtonColor: '#259A5E'
+                                  });
+                                }
+                              });
+                            }}
+                            style={{
+                              backgroundColor: '#0284c7', 
+                              color: 'white', padding: '12px 20px', borderRadius: '8px', 
+                              border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.88rem',
+                              display: 'flex', alignItems: 'center', gap: '8px',
+                              transition: 'all 0.2s ease',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.08)'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0369a1'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#0284c7'}
+                          >
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            TERMINAR CONSULTA
+                          </button>
+                        </>
+                      ) : turno.estado === 'Llamado' ? (
+                        <>
+                          <button
+                            onClick={() => handleIniciarAtencion(turno)}
+                            style={{
+                              backgroundColor: '#259A5E', 
+                              color: 'white', padding: '12px 20px', borderRadius: '8px', 
+                              border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.88rem',
+                              display: 'flex', alignItems: 'center', gap: '8px',
+                              transition: 'all 0.2s ease',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.08)'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#1e7b4b'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#259A5E'}
+                          >
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            ATENDER
+                          </button>
+                          
+                          <button
+                            onClick={() => handleMarcarAusente(turno)}
+                            style={{
+                              backgroundColor: '#F5F5F5', 
+                              color: '#C62828', padding: '12px 15px', borderRadius: '8px', 
+                              border: '1px solid #FFCDD2', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.88rem',
+                              display: 'flex', alignItems: 'center', gap: '5px',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.backgroundColor = '#FFEBEE';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.backgroundColor = '#F5F5F5';
+                            }}
+                          >
+                            AUSENTE
+                          </button>
+
+                          <button
+                            onClick={() => handleLlamarPaciente(turno)}
+                            title="Llamar nuevamente"
+                            style={{
+                              backgroundColor: '#F5F5F5', 
+                              color: '#0D47A1', padding: '12px', borderRadius: '8px', 
+                              border: '1px solid #BBDEFB', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              transition: 'all 0.2s ease'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#E3F2FD'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#F5F5F5'}
+                          >
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                          </button>
+                        </>
+                      ) : turno.estado === 'Ausente' ? (
                         <button
-                          onClick={() => {
-                            if (tieneFicha) {
-                              onSeleccionarPaciente(fichaMedicaIdx);
-                            } else {
-                              setTurnoPendiente(turno);
-                              setCorePatientToCreate(turno.paciente);
-                              setMostrarModal(true);
-                            }
-                          }}
+                          onClick={() => handleLlamarPaciente(turno)}
                           style={{
-                            backgroundColor: '#E65100', 
-                            color: 'white', padding: '12px 20px', borderRadius: '8px', 
-                            border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.88rem',
+                            backgroundColor: '#F5F5F5', 
+                            color: '#666', padding: '12px 20px', borderRadius: '8px', 
+                            border: '1px solid #DDD', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.88rem',
                             display: 'flex', alignItems: 'center', gap: '8px',
-                            transition: 'all 0.2s ease',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.08)'
+                            transition: 'all 0.2s ease'
                           }}
-                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#BF360C'}
-                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#E65100'}
+                          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#EEEEEE'}
+                          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#F5F5F5'}
                         >
-                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                          RETOMAR CONSULTA
+                          LLAMAR NUEVAMENTE
                         </button>
                       ) : (
-
                         <button
-                          onClick={() => handleLlamarYAtender(turno, tieneFicha, fichaMedicaIdx)}
+                          onClick={() => handleLlamarPaciente(turno)}
                           style={{
                             backgroundColor: tieneFicha ? '#259A5E' : '#1976D2', 
                             color: 'white', padding: '12px 20px', borderRadius: '8px', 
@@ -400,17 +508,8 @@ const Home = ({
                           onMouseOver={(e) => e.currentTarget.style.backgroundColor = tieneFicha ? '#1e7b4b' : '#1565C0'}
                           onMouseOut={(e) => e.currentTarget.style.backgroundColor = tieneFicha ? '#259A5E' : '#1976D2'}
                         >
-                          {tieneFicha ? (
-                            <>
-                              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                              LLAMAR Y ATENDER
-                            </>
-                          ) : (
-                            <>
-                              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
-                              CREAR FICHA Y ATENDER
-                            </>
-                          )}
+                          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                          LLAMAR PACIENTE
                         </button>
                       )}
                     </div>
@@ -425,87 +524,187 @@ const Home = ({
           </div>
         )}
 
+
         {/* CONTENIDO TAB BUSQUEDA GLOBAL */}
-        {tabActiva === 'busqueda' && (
+        {tabActiva === 'busqueda' && !loading && (
           <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' }}>
-            <h2 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#11352A' }}>Búsqueda Global</h2>
-            <p style={{ margin: '0 0 20px 0', color: '#666', fontSize: '0.9rem' }}>Busque por DNI o Nombre para acceder a fichas médicas de pacientes que no tienen turno.</p>
+            
+            {/* Si no hay búsqueda escrita, mostramos las fichas recientes */}
+            {!searchTerm.trim() ? (
+              <div>
+                <h2 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#11352A' }}>Fichas Médicas Recientes</h2>
+                <p style={{ margin: '0 0 25px 0', color: '#666', fontSize: '0.9rem' }}>
+                  Últimos pacientes visitados por tu usuario. Accede rápidamente a su historial clínico.
+                </p>
 
-            <div style={{ marginTop: '20px', marginBottom: '40px' }}>
-              <h3 style={{ margin: '0 0 15px 0', fontSize: '1.05rem', color: '#11352A', fontWeight: 'bold' }}>
-                Pacientes encontrados ({coreResults.length})
-              </h3>
-              {coreResults.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {coreResults.map((cp) => {
-                    const { fichaMedicaIdx, tieneFicha, fichaMedica } = renderFichaAction(cp);
-
-                    return (
-                      <div
-                        key={cp.core_patient_id}
-                        onClick={() => {
-                          if (tieneFicha) {
-                            onSeleccionarPaciente(fichaMedicaIdx);
-                          } else {
-                            setCorePatientToCreate(cp);
-                            setMostrarModal(true);
-                          }
-                        }}
-                        style={{
-                          backgroundColor: '#F9FBFA', border: '1px solid #E8ECE9', borderRadius: '8px',
-                          padding: '15px 20px', display: 'flex', justifyContent: 'space-between',
-                          alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s ease',
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.backgroundColor = '#EAEFEA';
-                          e.currentTarget.style.borderColor = '#C8E6C9';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F9FBFA';
-                          e.currentTarget.style.borderColor = '#E8ECE9';
-                        }}
-                      >
-                        <div>
-                          <h4 style={{ margin: '0 0 5px 0', fontSize: '0.95rem', color: '#11352A', fontWeight: '600' }}>
-                            {cp.nombreApellido}
-                          </h4>
-                          <span style={{ fontSize: '0.8rem', color: '#666', marginRight: '15px' }}>
-                            DNI: <strong>{cp.dni || '—'}</strong>
-                          </span>
-                          {tieneFicha && (
-                            <span style={{ fontSize: '0.8rem', color: '#666' }}>
-                              HC: <strong>#{fichaMedica.numeroHistoriaClinica || '—'}</strong>
+                {fichasRecientes.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {fichasRecientes.map((cp) => {
+                      return (
+                        <div
+                          key={cp.core_patient_id}
+                          onClick={() => handleSeleccionarPacienteBusqueda(cp)}
+                          style={{
+                            backgroundColor: '#F9FBFA', border: '1px solid #E8ECE9', borderRadius: '8px',
+                            padding: '15px 20px', display: 'flex', justifyContent: 'space-between',
+                            alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s ease',
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = '#EAEFEA';
+                            e.currentTarget.style.borderColor = '#C8E6C9';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = '#F9FBFA';
+                            e.currentTarget.style.borderColor = '#E8ECE9';
+                          }}
+                        >
+                          <div>
+                            <h4 style={{ margin: '0 0 5px 0', fontSize: '0.95rem', color: '#11352A', fontWeight: '600' }}>
+                              {cp.nombreApellido}
+                            </h4>
+                            <span style={{ fontSize: '0.8rem', color: '#666', marginRight: '15px' }}>
+                              DNI: <strong>{cp.dni || '—'}</strong>
                             </span>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          {tieneFicha ? (
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span style={{
                               fontSize: '0.72rem', fontWeight: '700', color: '#259A5E',
                               backgroundColor: '#E8F5E9', padding: '3px 10px', borderRadius: '12px'
                             }}>
-                              ✓ Ver Ficha Médica
+                              ✓ Ficha Médica
                             </span>
-                          ) : (
-                            <span style={{
-                              fontSize: '0.72rem', fontWeight: '700', color: '#11352A',
-                              backgroundColor: '#E0E0E0', padding: '3px 10px', borderRadius: '12px'
-                            }}>
-                              + Crear Ficha
-                            </span>
-                          )}
-                          <span style={{ color: '#CCC', fontSize: '1.2rem', fontWeight: 'bold' }}>›</span>
+                            <span style={{ color: '#CCC', fontSize: '1.2rem', fontWeight: 'bold' }}>›</span>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p style={{ color: '#888', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                  Ingrese un parámetro de búsqueda para encontrar pacientes en el Core.
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '30px', color: '#888', fontStyle: 'italic', border: '1px dashed #DDD', borderRadius: '10px' }}>
+                    Aún no has visitado ninguna ficha médica en esta sesión. Usa la barra superior de búsqueda.
+                  </div>
+                )}
+              </div>
+            ) : (
+              // BÚSQUEDA ACTIVA
+              <div>
+                <h2 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#11352A' }}>Búsqueda Global</h2>
+                <p style={{ margin: '0 0 20px 0', color: '#666', fontSize: '0.9rem' }}>
+                  Resultados del padrón de pacientes en base a tu consulta.
                 </p>
-              )}
-            </div>
+
+                <div style={{ marginTop: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#11352A', fontWeight: 'bold' }}>
+                      Pacientes encontrados ({coreResults.length})
+                    </h3>
+                    {buscando && <span style={{ fontSize: '0.85rem', color: '#259A5E', fontWeight: 'bold' }}>Buscando...</span>}
+                  </div>
+
+                  {buscando ? (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                      Filtrando base de datos de pacientes...
+                    </div>
+                  ) : coreResults.length > 0 ? (
+                    <>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                        {coreResults.map((cp) => {
+                          const { fichaMedicaIdx, tieneFicha, fichaMedica } = obtenerAccionFicha(cp);
+                          return (
+                            <div
+                              key={cp.core_patient_id}
+                              onClick={() => handleSeleccionarPacienteBusqueda(cp)}
+                              style={{
+                                backgroundColor: '#F9FBFA', border: '1px solid #E8ECE9', borderRadius: '8px',
+                                padding: '15px 20px', display: 'flex', justifyContent: 'space-between',
+                                alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s ease',
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.backgroundColor = '#EAEFEA';
+                                e.currentTarget.style.borderColor = '#C8E6C9';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.backgroundColor = '#F9FBFA';
+                                e.currentTarget.style.borderColor = '#E8ECE9';
+                              }}
+                            >
+                              <div>
+                                <h4 style={{ margin: '0 0 5px 0', fontSize: '0.95rem', color: '#11352A', fontWeight: '600' }}>
+                                  {cp.nombreApellido}
+                                </h4>
+                                <span style={{ fontSize: '0.8rem', color: '#666', marginRight: '15px' }}>
+                                  DNI: <strong>{cp.dni || '—'}</strong>
+                                </span>
+                                {tieneFicha && (
+                                  <span style={{ fontSize: '0.8rem', color: '#666' }}>
+                                    HC: <strong>#{fichaMedica.numeroHistoriaClinica || '—'}</strong>
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {tieneFicha ? (
+                                  <span style={{
+                                    fontSize: '0.72rem', fontWeight: '700', color: '#259A5E',
+                                    backgroundColor: '#E8F5E9', padding: '3px 10px', borderRadius: '12px'
+                                  }}>
+                                    ✓ Ver Ficha Médica
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    fontSize: '0.72rem', fontWeight: '700', color: '#11352A',
+                                    backgroundColor: '#E0E0E0', padding: '3px 10px', borderRadius: '12px'
+                                  }}>
+                                    + Crear Ficha
+                                  </span>
+                                )}
+                                <span style={{ color: '#CCC', fontSize: '1.2rem', fontWeight: 'bold' }}>›</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* CONTROLES DE PAGINACIÓN */}
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '25px', paddingTop: '15px', borderTop: '1px solid #EEE' }}>
+                        <button
+                          disabled={pagina === 1}
+                          onClick={() => setPagina(prev => Math.max(prev - 1, 1))}
+                          style={{
+                            padding: '8px 16px', borderRadius: '6px', border: '1px solid #CCC',
+                            backgroundColor: pagina === 1 ? '#EEE' : 'white',
+                            color: pagina === 1 ? '#999' : '#11352A',
+                            fontWeight: 'bold', cursor: pagina === 1 ? 'default' : 'pointer',
+                            fontSize: '0.85rem', transition: 'all 0.2s ease'
+                          }}
+                        >
+                          Anterior
+                        </button>
+                        <span style={{ fontSize: '0.9rem', color: '#666' }}>
+                          Página <strong>{pagina}</strong>
+                        </span>
+                        <button
+                          disabled={!tieneMas}
+                          onClick={() => setPagina(prev => prev + 1)}
+                          style={{
+                            padding: '8px 16px', borderRadius: '6px', border: '1px solid #CCC',
+                            backgroundColor: !tieneMas ? '#EEE' : 'white',
+                            color: !tieneMas ? '#999' : '#11352A',
+                            fontWeight: 'bold', cursor: !tieneMas ? 'default' : 'pointer',
+                            fontSize: '0.85rem', transition: 'all 0.2s ease'
+                          }}
+                        >
+                          Siguiente
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: 'center', padding: '40px', color: '#888', fontStyle: 'italic' }}>
+                      No se encontraron pacientes que coincidan con la búsqueda.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -518,7 +717,7 @@ const Home = ({
             setMostrarModal(false);
             setCorePatientToCreate(null);
           }}
-          onGuardar={handleGuardar}
+          onGuardar={handleGuardarFicha}
         />
       )}
     </div>

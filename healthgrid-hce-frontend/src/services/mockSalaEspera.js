@@ -113,10 +113,13 @@ export const getAgendaDelDia = (idProfesional) => {
     });
 };
 
-export const actualizarEstadoTurno = (id_espera, nuevoEstado) => {
+export const actualizarEstadoTurno = (id_espera, nuevoEstado, consultorio = null) => {
   const turno = salaEsperaMock.find(t => t.id_espera === id_espera);
   if (turno) {
     turno.estado = nuevoEstado;
+    if (consultorio !== null) {
+      turno.consultorio = consultorio;
+    }
     guardarSalaEspera();
   }
 };

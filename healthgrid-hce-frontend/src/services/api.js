@@ -3,8 +3,8 @@ import axios from 'axios';
 
 // Creación de la instancia base de Axios
 const api = axios.create({
-  // URL base configurada desde variables de entorno de Vite o localhost por defecto
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  // URL base configurada desde variables de entorno de Vite o HCE backend por defecto
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8001/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -38,9 +38,9 @@ api.interceptors.response.use(
       // Captura de errores HTTP recurrentes
       switch (status) {
         case 401:
-          console.warn('No autorizado / Sesión expirada. Limpiando credenciales...');
+          console.warn('No autorizado / Sesión expirada. Limpiando credenciales y recargando...');
           localStorage.removeItem('healthgrid_token');
-          // window.location.href = '/login'; // Descomentar al implementar login real
+          window.location.reload();
           break;
         case 403:
           console.error('Acceso prohibido. No cuenta con los permisos requeridos.');

@@ -28,6 +28,19 @@ const mapEstadoToFrontend = (estado) => {
   return estado; // 'En triage', 'Ausente'
 };
 
+const mapTipoAtencion = (tipoAtencion, idTurnoM2) => {
+  if (!tipoAtencion) {
+    return idTurnoM2 ? 'Consultorio' : 'Guardia';
+  }
+  const mapa = {
+    consultorio: 'Consultorio',
+    guardia: 'Guardia',
+    cirugia: 'Cirugía',
+    demanda_espontanea: 'Demanda Espontánea'
+  };
+  return mapa[tipoAtencion.toString().trim().toLowerCase()] || tipoAtencion;
+};
+
 const mapTurnoRealToFrontend = (turnoReal) => {
   // Manejo de la información de paciente que manda el backend
   const idPacienteRaw = turnoReal.id_paciente;
@@ -49,7 +62,7 @@ const mapTurnoRealToFrontend = (turnoReal) => {
     motivo: turnoReal.motivo || '-',
     hora_llegada: turnoReal.fecha_llegada,
     horario_turno: turnoReal.fecha_turno,
-    tipo_atencion: turnoReal.id_turno_m2 ? 'Consultorio' : 'Guardia',
+    tipo_atencion: mapTipoAtencion(turnoReal.tipo_atencion, turnoReal.id_turno_m2),
     sector: turnoReal.id_turno_m2 ? 'Cardiología' : 'Clínica Médica', // Fallbacks visuales
     consultorio: turnoReal.consultorio,
     paciente: {

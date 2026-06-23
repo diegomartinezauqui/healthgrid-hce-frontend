@@ -79,6 +79,39 @@ export const pacienteService = {
   },
 
   /**
+   * Registra/abre un nuevo episodio clínico para el paciente en el backend HCE.
+   */
+  crearEpisodio: async (core_patient_id, tipo, diagnosticoPrincipal = '') => {
+    if (useMocks) {
+      return {
+        id_episodio: Date.now(),
+        tipo: tipo || 'consulta-externa',
+        estado: 'open',
+        id_sede: 3,
+        fecha_apertura: new Date().toISOString(),
+        fecha_cierre: null,
+        id_medico_responsable: 42
+      };
+    }
+
+    try {
+      const cleanId = core_patient_id.replace('core-', '').replace(/^0+/, '');
+      const payload = {
+        tipo: tipo || 'consulta-externa',
+        estado: 'open',
+        id_sede: 3,
+        diagnostico_principal: diagnosticoPrincipal || 'Nuevo episodio clínico'
+      };
+
+      const response = await api.post(`/patients/${cleanId}/episodes`, payload);
+      return response;
+    } catch (error) {
+      console.error(`[PacienteService] Error al crear episodio para paciente ${core_patient_id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Cierra un episodio médico (Dar de alta).
    */
   cerrarEpisodio: async (core_patient_id, id_episodio) => {
@@ -108,23 +141,30 @@ export const pacienteService = {
       console.log(`[PacienteService] Respuesta cruda de episodios desde el backend para paciente ${core_patient_id}:`, JSON.stringify(response, null, 2));
       
       if (response && Array.isArray(response.episodios)) {
-        const mapped = response.episodios.map(ep => {
+        // Ordenamos por fecha de apertura (de más antiguo a más nuevo) para asignar números correlativos coherentes
+        const sorted = [...response.episodios].sort((a, b) => new Date(a.fecha_apertura) - new Date(b.fecha_apertura));
+        const mapped = sorted.map((ep, index) => {
           const mappedEp = {
             id: ep.id_episodio,
             id_episodio: ep.id_episodio,
+            numero: index + 1, // Asignamos número correlativo coherente
             tipoEpisodio: ep.tipo,
             estado: ep.estado === 'open' ? 'abierto' : 'cerrado',
             id_sede: ep.id_sede,
             fechaApertura: ep.fecha_apertura,
             fechaAlta: ep.fecha_cierre,
             medico: ep.id_medico_responsable,
+            diagnosticoPrincipal: ep.diagnostico_principal || '',
+            cantEvoluciones: ep.cant_evoluciones || 0,
+            cantRecetas: ep.cant_recetas || 0,
+            cantEstudios: ep.cant_estudios || 0,
             evolucionesData: [],
             recetasData: [],
             estudiosData: [],
             solicitudesPaseData: [],
             solicitudesInternacionData: []
           };
-          console.log(`[PacienteService] Episodio #${ep.id_episodio} - Mapeando estado backend '${ep.estado}' -> frontend '${mappedEp.estado}'`);
+          console.log(`[PacienteService] Episodio #${ep.id_episodio} - Mapeando estado backend '${ep.estado}' -> frontend '${mappedEp.estado}' (Número correlativo: ${mappedEp.numero}, Diagnóstico: ${mappedEp.diagnosticoPrincipal})`);
           return mappedEp;
         });
         console.log(`[PacienteService] Lista total de episodios mapeados para paciente ${core_patient_id}:`, mapped);
@@ -148,21 +188,52 @@ export const pacienteService = {
       const cleanId = core_patient_id.replace('core-', '').replace(/^0+/, '');
       const response = await api.get(`/patients/${cleanId}/episodes/${id_episodio}/evoluciones`);
       if (response && Array.isArray(response.evoluciones)) {
-        return response.evoluciones.map(ev => {
-          const parts = (ev.contenido || '').split('\n');
-          return {
-            id: ev.id_evolucion,
-            id_evolucion: ev.id_evolucion,
-            fecha: ev.fecha,
-            profesional: `Profesional #${ev.id_profesional}`,
-            rol: 'Médico',
-            diagnostico: '',
-            subjetivo: parts[0] || '',
-            objetivo: parts[1] || '',
-            analisis: parts[2] || '',
-            plan: '',
-            es_notificable: false
-          };
+        // Ordenamos de más antiguas a más nuevas para asignar números correlativos coherentes
+        const sorted = [...response.evoluciones].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        return sorted.map((ev, index) => {
+          let parsed = null;
+          try {
+            parsed = JSON.parse(ev.contenido);
+          } catch (e) {
+            // No es un JSON string (es texto plano antiguo)
+          }
+
+          if (parsed && typeof parsed === 'object') {
+            return {
+              id: ev.id_evolucion,
+              id_evolucion: ev.id_evolucion,
+              numero: index + 1, // Asignamos número correlativo coherente
+              fecha: ev.fecha,
+              fechaHora: parsed.fechaHora || ev.fecha,
+              profesional: parsed.profesional || `Profesional #${ev.id_profesional}`,
+              tipoConsulta: parsed.tipoConsulta || 'consulta_control',
+              motivoEstado: parsed.motivoEstado || '',
+              diagnostico: parsed.diagnostico || '',
+              planTratamiento: parsed.planTratamiento || '',
+              observacionesAdicionales: parsed.observacionesAdicionales || '',
+              es_notificable: false
+            };
+          } else {
+            // Fallback de texto plano
+            const parts = (ev.contenido || '').split('\n');
+            return {
+              id: ev.id_evolucion,
+              id_evolucion: ev.id_evolucion,
+              numero: index + 1, // Asignamos número correlativo coherente
+              fecha: ev.fecha,
+              fechaHora: ev.fecha,
+              profesional: `Profesional #${ev.id_profesional}`,
+              rol: 'Médico',
+              tipoConsulta: 'consulta_control',
+              diagnostico: '',
+              subjetivo: parts[0] || '',
+              objetivo: parts[1] || '',
+              analisis: parts[2] || '',
+              plan: '',
+              motivoEstado: ev.contenido || '',
+              es_notificable: false
+            };
+          }
         });
       }
       return [];
@@ -173,7 +244,7 @@ export const pacienteService = {
   },
 
   /**
-   * Obtiene todas las recetas de un paciente.
+   * Obtiene todas las recetas de un paciente desde el backend de HCE.
    */
   obtenerRecetas: async (core_patient_id) => {
     if (useMocks) return null;
@@ -190,11 +261,13 @@ export const pacienteService = {
           fecha: rec.fecha_creacion || new Date().toISOString(),
           medicamentos: Array.isArray(rec.items) ? rec.items.map((item, idx) => ({
             id: item.id_receta_item || idx,
+            nombre: item.medicamento, // Mapeado para compatibilidad con el frontend
             medicamento: item.medicamento,
             presentacion: item.presentacion,
             dosis: item.dosis,
             duracion: item.duracion,
-            indicaciones: item.indicaciones
+            indicaciones: item.indicaciones,
+            cantidad: item.cantidad || 1
           })) : []
         }));
       }
@@ -229,40 +302,59 @@ export const pacienteService = {
   /**
    * Registra una evolución médica en un episodio clínico.
    */
-  guardarEvolucion: async (id_episodio, evolucion) => {
-    if (useMocks) return true;
+  guardarEvolucion: async (core_patient_id, id_episodio, evolucion) => {
+    if (useMocks) return { id_evolucion: Date.now() };
 
     try {
-      await api.post(`/episodes/${id_episodio}/evoluciones`, {
-        descripcion: evolucion.subjetivo + '\n' + evolucion.objetivo + '\n' + evolucion.analisis,
-        diagnostico: evolucion.plan,
-        es_notificable: evolucion.es_notificable || false
-      });
-      return true;
+      const cleanId = core_patient_id.replace('core-', '').replace(/^0+/, '');
+      
+      // Armamos el payload estructurado como JSON string en el campo 'contenido'
+      const payload = {
+        contenido: JSON.stringify({
+          tipoConsulta: evolucion.tipoConsulta || 'consulta_control',
+          fechaHora: evolucion.fechaHora || new Date().toISOString(),
+          profesional: evolucion.profesional || 'Dr. Santiago Rossi — Jefe de Guardia',
+          motivoEstado: evolucion.motivoEstado || '',
+          diagnostico: evolucion.diagnostico || '',
+          planTratamiento: evolucion.planTratamiento || '',
+          observacionesAdicionales: evolucion.observacionesAdicionales || ''
+        })
+      };
+
+      const response = await api.post(`/patients/${cleanId}/episodes/${id_episodio}/evoluciones`, payload);
+      return response;
     } catch (error) {
-      console.error(`[PacienteService] Error al guardar evolución en episodio ${id_episodio}:`, error);
+      console.error(`[PacienteService] Error al guardar evolución en episodio ${id_episodio} para paciente ${core_patient_id}:`, error);
       throw error;
     }
   },
 
   /**
-   * Registra una receta digital (prescripción de fármaco).
+   * Registra una receta digital (prescripción de fármaco) en un episodio clínico.
    */
-  emitirReceta: async (receta) => {
-    if (useMocks) return true;
+  emitirReceta: async (core_patient_id, id_episodio, id_evolucion, payload) => {
+    if (useMocks) {
+      return {
+        id_receta: Date.now(),
+        id_paciente: parseInt(core_patient_id.replace('core-', '').replace(/^0+/, '')),
+        id_evolucion: id_evolucion,
+        estado: 'Activa',
+        items: payload.items.map((it, idx) => ({
+          id_item: idx + 1,
+          id_receta: Date.now(),
+          medicamento: it.medicamento,
+          indicaciones: it.indicaciones,
+          cantidad: it.cantidad
+        }))
+      };
+    }
 
     try {
-      await api.post('/recetas', {
-        id_episodio: receta.id_episodio,
-        medicamento: receta.medicamento,
-        presentacion: receta.presentacion,
-        dosis: receta.dosis,
-        duracion: receta.duracion,
-        indicaciones: receta.indicaciones
-      });
-      return true;
+      const cleanId = core_patient_id.replace('core-', '').replace(/^0+/, '');
+      const response = await api.post(`/patients/${cleanId}/episodes/${id_episodio}/evoluciones/${id_evolucion}/recetas`, payload);
+      return response;
     } catch (error) {
-      console.error('[PacienteService] Error al emitir receta digital:', error);
+      console.error(`[PacienteService] Error al emitir receta digital para paciente ${core_patient_id}:`, error);
       throw error;
     }
   },
@@ -328,6 +420,44 @@ export const pacienteService = {
       return [];
     } catch (error) {
       console.error('[PacienteService] Error al listar pacientes cacheados:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtiene la lista de medicamentos (Vademecum Mock) desde el backend.
+   */
+  buscarMedicamentos: async (query) => {
+    if (useMocks) {
+      const meds = [
+        { id: 1, nombre: "Ibuprofeno 600mg", presentacion: "Comprimidos" },
+        { id: 2, nombre: "Paracetamol 500mg", presentacion: "Comprimidos" },
+        { id: 3, nombre: "Amoxicilina 500mg", presentacion: "Comprimidos" },
+        { id: 4, nombre: "Clonazepam 2mg", presentacion: "Comprimidos" },
+        { id: 5, nombre: "Metformina 850mg", presentacion: "Comprimidos" },
+        { id: 6, nombre: "Losartán 50mg", presentacion: "Comprimidos" },
+        { id: 7, nombre: "Atorvastatina 20mg", presentacion: "Comprimidos" },
+        { id: 8, nombre: "Aspirina 100mg", presentacion: "Comprimidos" },
+        { id: 9, nombre: "Omeprazol 20mg", presentacion: "Cápsulas" },
+        { id: 10, nombre: "Enalapril 10mg", presentacion: "Comprimidos" },
+        { id: 11, nombre: "Sildenafil 50mg", presentacion: "Comprimidos" },
+        { id: 12, font: "Diclofenac 75mg", nombre: "Diclofenac 75mg", presentacion: "Comprimidos" },
+        { id: 13, nombre: "Loratadina 10mg", presentacion: "Comprimidos" },
+        { id: 14, nombre: "Levotiroxina 100mcg", presentacion: "Comprimidos" },
+        { id: 15, nombre: "Salbutamol Aerosol", presentacion: "Inhalador" },
+      ];
+      if (query) {
+        const qLower = query.toLowerCase();
+        return meds.filter(m => m.nombre.toLowerCase().includes(qLower));
+      }
+      return meds;
+    }
+
+    try {
+      const response = await api.get('/medicamentos', { params: { q: query } });
+      return response;
+    } catch (error) {
+      console.error(`[PacienteService] Error al buscar medicamentos con query '${query}':`, error);
       throw error;
     }
   }

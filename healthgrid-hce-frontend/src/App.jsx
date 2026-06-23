@@ -274,7 +274,7 @@ function App() {
     setVistaActual('detalle');
   };
 
-  const iniciarAtencion = (turno, pacienteIdx) => {
+  const iniciarAtencion = async (turno, pacienteIdx) => {
     if (turnoActivo && (!turno || turnoActivo.id_espera !== turno.id_espera)) {
       actualizarEstadoTurno(turnoActivo.id_espera, 'En espera');
     }
@@ -282,7 +282,6 @@ function App() {
     
     if (turno) {
       actualizarEstadoTurno(turno.id_espera, 'En atención');
-      setPacienteActualIndex(pacienteIdx);
       
       // Registramos al paciente en la lista de recientes al iniciar su atención
       if (pacientes[pacienteIdx]) {
@@ -317,7 +316,8 @@ function App() {
         return actualizados;
       });
 
-      setVistaActual('detalle');
+      // Cargamos de forma asíncrona todos sus datos (personales y clínicos)
+      await seleccionarPaciente(pacienteIdx);
     } else {
       setPacienteActualIndex(null);
     }
@@ -383,48 +383,102 @@ function App() {
   };
 
   // Agregar episodio a un paciente
-  const agregarEpisodio = (index, episodioData) => {
-    setPacientes(prev => {
-      const actualizados = [...prev];
-      const paciente = actualizados[index];
-      const nuevoEpisodio = {
-        ...episodioData,
-        id: Date.now(),
-        numero: (paciente.episodios?.length || 0) + 1,
-        estado: 'abierto',
-        fechaAlta: null,
-        evolucionesData: [], // Array real de evoluciones
-        recetasData: [],
-        estudiosData: [],
-      };
-      actualizados[index] = {
-        ...paciente,
-        episodios: [...(paciente.episodios || []), nuevoEpisodio],
-      };
-      return actualizados;
-    });
+  const agregarEpisodio = async (index, episodioData) => {
+    const pacienteObj = pacientes[index];
+    if (!pacienteObj) return;
+
+    // Mapeamos el tipo de episodio del frontend al backend HCE
+    const backendTipo = episodioData.tipoEpisodio === 'internado' ? 'internacion' : 'consulta-externa';
+
+    try {
+      console.log(`[App] Abriendo nuevo episodio clínico en backend para paciente ${pacienteObj.core_patient_id}...`);
+      const response = await pacienteService.crearEpisodio(
+        pacienteObj.core_patient_id,
+        backendTipo,
+        episodioData.motivo || 'Nuevo episodio clínico'
+      );
+
+      const realEpisodeId = response?.id_episodio || Date.now();
+
+      setPacientes(prev => {
+        const actualizados = [...prev];
+        const paciente = actualizados[index];
+        const nuevoEpisodio = {
+          ...episodioData,
+          id: realEpisodeId,
+          id_episodio: realEpisodeId,
+          numero: (paciente.episodios?.length || 0) + 1,
+          estado: 'abierto',
+          fechaAlta: null,
+          fechaApertura: response?.fecha_apertura || new Date().toISOString(),
+          evolucionesData: [],
+          recetasData: [],
+          estudiosData: [],
+          solicitudesPaseData: [],
+          solicitudesInternacionData: []
+        };
+        actualizados[index] = {
+          ...paciente,
+          episodios: [...(paciente.episodios || []), nuevoEpisodio],
+        };
+        return actualizados;
+      });
+    } catch (err) {
+      console.error('[App] Error al abrir episodio en el backend:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al abrir episodio',
+        text: 'No se pudo registrar el episodio clínico en el servidor HCE. Por favor, intente de nuevo.'
+      });
+    }
   };
 
   // Agregar evolución a un episodio
-  const agregarEvolucion = (pacienteIdx, episodioIdx, evolucionData) => {
-    setPacientes(prev => {
-      const actualizados = [...prev];
-      const paciente = { ...actualizados[pacienteIdx] };
-      const episodios = [...(paciente.episodios || [])];
-      const episodio = { ...episodios[episodioIdx] };
+  const agregarEvolucion = async (pacienteIdx, episodioIdx, evolucionData) => {
+    const pacienteObj = pacientes[pacienteIdx];
+    const episodioObj = pacienteObj?.episodios?.[episodioIdx];
+    if (!pacienteObj || !episodioObj) return;
 
-      const nuevaEvolucion = {
-        ...evolucionData,
-        id: Date.now(),
-        numero: (episodio.evolucionesData?.length || 0) + 1,
-      };
+    try {
+      const idEpDb = episodioObj.id_episodio || episodioObj.id;
+      console.log(`[App] Guardando evolución en backend para episodio ${idEpDb}...`);
+      const response = await pacienteService.guardarEvolucion(
+        pacienteObj.core_patient_id,
+        idEpDb,
+        evolucionData
+      );
 
-      episodio.evolucionesData = [...(episodio.evolucionesData || []), nuevaEvolucion];
-      episodios[episodioIdx] = episodio;
-      paciente.episodios = episodios;
-      actualizados[pacienteIdx] = paciente;
-      return actualizados;
-    });
+      const realEvolucionId = response?.id_evolucion || Date.now();
+
+      setPacientes(prev => {
+        const actualizados = [...prev];
+        const paciente = { ...actualizados[pacienteIdx] };
+        const episodios = [...(paciente.episodios || [])];
+        const episodio = { ...episodios[episodioIdx] };
+
+        const nuevaEvolucion = {
+          ...evolucionData,
+          id: realEvolucionId,
+          id_evolucion: realEvolucionId,
+          fecha: response?.fecha || new Date().toISOString(),
+          fechaHora: evolucionData.fechaHora || response?.fecha || new Date().toISOString(),
+          numero: (episodio.evolucionesData?.length || 0) + 1,
+        };
+
+        episodio.evolucionesData = [...(episodio.evolucionesData || []), nuevaEvolucion];
+        episodios[episodioIdx] = episodio;
+        paciente.episodios = episodios;
+        actualizados[pacienteIdx] = paciente;
+        return actualizados;
+      });
+    } catch (err) {
+      console.error('[App] Error al guardar evolución en el backend:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al guardar',
+        text: 'No se pudo guardar la evolución clínica en el servidor HCE. Por favor, intente de nuevo.'
+      });
+    }
   };
 
   // Finalizar la atención de un paciente (liberando consultorio y opcionalmente cerrando el episodio)
@@ -543,25 +597,113 @@ function App() {
   };
 
   // Agregar receta a un episodio
-  const agregarReceta = (pacienteIdx, episodioIdx, recetaData) => {
+  const agregarReceta = async (pacienteIdx, episodioIdx, recetaData) => {
+    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+    const paciente = pacientes[pacienteIdx];
+    const episodio = paciente.episodios[episodioIdx];
+
+    let id_evolucion = null;
+    let evolIndice = recetaData.evolucionVinculada;
+
+    if (evolIndice !== '' && evolIndice !== undefined) {
+      const ev = episodio.evolucionesData[parseInt(evolIndice)];
+      if (ev) id_evolucion = ev.id_evolucion;
+    } else if (episodio.evolucionesData && episodio.evolucionesData.length > 0) {
+      // Si no se vinculó una específica, tomamos la última por defecto
+      const ev = episodio.evolucionesData[episodio.evolucionesData.length - 1];
+      if (ev) {
+        id_evolucion = ev.id_evolucion;
+        evolIndice = String(episodio.evolucionesData.length - 1);
+      }
+    }
+
+    if (!useMocks && !id_evolucion) {
+      Swal.fire({
+        title: 'Atención requerida',
+        text: 'Para emitir una receta digital, el episodio debe tener al menos una evolución médica registrada.',
+        icon: 'warning',
+        confirmButtonColor: '#259A5E'
+      });
+      return;
+    }
+
+    // Payload requerido por el backend
+    const payload = {
+      items: (recetaData.medicamentos || []).map(m => ({
+        medicamento: m.nombre,
+        indicaciones: m.indicaciones || '',
+        cantidad: parseInt(m.cantidad) || 1
+      }))
+    };
+
+    let idRecetaReal = Date.now();
+    let id_evolucion_res = id_evolucion;
+    let estadoReal = 'vigente';
+    let itemsReales = (recetaData.medicamentos || []).map((m, idx) => ({
+      id: idx,
+      nombre: m.nombre,
+      indicaciones: m.indicaciones || '',
+      cantidad: parseInt(m.cantidad) || 1
+    }));
+
+    if (!useMocks) {
+      try {
+        const res = await pacienteService.emitirReceta(paciente.core_patient_id, episodio.id_episodio, id_evolucion, payload);
+        if (res) {
+          idRecetaReal = res.id_receta;
+          id_evolucion_res = res.id_evolucion || id_evolucion;
+          estadoReal = res.estado === 'Dispensada' ? 'vencida' : 'vigente';
+          itemsReales = (res.items || []).map((it, idx) => ({
+            id: it.id_item || idx,
+            nombre: it.medicamento,
+            indicaciones: it.indicaciones,
+            cantidad: it.cantidad || 1
+          }));
+        }
+      } catch (err) {
+        console.error('[agregarReceta] Error al emitir receta digital:', err);
+        Swal.fire({
+          title: 'Error al emitir receta',
+          text: 'Ocurrió un error en el servidor al registrar la receta digital.',
+          icon: 'error',
+          confirmButtonColor: '#259A5E'
+        });
+        return;
+      }
+    }
+
     setPacientes(prev => {
       const actualizados = [...prev];
-      const paciente = { ...actualizados[pacienteIdx] };
-      const episodios = [...(paciente.episodios || [])];
-      const episodio = { ...episodios[episodioIdx] };
+      const pac = { ...actualizados[pacienteIdx] };
+      const eps = [...(pac.episodios || [])];
+      const ep = { ...eps[episodioIdx] };
 
       const nuevaReceta = {
-        ...recetaData,
-        id: Date.now(),
-        numero: (episodio.recetasData?.length || 0) + 1,
-        estado: 'vigente',
+        id: idRecetaReal,
+        id_receta: idRecetaReal,
+        id_evolucion: id_evolucion_res,
+        evolucionVinculada: evolIndice,
+        numero: (ep.recetasData?.length || 0) + 1,
+        fecha: new Date().toISOString(),
+        estado: estadoReal,
+        medicamentos: itemsReales,
+        observaciones: recetaData.observaciones || ''
       };
 
-      episodio.recetasData = [...(episodio.recetasData || []), nuevaReceta];
-      episodios[episodioIdx] = episodio;
-      paciente.episodios = episodios;
-      actualizados[pacienteIdx] = paciente;
+      ep.recetasData = [...(ep.recetasData || []), nuevaReceta];
+      ep.cantRecetas = (ep.cantRecetas || 0) + 1; // Incrementamos el contador para que coincida en pantalla
+
+      eps[episodioIdx] = ep;
+      pac.episodios = eps;
+      actualizados[pacienteIdx] = pac;
       return actualizados;
+    });
+
+    Swal.fire({
+      title: 'Receta Emitida',
+      text: 'La receta digital ha sido registrada exitosamente.',
+      icon: 'success',
+      confirmButtonColor: '#259A5E'
     });
   };
 
@@ -727,9 +869,34 @@ function App() {
     const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
     if (!useMocks) {
       try {
-        console.log(`[App] Cargando ficha clínica diferida para ${pacienteObj.core_patient_id}...`);
-        const ficha = await pacienteService.obtenerFicha(pacienteObj.core_patient_id);
-        if (ficha) {
+        console.log(`[App] Cargando datos personales y ficha clínica diferida para ${pacienteObj.core_patient_id}...`);
+        
+        // Consultamos en paralelo datos personales y ficha médica
+        const [datosPersonalesRes, fichaRes] = await Promise.allSettled([
+          pacienteService.obtenerDatosPersonales(pacienteObj.core_patient_id),
+          pacienteService.obtenerFicha(pacienteObj.core_patient_id)
+        ]);
+
+        if (datosPersonalesRes.status === 'fulfilled' && datosPersonalesRes.value) {
+          const dp = datosPersonalesRes.value;
+          pacienteObj = {
+            ...pacienteObj,
+            nombreApellido: dp.nombreApellido || pacienteObj.nombreApellido,
+            dni: dp.dni || pacienteObj.dni,
+            fechaNacimiento: dp.fechaNacimiento || pacienteObj.fechaNacimiento,
+            sexo: dp.sexo || pacienteObj.sexo,
+            telefono: dp.telefono || pacienteObj.telefono,
+            direccion: dp.direccion || pacienteObj.direccion,
+            obraSocial: dp.obraSocial || pacienteObj.obraSocial,
+            numeroHistoriaClinica: pacienteObj.id || pacienteObj.core_patient_id.replace('core-', '').replace(/^0+/, '')
+          };
+        } else {
+          // Asignar al menos la Historia Clínica si falló o no vino de datos personales
+          pacienteObj.numeroHistoriaClinica = pacienteObj.id || pacienteObj.core_patient_id.replace('core-', '').replace(/^0+/, '');
+        }
+
+        if (fichaRes.status === 'fulfilled' && fichaRes.value) {
+          const ficha = fichaRes.value;
           pacienteObj = {
             ...pacienteObj,
             grupoSanguineo: ficha.grupo_sanguineo || 'O+',
@@ -745,13 +912,15 @@ function App() {
           pacienteObj.tieneFichaClinica = false;
         }
       } catch (err) {
-        console.log(`[App] Ficha médica no encontrada en el backend para ${pacienteObj.core_patient_id} (se creará al guardar).`);
+        console.error('[App] Error al cargar los datos del paciente:', err);
         pacienteObj.tieneFichaClinica = false;
-        // Aseguramos estructura básica de arreglos para evitar errores de renderizado
         pacienteObj.consideraciones = [];
         pacienteObj.antecedentes = [];
         pacienteObj.episodios = [];
       }
+    } else {
+      // Si estamos en Mocks, igual definimos numeroHistoriaClinica
+      pacienteObj.numeroHistoriaClinica = pacienteObj.id || pacienteObj.core_patient_id.replace('core-', '').replace(/^0+/, '');
     }
 
     // Registramos en el historial de vistos recientemente

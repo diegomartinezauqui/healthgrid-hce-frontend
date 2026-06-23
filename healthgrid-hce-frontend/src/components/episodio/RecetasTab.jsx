@@ -40,7 +40,9 @@ const RecetasTab = ({
             const evolVinculada =
               rec.evolucionVinculada !== '' && rec.evolucionVinculada !== undefined
                 ? evoluciones[parseInt(rec.evolucionVinculada)]
-                : null;
+                : (rec.id_evolucion
+                  ? evoluciones.find(e => e.id_evolucion === rec.id_evolucion)
+                  : null);
 
             return (
               <div key={rec.id || i} className="receta-card">
@@ -67,7 +69,14 @@ const RecetasTab = ({
                       <div key={mi} className="receta-card__medicamento">
                         <div className="receta-card__med-icon">✓</div>
                         <div className="receta-card__med-info">
-                          <span className="receta-card__med-nombre">{med.nombre}</span>
+                          <span className="receta-card__med-nombre">
+                            {med.nombre}
+                            {med.cantidad && med.cantidad > 1 && (
+                              <span style={{ marginLeft: '6px', padding: '2px 6px', backgroundColor: '#E8F5E9', color: '#2E7D32', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', display: 'inline-block', verticalAlign: 'middle' }}>
+                                x{med.cantidad}
+                              </span>
+                            )}
+                          </span>
                           {med.indicaciones && (
                             <span className="receta-card__med-indicacion">{med.indicaciones}</span>
                           )}
@@ -93,12 +102,14 @@ const RecetasTab = ({
                       </span>
                     )}
                   </div>
-                  <button
-                    className="receta-card__btn-estado"
-                    onClick={() => onCambiarEstadoReceta(pacienteIndex, episodioIndex, i)}
-                  >
-                    Cambiar estado
-                  </button>
+                  {import.meta.env.VITE_USE_MOCKS === 'true' && (
+                    <button
+                      className="receta-card__btn-estado"
+                      onClick={() => onCambiarEstadoReceta(pacienteIndex, episodioIndex, i)}
+                    >
+                      Cambiar estado
+                    </button>
+                  )}
                 </div>
               </div>
             );

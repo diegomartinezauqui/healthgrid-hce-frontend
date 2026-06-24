@@ -9,6 +9,7 @@ import PedidoEstudioDetalle from './PedidoEstudioDetalle';
 import PacienteHeaderCard from '../components/paciente/PacienteHeaderCard';
 import PacienteFichaTab from '../components/paciente/PacienteFichaTab';
 import PacienteEpisodiosTab from '../components/paciente/PacienteEpisodiosTab';
+import { pacienteService } from '../services/pacienteService';
 import '../styles/PacienteDetalle.css';
 
 // Helpers
@@ -92,11 +93,15 @@ const PacienteDetalle = ({
   onAgregarReceta,
   onCambiarEstadoReceta,
   onAgregarEstudio,
+  onVerEstudio,
   onAgregarSolicitudPase,
   onAgregarSolicitudInternacion,
   onAgregarResultadoEstudio,
   onSiguiente,
   turnoActivo,
+  onFinalizarAtencion,
+  onActualizarEpisodios,
+  onActualizarDetalleEpisodio,
 }) => {
   const [tabActiva, setTabActiva] = useState('ficha');
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
@@ -108,20 +113,32 @@ const PacienteDetalle = ({
   const searchContainerRef = useRef(null);
 
   const handleBusquedaTopbar = (e) => {
-    const val = e.target.value;
-    setBusquedaTopbar(val);
-    const t = val.trim().toLowerCase();
-    if (!t) { setSugerencias([]); return; }
-    setSugerencias(
-      pacientes
-        .map((p, idx) => ({ ...p, _index: idx }))
-        .filter(p =>
-          (p.dni || '').toLowerCase().includes(t) ||
-          (p.nombreApellido || '').toLowerCase().includes(t) ||
-          (p.numeroHistoriaClinica || '').toLowerCase().includes(t)
-        )
-    );
+    setBusquedaTopbar(e.target.value);
   };
+
+  // Filtrado de sugerencias debounced para optimizar renderizado al escribir
+  useEffect(() => {
+    const t = busquedaTopbar.trim().toLowerCase();
+    if (!t) {
+      setSugerencias([]);
+      return;
+    }
+
+    const handler = setTimeout(() => {
+      setSugerencias(
+        pacientes
+          .map((p, idx) => ({ ...p, _index: idx }))
+          .filter(p =>
+            (p.dni || '').toLowerCase().includes(t) ||
+            (p.nombreApellido || '').toLowerCase().includes(t) ||
+            (p.numeroHistoriaClinica || '').toLowerCase().includes(t)
+          )
+      );
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [busquedaTopbar, pacientes]);
+
 
   const seleccionarSugerencia = (p) => {
     setBusquedaTopbar('');
@@ -219,6 +236,31 @@ const PacienteDetalle = ({
       setEstudioSeleccionadoIdx(null);
     }
   };
+
+  const [loadingEpisodios, setLoadingEpisodios] = useState(false);
+
+  // Carga diferida de episodios desde el backend al activar la pestaña "Episodios"
+  useEffect(() => {
+    const cargarEpisodiosReal = async () => {
+      const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+      if (useMocks || tabActiva !== 'episodios') return;
+
+      setLoadingEpisodios(true);
+      try {
+        const eps = await pacienteService.obtenerEpisodios(paciente.core_patient_id);
+        if (onActualizarEpisodios && eps) {
+          onActualizarEpisodios(pacienteIndex, eps);
+        }
+      } catch (err) {
+        console.error('[PacienteDetalle] Error cargando episodios diferidos:', err);
+      } finally {
+        setLoadingEpisodios(false);
+      }
+    };
+    cargarEpisodiosReal();
+  }, [tabActiva, paciente.core_patient_id, pacienteIndex]);
+
+  const esTurnoActivo = turnoActivo && turnoActivo.paciente?.core_patient_id === paciente.core_patient_id;
 
   // Episodios del paciente
   const episodios = paciente.episodios || [];
@@ -330,11 +372,17 @@ const PacienteDetalle = ({
           <>
             {/* Sub-vista: Lista de episodios */}
             {subVistaEpisodio === 'lista' && (
-              <PacienteEpisodiosTab
-                episodios={episodios}
-                onAbrirEpisodio={abrirEpisodio}
-                onNuevoEpisodioClick={() => setMostrarModalEpisodio(true)}
-              />
+              loadingEpisodios ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#11352A', fontWeight: 'bold' }}>
+                  Cargando episodios desde la Historia Clínica...
+                </div>
+              ) : (
+                <PacienteEpisodiosTab
+                  episodios={episodios}
+                  onAbrirEpisodio={abrirEpisodio}
+                  onNuevoEpisodioClick={() => setMostrarModalEpisodio(true)}
+                />
+              )
             )}
 
             {/* Sub-vista: Detalle de un episodio */}
@@ -355,6 +403,10 @@ const PacienteDetalle = ({
                 onAgregarSolicitudPase={onAgregarSolicitudPase}
                 onAgregarSolicitudInternacion={onAgregarSolicitudInternacion}
                 onAgregarResultadoEstudio={onAgregarResultadoEstudio}
+                esTurnoActivo={esTurnoActivo}
+                onFinalizarAtencion={onFinalizarAtencion}
+                turnoActivo={turnoActivo}
+                onActualizarDetalleEpisodio={onActualizarDetalleEpisodio}
               />
             )}
 

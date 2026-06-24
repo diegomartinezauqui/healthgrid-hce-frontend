@@ -113,6 +113,31 @@
   letter-spacing: 1.5px;
   color: #11352A;
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Asterisco rojo indicador de sección obligatoria */
+.ficha-required-asterisk {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  animation: pulseAsterisk 2s ease-in-out infinite;
+}
+
+/* Asterisco rojo para campo individual obligatorio */
+.ficha-required-field-asterisk {
+  color: #e74c3c;
+  font-size: 0.65rem;
+  margin-left: 3px;
+  vertical-align: super;
+  flex-shrink: 0;
+}
+
+@keyframes pulseAsterisk {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .ficha-section__subtitulo {
@@ -186,6 +211,8 @@
   font-weight: 600;
   color: #2D3B34;
   margin-bottom: 5px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .ficha-input {

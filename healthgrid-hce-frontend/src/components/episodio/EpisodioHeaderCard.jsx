@@ -12,6 +12,8 @@ const EpisodioHeaderCard = ({
   episodio,
   onDarDeAlta,
   onSolicitarInternacionClick,
+  esTurnoActivo,
+  onTerminarConsultaClick,
 }) => {
   if (!episodio) return null;
 
@@ -49,6 +51,14 @@ const EpisodioHeaderCard = ({
       <div className="ep-detalle__card-right">
         {esAbierto && (
           <>
+            {esTurnoActivo && (
+              <button className="ep-detalle__btn ep-detalle__btn--terminar" onClick={onTerminarConsultaClick}>
+                <FiCheckCircle
+                  style={{ marginRight: '6px', verticalAlign: 'middle', fontSize: '1.1rem' }}
+                />{' '}
+                Terminar Consulta
+              </button>
+            )}
             <button className="ep-detalle__btn ep-detalle__btn--alta" onClick={onDarDeAlta}>
               <FiCheckCircle
                 style={{ marginRight: '6px', verticalAlign: 'middle', fontSize: '1.1rem' }}

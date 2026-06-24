@@ -251,3 +251,47 @@
     flex-direction: column;
   }
 }
+
+/* Dropdown de Sugerencias del Vademecum */
+.receta-form__dropdown {
+  position: absolute;
+  top: 42px; /* Justo debajo de la fila del input de búsqueda */
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border: 1px solid #D4DAD7;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.receta-form__dropdown-item {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: #333;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.15s ease;
+}
+
+.receta-form__dropdown-item:not(:last-child) {
+  border-bottom: 1px solid #F0F2F1;
+}
+
+.receta-form__dropdown-item:hover {
+  background-color: #F0F9F4;
+}
+
+.receta-form__dropdown-item-nombre {
+  font-weight: 600;
+  color: #11352A;
+}
+
+.receta-form__dropdown-item-presentacion {
+  font-size: 0.78rem;
+  color: #666;
+}

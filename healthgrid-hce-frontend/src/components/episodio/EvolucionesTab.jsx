@@ -25,7 +25,21 @@ const EvolucionesTab = ({
   // Unificar eventos
   const allEvents = [
     ...evoluciones.map((ev, i) => ({ ...ev, _timelineType: 'evolucion', _originalIndex: i, _sortDate: new Date(ev.fechaHora || ev.fecha) })),
-    ...recetas.map((r, i) => ({ ...r, _timelineType: 'receta', _originalIndex: i, _sortDate: new Date(r.fecha) })),
+    ...recetas.map((r, i) => {
+      // Intentar encontrar el profesional de la evolución vinculada si r no tiene profesional
+      let profesional = r.profesional;
+      if (!profesional) {
+        const ev = evoluciones.find(e => e.id_evolucion === r.id_evolucion || String(e._originalIndex) === String(r.evolucionVinculada));
+        if (ev) profesional = ev.profesional;
+      }
+      return {
+        ...r,
+        profesional: profesional || 'Médico Responsable',
+        _timelineType: 'receta',
+        _originalIndex: i,
+        _sortDate: new Date(r.fecha)
+      };
+    }),
     ...estudios.map((e, i) => ({ ...e, _timelineType: 'estudio', _originalIndex: i, _sortDate: new Date(e.fecha) })),
     ...pases.map((p, i) => ({ ...p, _timelineType: 'pase', _originalIndex: i, _sortDate: new Date(p.fecha) })),
     ...internaciones.map((int, i) => ({ ...int, _timelineType: 'internacion', _originalIndex: i, _sortDate: new Date(int.fecha) }))
@@ -56,7 +70,14 @@ const EvolucionesTab = ({
   const getSubtitle = (ev) => {
     switch(ev._timelineType) {
       case 'evolucion': return ev.motivoEstado?.length > 150 ? ev.motivoEstado.substring(0, 150) + '...' : ev.motivoEstado;
-      case 'receta': return ev.observaciones ? `Obs: ${ev.observaciones}` : 'Sin observaciones';
+      case 'receta': {
+        const medsStr = (ev.medicamentos || [])
+          .filter(m => m.nombre)
+          .map(m => `${m.nombre}${m.cantidad && m.cantidad > 1 ? ` x${m.cantidad}` : ''}${m.indicaciones ? ` (${m.indicaciones})` : ''}`)
+          .join(' · ');
+        const obsStr = ev.observaciones ? ` [Obs: ${ev.observaciones}]` : '';
+        return medsStr ? `${medsStr}${obsStr}` : 'Sin medicamentos prescritos';
+      }
       case 'estudio': return ev.diagnosticoPresuntivo ? `Diagnóstico: ${ev.diagnosticoPresuntivo}` : '';
       case 'pase': return ev.motivoDerivacion ? `Motivo: ${ev.motivoDerivacion}` : '';
       case 'internacion': return ev.motivoInternacion ? `Motivo: ${ev.motivoInternacion}` : '';

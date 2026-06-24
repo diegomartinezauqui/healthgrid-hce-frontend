@@ -39,9 +39,9 @@ const PacienteEpisodiosTab = ({
           episodios.map((ep, i) => {
             const esAbierto = ep.estado === 'abierto';
             const esInternado = ep.tipoEpisodio === 'internado';
-            const numEvol = ep.evolucionesData?.length || 0;
-            const numRecetas = ep.recetasData?.length || 0;
-            const numEstudios = ep.estudiosData?.length || 0;
+            const numEvol = ep.cantEvoluciones !== undefined && (ep.evolucionesData?.length || 0) === 0 ? ep.cantEvoluciones : (ep.evolucionesData?.length || 0);
+            const numRecetas = ep.cantRecetas !== undefined && (ep.recetasData?.length || 0) === 0 ? ep.cantRecetas : (ep.recetasData?.length || 0);
+            const numEstudios = ep.cantEstudios !== undefined && (ep.estudiosData?.length || 0) === 0 ? ep.cantEstudios : (ep.estudiosData?.length || 0);
             return (
               <div
                 key={ep.id || i}
@@ -59,7 +59,9 @@ const PacienteEpisodiosTab = ({
                 </div>
                 <div className="episodio-item__info">
                   <div className="episodio-item__titulo-row">
-                    <span className="episodio-item__titulo">Episodio #{ep.numero}</span>
+                    <span className="episodio-item__titulo">
+                      Episodio #{ep.numero}{ep.diagnosticoPrincipal ? ` — ${ep.diagnosticoPrincipal}` : ''}
+                    </span>
                     <span
                       className={`episodio-item__tipo-badge ${
                         esInternado

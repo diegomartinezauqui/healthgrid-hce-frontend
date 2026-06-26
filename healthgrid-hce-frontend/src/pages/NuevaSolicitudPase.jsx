@@ -4,20 +4,7 @@ import Swal from 'sweetalert2';
 import ModalWrapper from '../components/ModalWrapper';
 import '../styles/NuevaSolicitudPase.css';
 
-const sectores = [
-  'Piso 1 — Clínica General',
-  'Piso 2 — Clínica Médica',
-  'Piso 3 — Cirugía',
-  'Piso 4 — Pediatría',
-  'UCI — Unidad de Cuidados Intensivos',
-  'UTI — Terapia Intensiva',
-  'Guardia — Observación',
-  'Quirófano',
-  'Maternidad',
-  'Cardiología',
-  'Neurología',
-  'Traumatología',
-];
+import { SECTORES_DESTINO as sectores } from '../utils/helpers';
 
 const NuevaSolicitudPase = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC }) => {
   const {

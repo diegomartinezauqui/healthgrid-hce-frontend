@@ -2,22 +2,43 @@
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import ModalWrapper from '../components/ModalWrapper';
+import { CATALOGO_LABORATORIO_MOCK } from '../services/ordenService';
 import '../styles/NuevoPedidoEstudio.css';
 import { tipoConsultaLabel, formatearFechaCorta } from '../utils/helpers';
 
 const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evoluciones }) => {
-  const { register, handleSubmit } = useForm({
+  const { register, handleSubmit, watch } = useForm({
     defaultValues: {
       tipoEstudio: 'laboratorio',
       fechaSolicitud: new Date().toISOString().slice(0, 16),
       evolucionAsociada: '',
       descripcion: '',
       estado: 'pendiente',
+      subtipo: 'RADIOLOGY',
+      estudio_ids: []
     }
   });
 
+  const tipoEstudio = watch('tipoEstudio');
+
   const onSubmit = (data) => {
-    onGuardar(data);
+    const estudio_ids_ints = (data.estudio_ids || []).map(id => parseInt(id, 10));
+
+    if (data.tipoEstudio === 'laboratorio' && estudio_ids_ints.length === 0) {
+      Swal.fire({
+        title: 'Selección requerida',
+        text: 'Por favor, selecciona al menos un estudio bioquímico del catálogo.',
+        icon: 'warning',
+        confirmButtonColor: '#259A5E'
+      });
+      return;
+    }
+
+    onGuardar({
+      ...data,
+      estudio_ids: estudio_ids_ints
+    });
+
     Swal.fire({
       title: '¡Pedido emitido!',
       text: 'El pedido de estudio ha sido registrado exitosamente.',
@@ -67,6 +88,44 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
             </div>
           </div>
 
+          {/* Catálogo de Laboratorio Bioquímico M4 (Solo si es laboratorio) */}
+          {tipoEstudio === 'laboratorio' && (
+            <div className="pedido-form__field">
+              <label className="pedido-form__label" style={{ marginBottom: '8px', color: '#11352A' }}>
+                Catálogo de Estudios Bioquímicos (M4)
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', padding: '10px 14px', backgroundColor: '#FAFBFA', border: '1px solid #E8ECE9', borderRadius: '8px' }}>
+                {CATALOGO_LABORATORIO_MOCK.map((est) => (
+                  <label key={est.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer', color: '#444', fontWeight: '500' }}>
+                    <input
+                      type="checkbox"
+                      value={est.id}
+                      {...register('estudio_ids')}
+                    />
+                    {est.nombre}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Modalidad de Imágenes (Solo si es imágenes) */}
+          {tipoEstudio === 'imagenes' && (
+            <div className="pedido-form__field">
+              <label className="pedido-form__label">Modalidad de Imagen (M5)</label>
+              <select className="pedido-form__input pedido-form__select" {...register('subtipo')}>
+                <option value="RADIOLOGY">Radiografía (RADIOLOGY)</option>
+                <option value="RESONANCE">Resonancia (RESONANCE)</option>
+                <option value="ECOGRAFY">Ecografía (ECOGRAFY)</option>
+                <option value="TOMOGRAPHY">Tomografía (TOMOGRAPHY)</option>
+                <option value="MAMMOGRAPHY">Mamografía (MAMMOGRAPHY)</option>
+                <option value="DENSITOMETRY">Densitometría (DENSITOMETRY)</option>
+                <option value="ECODOPPLER">Ecodoppler (ECODOPPLER)</option>
+                <option value="ENDOSCOPY">Endoscopía (ENDOSCOPY)</option>
+              </select>
+            </div>
+          )}
+
           {/* Evolución asociada */}
           <div className="pedido-form__field">
             <label className="pedido-form__label">Evolución asociada</label>
@@ -82,10 +141,10 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
 
           {/* Descripción del pedido */}
           <div className="pedido-form__field">
-            <label className="pedido-form__label">Descripción del pedido</label>
+            <label className="pedido-form__label">Descripción / Indicaciones del pedido</label>
             <textarea
               className="pedido-form__textarea"
-              placeholder="Detalle de los estudios solicitados..."
+              placeholder="Detalle adicional, preparación o indicaciones clínicas..."
               rows={4}
               {...register('descripcion')}
             />

@@ -3,20 +3,8 @@ import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import ModalWrapper from '../components/ModalWrapper';
 import '../styles/SolicitarInternacion.css';
-
-const sectores = [
-  'Piso 1 — Clínica General',
-  'Piso 2 — Clínica Médica',
-  'Piso 3 — Cirugía',
-  'Piso 4 — Pediatría',
-  'UCI — Unidad de Cuidados Intensivos',
-  'UTI — Unidad de Terapia Intensiva',
-  'Guardia — Observación',
-  'Maternidad',
-  'Cardiología',
-  'Neurología',
-  'Traumatología',
-];
+import { SECTORES_DESTINO as sectores } from '../utils/helpers';
+import '../styles/SolicitarInternacion.css';
 
 const SolicitarInternacion = ({ onCerrar, onEnviar, pacienteNombre, pacienteHC }) => {
   const {
@@ -26,6 +14,7 @@ const SolicitarInternacion = ({ onCerrar, onEnviar, pacienteNombre, pacienteHC }
   } = useForm({
     defaultValues: {
       sector: 'Piso 2 — Clínica Médica',
+      prioridad: 'Media',
       motivo: '',
       fechaHoraSugerida: new Date().toISOString().slice(0, 16),
     },
@@ -79,14 +68,27 @@ const SolicitarInternacion = ({ onCerrar, onEnviar, pacienteNombre, pacienteHC }
             {errors.sector && <span className="intern-form__error">{errors.sector.message}</span>}
           </div>
 
-          {/* Prioridad / Motivo del pase */}
+          {/* Prioridad */}
           <div className="intern-form__field">
-            <label className="intern-form__label">Prioridad / Motivo del pase</label>
+            <label className="intern-form__label">Prioridad</label>
+            <select
+              className="intern-form__input intern-form__select"
+              {...register('prioridad', { required: true })}
+            >
+              <option value="Baja">Baja</option>
+              <option value="Media">Media</option>
+              <option value="Alta">Alta</option>
+            </select>
+          </div>
+
+          {/* Motivo */}
+          <div className="intern-form__field">
+            <label className="intern-form__label">Motivo</label>
             <textarea
               className={`intern-form__textarea ${errors.motivo ? 'intern-form__input--error' : ''}`}
-              placeholder="Ej: Post-operatorio inmediato, requerimiento de mayor complejidad, pase a sala común por mejoría..."
+              placeholder="Ej: Criterio de neumonía grave, requerimiento de oxigenoterapia..."
               rows={4}
-              {...register('motivo', { required: 'Ingresá el motivo del pase' })}
+              {...register('motivo', { required: 'Ingresá el motivo' })}
             />
             {errors.motivo && <span className="intern-form__error">{errors.motivo.message}</span>}
           </div>

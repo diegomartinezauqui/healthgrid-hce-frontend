@@ -59,21 +59,7 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
       errores.push('Contacto de Emergencia');
     }
 
-    // Validar consideraciones: al menos una fila debe tener tipo y descripción
-    const consideracionesValidas = (data.consideraciones || []).some(
-      c => c.tipo && c.tipo.trim() !== '' && c.descripcion && c.descripcion.trim() !== ''
-    );
-    if (!consideracionesValidas) {
-      errores.push('Consideraciones (tipo y descripción)');
-    }
-
-    // Validar antecedentes: al menos una fila debe tener tipo y nombre/descripción
-    const antecedentesValidos = (data.antecedentes || []).some(
-      a => a.tipo && a.tipo.trim() !== '' && a.nombreDescripcion && a.nombreDescripcion.trim() !== ''
-    );
-    if (!antecedentesValidos) {
-      errores.push('Antecedentes (tipo y descripción)');
-    }
+    // Consideraciones y antecedentes son OPCIONALES: el paciente puede no tener.
 
     return errores;
   };
@@ -233,11 +219,10 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
             </div>
           </section>
 
-          {/* ─── SECCIÓN 3: CONSIDERACIONES (OBLIGATORIO) ─── */}
+          {/* ─── SECCIÓN 3: CONSIDERACIONES (OPCIONAL) ─── */}
           <section className="ficha-section">
             <h2 className="ficha-section__titulo">
-              CONSIDERACIONES (OBLIGATORIO)
-              <RiAsterisk className="ficha-required-asterisk" />
+              CONSIDERACIONES (OPCIONAL)
             </h2>
             <p className="ficha-section__subtitulo">
               Registro de alergias, implantes, condiciones, contraindicaciones, etc.
@@ -293,11 +278,10 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
             </button>
           </section>
 
-          {/* ─── SECCIÓN 4: ANTECEDENTES (OBLIGATORIO) ─── */}
+          {/* ─── SECCIÓN 4: ANTECEDENTES (OPCIONAL) ─── */}
           <section className="ficha-section">
             <h2 className="ficha-section__titulo">
-              ANTECEDENTES (OBLIGATORIO)
-              <RiAsterisk className="ficha-required-asterisk" />
+              ANTECEDENTES (OPCIONAL)
             </h2>
             <p className="ficha-section__subtitulo">
               Registro de antecedentes quirúrgicos, familiares, patológicos, hábitos e internaciones.

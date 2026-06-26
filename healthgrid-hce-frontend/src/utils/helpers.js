@@ -1,6 +1,38 @@
 // src/utils/helpers.js
 
 /**
+ * Sectores / servicios de destino para solicitudes de internación y pase de cama.
+ * Lista única compartida por ambos formularios para que no diverjan.
+ */
+export const SECTORES_DESTINO = [
+  'Piso 1 — Clínica General',
+  'Piso 2 — Clínica Médica',
+  'Piso 3 — Cirugía',
+  'Piso 4 — Pediatría',
+  'UCI — Unidad de Cuidados Intensivos',
+  'UTI — Unidad de Terapia Intensiva',
+  'Guardia — Observación',
+  'Quirófano',
+  'Maternidad',
+  'Cardiología',
+  'Neurología',
+  'Traumatología',
+];
+
+/**
+ * Deriva el número de Historia Clínica a partir del core_patient_id.
+ * El HC del paciente es su id numérico (ej: "core-002" → "2"). El backend no
+ * persiste un numeroHistoriaClinica aparte, así que el id ES la HC.
+ * @param {string|number} corePatientId
+ * @returns {string}
+ */
+export const formatearNumeroHC = (corePatientId) => {
+  if (corePatientId === null || corePatientId === undefined || corePatientId === '') return '—';
+  const limpio = String(corePatientId).replace('core-', '').replace(/^0+/, '');
+  return limpio || '—';
+};
+
+/**
  * Calcula la edad a partir de una fecha de nacimiento
  * @param {string} fechaNacimiento 
  * @returns {number|string}

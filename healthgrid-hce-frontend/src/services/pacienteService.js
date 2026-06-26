@@ -16,7 +16,41 @@ export const pacienteService = {
     try {
       // Limpia el prefijo "core-" y ceros a la izquierda (ej: "core-001" -> "1")
       const cleanId = core_patient_id.replace('core-', '').replace(/^0+/, '');
-      const data = await api.get(`/pacientes/${cleanId}/ficha-medica`);
+      
+      // La ficha es la fuente de existencia. Si 404 -> el paciente aún no tiene ficha.
+      const ficha = await api.get(`/pacientes/${cleanId}/ficha-medica`);
+
+      // Antecedentes y alertas viven en endpoints separados (el backend no los
+      // anida en la ficha). Los traemos en paralelo y los mapeamos a la forma de la UI.
+      const [antRes, alertRes] = await Promise.allSettled([
+        api.get(`/pacientes/${cleanId}/antecedentes`),
+        api.get(`/pacientes/${cleanId}/alertas`),
+      ]);
+
+      const antRaw = antRes.status === 'fulfilled' && Array.isArray(antRes.value) ? antRes.value : [];
+      const alertRaw = alertRes.status === 'fulfilled' && Array.isArray(alertRes.value) ? alertRes.value : [];
+
+      const lower = (s) => (s || '').toString().toLowerCase();
+
+      const data = {
+        ...ficha,
+        // UI espera tipo en minúscula, `nombreDescripcion` y `fecha`
+        antecedentes: antRaw.map(a => ({
+          id: a.id,
+          tipo: lower(a.tipo),
+          nombreDescripcion: a.descripcion,
+          fecha: a.fecha_suceso || null,
+          observaciones: a.observaciones || '',
+        })),
+        // UI espera tipo en minúscula y `descripcion`
+        alertas_clinicas: alertRaw.map(c => ({
+          id: c.id,
+          tipo: lower(c.tipo),
+          descripcion: c.descripcion,
+          severidad: c.severidad,
+        })),
+      };
+
       console.log(`[PacienteService] Ficha médica recuperada del backend para paciente ${core_patient_id}:`, JSON.stringify(data, null, 2));
       return data;
     } catch (error) {
@@ -40,12 +74,12 @@ export const pacienteService = {
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
       };
 
-      // Formatear antecedentes (filtrando los vacíos)
+      // Formatear antecedentes (solo los que tienen descripción; tipo opcional, default Otro)
       const antecedentes = (data.antecedentes || [])
-        .filter(a => a.tipo || a.nombreDescripcion)
+        .filter(a => a.nombreDescripcion && a.nombreDescripcion.trim() !== '')
         .map(a => ({
-          tipo: capitalize(a.tipo),
-          descripcion: a.nombreDescripcion || '-',
+          tipo: a.tipo ? capitalize(a.tipo) : 'Otro',
+          descripcion: a.nombreDescripcion.trim(),
           fecha_suceso: a.fecha || null,
           observaciones: a.observaciones || ''
         }));
@@ -148,7 +182,9 @@ export const pacienteService = {
             id: ep.id_episodio,
             id_episodio: ep.id_episodio,
             numero: index + 1, // Asignamos número correlativo coherente
-            tipoEpisodio: ep.tipo,
+            // Traducimos el vocabulario del backend (consulta-externa/internacion/guardia/cirugia)
+            // al binario que usa la UI (ambulatorio/internado). Inverso del mapeo de escritura.
+            tipoEpisodio: ep.tipo === 'internacion' ? 'internado' : 'ambulatorio',
             estado: ep.estado === 'open' ? 'abierto' : 'cerrado',
             id_sede: ep.id_sede,
             fechaApertura: ep.fecha_apertura,

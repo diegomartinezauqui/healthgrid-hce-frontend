@@ -650,7 +650,7 @@ function App() {
 
     let idRecetaReal = Date.now();
     let id_evolucion_res = id_evolucion;
-    let estadoReal = 'vigente';
+    let estadoReal = 'Activa';
     let itemsReales = (recetaData.medicamentos || []).map((m, idx) => ({
       id: idx,
       nombre: m.nombre,
@@ -664,7 +664,7 @@ function App() {
         if (res) {
           idRecetaReal = res.id_receta;
           id_evolucion_res = res.id_evolucion || id_evolucion;
-          estadoReal = res.estado === 'Dispensada' ? 'vencida' : 'vigente';
+          estadoReal = res.estado || 'Activa';
           itemsReales = (res.items || []).map((it, idx) => ({
             id: it.id_item || idx,
             nombre: it.medicamento,
@@ -719,7 +719,7 @@ function App() {
     });
   };
 
-  // Cambiar estado de receta (vigente <-> vencida)
+  // Cambiar estado de receta (ciclo: Activa -> Dispensada -> Suspendida -> Vencida)
   const cambiarEstadoReceta = (pacienteIdx, episodioIdx, recetaIdx) => {
     setPacientes(prev => {
       const actualizados = [...prev];
@@ -727,9 +727,22 @@ function App() {
       const episodios = [...(paciente.episodios || [])];
       const episodio = { ...episodios[episodioIdx] };
       const recetas = [...(episodio.recetasData || [])];
+      
+      const current = (recetas[recetaIdx].estado || '').toLowerCase();
+      let nextState = 'Activa';
+      if (current === 'activa' || current === 'vigente') {
+        nextState = 'Dispensada';
+      } else if (current === 'dispensada') {
+        nextState = 'Suspendida';
+      } else if (current === 'suspendida') {
+        nextState = 'Vencida';
+      } else {
+        nextState = 'Activa';
+      }
+
       recetas[recetaIdx] = {
         ...recetas[recetaIdx],
-        estado: recetas[recetaIdx].estado === 'vigente' ? 'vencida' : 'vigente',
+        estado: nextState,
       };
       episodio.recetasData = recetas;
       episodios[episodioIdx] = episodio;

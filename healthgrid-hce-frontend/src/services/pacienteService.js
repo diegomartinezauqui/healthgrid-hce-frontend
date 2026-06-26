@@ -257,7 +257,7 @@ export const pacienteService = {
           id: rec.id_receta,
           id_receta: rec.id_receta,
           id_evolucion: rec.id_evolucion,
-          estado: rec.estado === 'Dispensada' ? 'vencida' : 'vigente',
+          estado: rec.estado || 'Activa',
           fecha: rec.fecha_creacion || new Date().toISOString(),
           medicamentos: Array.isArray(rec.items) ? rec.items.map((item, idx) => ({
             id: item.id_receta_item || idx,

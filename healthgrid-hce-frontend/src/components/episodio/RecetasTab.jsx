@@ -35,7 +35,22 @@ const RecetasTab = ({
       <div className="recetas-lista">
         {recetas.length > 0 ? (
           recetas.map((rec, i) => {
-            const esVigente = rec.estado === 'vigente';
+            const estadoLower = (rec.estado || '').toLowerCase();
+            const esVigente = estadoLower === 'vigente' || estadoLower === 'activa';
+            let badgeClass = 'receta-card__estado--vencida';
+            let badgeLabel = 'Vencida';
+
+            if (esVigente) {
+              badgeClass = 'receta-card__estado--vigente';
+              badgeLabel = 'Vigente';
+            } else if (estadoLower === 'dispensada') {
+              badgeClass = 'receta-card__estado--dispensada';
+              badgeLabel = 'Dispensada';
+            } else if (estadoLower === 'suspendida') {
+              badgeClass = 'receta-card__estado--suspendida';
+              badgeLabel = 'Suspendida';
+            }
+
             // Find linked evolution info
             const evolVinculada =
               rec.evolucionVinculada !== '' && rec.evolucionVinculada !== undefined
@@ -52,12 +67,8 @@ const RecetasTab = ({
                     <span className="receta-card__numero">RECETA #{rec.numero}</span>
                     <span className="receta-card__fecha">{formatearFechaLarga(rec.fecha)}</span>
                   </div>
-                  <span
-                    className={`receta-card__estado ${
-                      esVigente ? 'receta-card__estado--vigente' : 'receta-card__estado--vencida'
-                    }`}
-                  >
-                    {esVigente ? 'Vigente' : 'Vencida'}
+                  <span className={`receta-card__estado ${badgeClass}`}>
+                    {badgeLabel}
                   </span>
                 </div>
 

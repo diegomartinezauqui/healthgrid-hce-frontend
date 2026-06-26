@@ -11,6 +11,7 @@ import { actualizarEstadoTurno } from './services/mockSalaEspera';
 import { authService } from './services/authService';
 import { pacienteService } from './services/pacienteService';
 import { salaEsperaService } from './services/salaEsperaService';
+import { ordenService } from './services/ordenService';
 
 function App() {
   // Estado de login mockeado
@@ -375,18 +376,22 @@ function App() {
     });
   };
 
-  // Actualizar el detalle (evoluciones, recetas) de un episodio clínico específico
-  const actualizarDetalleEpisodio = (pacienteIdx, episodioIdx, evoluciones, recetas) => {
+  // Actualizar el detalle de un episodio (evoluciones, recetas, estudios,
+  // solicitudes de cama, cama actual). Sólo pisa los campos presentes en `detalle`.
+  const actualizarDetalleEpisodio = (pacienteIdx, episodioIdx, detalle = {}) => {
     setPacientes(prev => {
       const actualizados = [...prev];
       const paciente = { ...actualizados[pacienteIdx] };
       if (paciente && paciente.episodios && paciente.episodios[episodioIdx]) {
         const episodios = [...paciente.episodios];
-        episodios[episodioIdx] = {
-          ...episodios[episodioIdx],
-          evolucionesData: evoluciones,
-          recetasData: recetas
-        };
+        const ep = { ...episodios[episodioIdx] };
+        if (detalle.evoluciones !== undefined) ep.evolucionesData = detalle.evoluciones;
+        if (detalle.recetas !== undefined) ep.recetasData = detalle.recetas;
+        if (detalle.estudios !== undefined) ep.estudiosData = detalle.estudios;
+        if (detalle.solicitudesCama !== undefined) ep.solicitudesCamaData = detalle.solicitudesCama;
+        if (detalle.camaActual !== undefined) ep.camaActual = detalle.camaActual;
+        if (detalle.internado) ep.tipoEpisodio = 'internado';
+        episodios[episodioIdx] = ep;
         paciente.episodios = episodios;
         actualizados[pacienteIdx] = paciente;
       }
@@ -752,17 +757,45 @@ function App() {
     });
   };
 
-  // Agregar pedido de estudio a un episodio
-  const agregarEstudio = (pacienteIdx, episodioIdx, estudioData) => {
+  // Agregar pedido de estudio a un episodio (crea la orden en el backend HCE)
+  const agregarEstudio = async (pacienteIdx, episodioIdx, estudioData) => {
+    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+    const paciente = pacientes[pacienteIdx];
+    if (!paciente) return;
+
+    let id_orden = Date.now();
+    let tipo_estudio = null;
+    const id_episodio = paciente.episodios?.[episodioIdx]?.id_episodio || null;
+
+    if (!useMocks) {
+      try {
+        const res = await ordenService.crearOrden(paciente.core_patient_id, estudioData, id_episodio);
+        if (res) {
+          id_orden = res.id_orden || id_orden;
+          tipo_estudio = res.tipo_estudio || null;
+        }
+      } catch (err) {
+        console.error('[App] Error al crear la orden de estudio en el backend:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al emitir el pedido',
+          text: 'No se pudo registrar la orden de estudio en el servidor HCE. Intente de nuevo.'
+        });
+        return;
+      }
+    }
+
     setPacientes(prev => {
       const actualizados = [...prev];
-      const paciente = { ...actualizados[pacienteIdx] };
-      const episodios = [...(paciente.episodios || [])];
+      const pac = { ...actualizados[pacienteIdx] };
+      const episodios = [...(pac.episodios || [])];
       const episodio = { ...episodios[episodioIdx] };
 
       const nuevoEstudio = {
         ...estudioData,
-        id: Date.now(),
+        id: id_orden,
+        id_orden,
+        tipo_estudio,
         numero: (episodio.estudiosData?.length || 0) + 1,
         resultado: estudioData.estado === 'completado' ? {
           codigoExterno: '',
@@ -775,58 +808,35 @@ function App() {
 
       episodio.estudiosData = [...(episodio.estudiosData || []), nuevoEstudio];
       episodios[episodioIdx] = episodio;
-      paciente.episodios = episodios;
-      actualizados[pacienteIdx] = paciente;
+      pac.episodios = episodios;
+      actualizados[pacienteIdx] = pac;
       return actualizados;
     });
   };
 
-  // Agregar solicitud de pase a un episodio
-  const agregarSolicitudPase = (pacienteIdx, episodioIdx, paseData) => {
-    setPacientes(prev => {
-      const actualizados = [...prev];
-      const paciente = { ...actualizados[pacienteIdx] };
-      const episodios = [...(paciente.episodios || [])];
-      const episodio = { ...episodios[episodioIdx] };
+  // Las solicitudes de internación/pase ahora se gestionan y persisten desde
+  // EpisodioDetalle vía solicitudCamaService (crear/resolver/cancelar) + recarga.
 
-      const nuevaSolicitud = {
-        ...paseData,
-        id: Date.now(),
-        estado: 'pendiente',
-      };
+  // Cargar resultado de un estudio en un episodio (lo vincula a la HCE via /resultados)
+  const agregarResultadoEstudio = async (pacienteIdx, episodioIdx, estudioIdx, resultadoData) => {
+    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+    const pacienteRef = pacientes[pacienteIdx];
+    const estudioRef = pacienteRef?.episodios?.[episodioIdx]?.estudiosData?.[estudioIdx];
 
-      episodio.solicitudesPaseData = [...(episodio.solicitudesPaseData || []), nuevaSolicitud];
-      episodios[episodioIdx] = episodio;
-      paciente.episodios = episodios;
-      actualizados[pacienteIdx] = paciente;
-      return actualizados;
-    });
-  };
+    if (!useMocks && estudioRef) {
+      try {
+        await ordenService.cargarResultado(pacienteRef.core_patient_id, estudioRef, resultadoData);
+      } catch (err) {
+        console.error('[App] Error al cargar el resultado del estudio en el backend:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al cargar resultados',
+          text: 'No se pudo registrar el resultado en el servidor HCE. Intente de nuevo.'
+        });
+        return;
+      }
+    }
 
-  // Agregar solicitud de internación a un episodio
-  const agregarSolicitudInternacion = (pacienteIdx, episodioIdx, internacionData) => {
-    setPacientes(prev => {
-      const actualizados = [...prev];
-      const paciente = { ...actualizados[pacienteIdx] };
-      const episodios = [...(paciente.episodios || [])];
-      const episodio = { ...episodios[episodioIdx] };
-
-      const nuevaSolicitud = {
-        ...internacionData,
-        id: Date.now(),
-        estado: 'pendiente',
-      };
-
-      episodio.solicitudesInternacionData = [...(episodio.solicitudesInternacionData || []), nuevaSolicitud];
-      episodios[episodioIdx] = episodio;
-      paciente.episodios = episodios;
-      actualizados[pacienteIdx] = paciente;
-      return actualizados;
-    });
-  };
-
-  // Cargar resultado de un estudio en un episodio
-  const agregarResultadoEstudio = (pacienteIdx, episodioIdx, estudioIdx, resultadoData) => {
     setPacientes(prev => {
       const actualizados = [...prev];
       const paciente = { ...actualizados[pacienteIdx] };
@@ -842,6 +852,8 @@ function App() {
           profesionalFirmante: resultadoData.profesionalFirmante || '',
           fechaResultado: resultadoData.fechaResultado || new Date().toISOString().slice(0, 10),
           informe: resultadoData.informe || '',
+          link_imagen: resultadoData.link_imagen || null,
+          analitos: resultadoData.analitos || null,
           archivosAdjuntos: resultadoData.archivosAdjuntos || [],
         },
       };
@@ -1067,8 +1079,6 @@ function App() {
             onAgregarReceta={agregarReceta}
             onCambiarEstadoReceta={cambiarEstadoReceta}
             onAgregarEstudio={agregarEstudio}
-            onAgregarSolicitudPase={agregarSolicitudPase}
-            onAgregarSolicitudInternacion={agregarSolicitudInternacion}
             onAgregarResultadoEstudio={agregarResultadoEstudio}
             onSiguiente={verSiguientePaciente}
             onFinalizarAtencion={finalizarAtencionPaciente}

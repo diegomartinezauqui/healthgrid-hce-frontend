@@ -1,6 +1,6 @@
 
 import { FiCalendar, FiCreditCard, FiFileText, FiEdit2, FiPlusCircle } from 'react-icons/fi';
-import { calcularEdad, formatearFecha, obtenerIniciales } from '../../utils/helpers';
+import { calcularEdad, formatearFecha, obtenerIniciales, formatearNumeroHC } from '../../utils/helpers';
 
 /**
  * PacienteHeaderCard renderiza la cabecera principal con información del paciente,
@@ -40,7 +40,7 @@ const PacienteHeaderCard = ({
                   <FiCreditCard style={{ marginRight: '4px', verticalAlign: 'middle' }} /> DNI <strong>{paciente.dni || '—'}</strong>
                 </span>
                 <span className="detalle-meta-item">
-                  <FiFileText style={{ marginRight: '4px', verticalAlign: 'middle' }} /> HC <strong>{paciente.numeroHistoriaClinica || '—'}</strong>
+                  <FiFileText style={{ marginRight: '4px', verticalAlign: 'middle' }} /> HC <strong>#{formatearNumeroHC(paciente.core_patient_id || paciente.numeroHistoriaClinica)}</strong>
                 </span>
                 <span className="detalle-meta-badge">● Activo</span>
               </>
@@ -51,7 +51,7 @@ const PacienteHeaderCard = ({
                   <FiCreditCard style={{ marginRight: '4px', verticalAlign: 'middle' }} /> DNI <strong>{paciente.dni || '—'}</strong>
                 </span>
                 <span className="detalle-meta-item">
-                  <FiFileText style={{ marginRight: '4px', verticalAlign: 'middle' }} /> HC <strong>{paciente.numeroHistoriaClinica || '—'}</strong>
+                  <FiFileText style={{ marginRight: '4px', verticalAlign: 'middle' }} /> HC <strong>#{formatearNumeroHC(paciente.core_patient_id || paciente.numeroHistoriaClinica)}</strong>
                 </span>
                 <span className="detalle-meta-badge">● Activo</span>
               </>

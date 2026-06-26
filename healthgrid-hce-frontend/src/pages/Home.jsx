@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import NuevaFichaMedica from './NuevaFichaMedica';
 import { useSalaEspera } from '../hooks/useSalaEspera';
 import { pacienteService } from '../services/pacienteService';
+import { formatearNumeroHC } from '../utils/helpers';
 
 const Home = ({ 
   pacientes = [], 
@@ -635,11 +636,9 @@ const Home = ({
                                 <span style={{ fontSize: '0.8rem', color: '#666', marginRight: '15px' }}>
                                   DNI: <strong>{cp.dni || '—'}</strong>
                                 </span>
-                                {tieneFicha && (
-                                  <span style={{ fontSize: '0.8rem', color: '#666' }}>
-                                    HC: <strong>#{fichaMedica.numeroHistoriaClinica || '—'}</strong>
-                                  </span>
-                                )}
+                                <span style={{ fontSize: '0.8rem', color: '#666' }}>
+                                  HC: <strong>#{formatearNumeroHC(cp.core_patient_id)}</strong>
+                                </span>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 {tieneFicha ? (

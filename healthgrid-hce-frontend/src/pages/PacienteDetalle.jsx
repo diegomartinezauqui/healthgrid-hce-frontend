@@ -94,8 +94,6 @@ const PacienteDetalle = ({
   onCambiarEstadoReceta,
   onAgregarEstudio,
   onVerEstudio,
-  onAgregarSolicitudPase,
-  onAgregarSolicitudInternacion,
   onAgregarResultadoEstudio,
   onSiguiente,
   turnoActivo,
@@ -400,8 +398,6 @@ const PacienteDetalle = ({
                 onCambiarEstadoReceta={onCambiarEstadoReceta}
                 onAgregarEstudio={onAgregarEstudio}
                 onVerEstudio={abrirEstudio}
-                onAgregarSolicitudPase={onAgregarSolicitudPase}
-                onAgregarSolicitudInternacion={onAgregarSolicitudInternacion}
                 onAgregarResultadoEstudio={onAgregarResultadoEstudio}
                 esTurnoActivo={esTurnoActivo}
                 onFinalizarAtencion={onFinalizarAtencion}

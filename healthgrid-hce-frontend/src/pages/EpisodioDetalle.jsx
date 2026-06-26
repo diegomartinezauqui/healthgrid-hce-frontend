@@ -1,6 +1,8 @@
 // src/pages/EpisodioDetalle.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { pacienteService } from '../services/pacienteService';
+import { ordenService } from '../services/ordenService';
+import { solicitudCamaService } from '../services/solicitudCamaService';
 import NuevaEvolucion from './NuevaEvolucion';
 import NuevaReceta from './NuevaReceta';
 import NuevoPedidoEstudio from './NuevoPedidoEstudio';
@@ -9,9 +11,10 @@ import NuevaSolicitudPase from './NuevaSolicitudPase';
 import CargarResultadoEstudio from './CargarResultadoEstudio';
 import EpisodioHeaderCard from '../components/episodio/EpisodioHeaderCard';
 import EvolucionesTab from '../components/episodio/EvolucionesTab';
+import EvolucionesListaTab from '../components/episodio/EvolucionesListaTab';
 import RecetasTab from '../components/episodio/RecetasTab';
 import EstudiosTab from '../components/episodio/EstudiosTab';
-import PasesYInternacionesTab from '../components/episodio/PasesYInternacionesTab';
+import InternacionPasesTab from '../components/episodio/InternacionPasesTab';
 import NotificacionObligatoria from '../components/NotificacionObligatoria';
 import { detectarNotificacionObligatoria } from '../data/patologiasNotificables';
 import { emitirNotificacionObligatoria } from '../services/epidemiologia';
@@ -33,8 +36,6 @@ const EpisodioDetalle = ({
   onCambiarEstadoReceta,
   onAgregarEstudio,
   onVerEstudio,
-  onAgregarSolicitudPase,
-  onAgregarSolicitudInternacion,
   onAgregarResultadoEstudio,
   esTurnoActivo,
   onFinalizarAtencion,
@@ -52,35 +53,46 @@ const EpisodioDetalle = ({
   const [notificacion, setNotificacion] = useState(null);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
 
-  useEffect(() => {
-    const cargarDetalleEpisodio = async () => {
-      const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
-      if (useMocks || !episodio || !episodio.id_episodio) return;
+  // Carga (o recarga) todo el detalle del episodio desde el backend:
+  // evoluciones, recetas, órdenes de estudio y solicitudes de cama + cama actual.
+  const cargarDetalle = useCallback(async () => {
+    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+    if (useMocks || !episodio || !episodio.id_episodio || !onActualizarDetalleEpisodio) return;
 
-      setLoadingDetalle(true);
-      try {
-        console.log(`[EpisodioDetalle] Cargando evoluciones y recetas reales del episodio ${episodio.id_episodio}...`);
-        const [evoluciones, todasLasRecetas] = await Promise.all([
-          pacienteService.obtenerEvoluciones(paciente.core_patient_id, episodio.id_episodio),
-          pacienteService.obtenerRecetas(paciente.core_patient_id)
-        ]);
+    setLoadingDetalle(true);
+    try {
+      const [evoluciones, todasLasRecetas, ordenes, solicitudesResp] = await Promise.all([
+        pacienteService.obtenerEvoluciones(paciente.core_patient_id, episodio.id_episodio),
+        pacienteService.obtenerRecetas(paciente.core_patient_id),
+        ordenService.listarOrdenesEpisodio(paciente.core_patient_id, episodio.id_episodio),
+        solicitudCamaService.listar(paciente.core_patient_id, episodio.id_episodio),
+      ]);
 
-        if (evoluciones && todasLasRecetas) {
-          const idsEvoluciones = evoluciones.map(ev => ev.id_evolucion);
-          const recetasDelEpisodio = todasLasRecetas.filter(rec => idsEvoluciones.includes(rec.id_evolucion));
+      const idsEvoluciones = (evoluciones || []).map(ev => ev.id_evolucion);
+      const recetasDelEpisodio = (todasLasRecetas || []).filter(rec => idsEvoluciones.includes(rec.id_evolucion));
 
-          if (onActualizarDetalleEpisodio) {
-            onActualizarDetalleEpisodio(pacienteIndex, episodioIndex, evoluciones, recetasDelEpisodio);
-          }
-        }
-      } catch (err) {
-        console.error('[EpisodioDetalle] Error cargando detalle de evolución/recetas:', err);
-      } finally {
-        setLoadingDetalle(false);
-      }
-    };
-    cargarDetalleEpisodio();
+      onActualizarDetalleEpisodio(pacienteIndex, episodioIndex, {
+        evoluciones: evoluciones || [],
+        recetas: recetasDelEpisodio,
+        estudios: ordenes || [],
+        solicitudesCama: solicitudesResp?.solicitudes || [],
+        camaActual: solicitudesResp?.cama_actual || null,
+        internado: solicitudesResp?.internado || false,
+      });
+    } catch (err) {
+      console.error('[EpisodioDetalle] Error cargando detalle del episodio:', err);
+    } finally {
+      setLoadingDetalle(false);
+    }
+    // onActualizarDetalleEpisodio se EXCLUYE a propósito: App la recrea en cada
+    // render y, si fuera dependencia, el efecto entraría en loop infinito.
+    // Usa setPacientes(prev => ...), por lo que una referencia "vieja" es segura.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episodio?.id_episodio, paciente.core_patient_id, pacienteIndex, episodioIndex]);
+
+  useEffect(() => {
+    cargarDetalle();
+  }, [cargarDetalle]);
 
   if (!episodio) return null;
 
@@ -88,8 +100,18 @@ const EpisodioDetalle = ({
   const evoluciones = episodio.evolucionesData || [];
   const recetas = episodio.recetasData || [];
   const estudios = episodio.estudiosData || [];
-  const solicitudesPase = episodio.solicitudesPaseData || [];
-  const solicitudesInternacion = episodio.solicitudesInternacionData || [];
+  const camaActual = episodio.camaActual || null;
+
+  // Solicitudes de cama (internación + pase) persistidas en el backend.
+  const solicitudesCama = (episodio.solicitudesCamaData || []).map((s) => ({ ...s, _tipo: s.tipo }));
+  const solicitudesInternacion = solicitudesCama.filter((s) => s.tipo === 'internacion');
+  const solicitudesPase = solicitudesCama.filter((s) => s.tipo === 'pase');
+
+  // ¿Hay alguna solicitud pendiente? (bloquea generar otra)
+  const hayPendiente = solicitudesCama.some((s) => s.estado === 'pendiente');
+  // ¿La internación ya fue aceptada / el paciente está internado? (habilita pase de cama)
+  const hayInternacionAceptada = !!camaActual || solicitudesInternacion.some((s) => s.estado === 'aceptada');
+  const labelSolicitudCama = hayInternacionAceptada ? 'Solicitar Pase de Cama' : 'Solicitar Internación';
 
   const handleGuardarEvolucion = async (data) => {
     const patologia = detectarNotificacionObligatoria(
@@ -134,28 +156,150 @@ const EpisodioDetalle = ({
     setMostrarModalReceta(false);
   };
 
-  const handleGuardarEstudio = (data) => {
-    onAgregarEstudio(pacienteIndex, episodioIndex, data);
+  const handleGuardarEstudio = async (data) => {
+    await onAgregarEstudio(pacienteIndex, episodioIndex, data);
     setMostrarModalEstudio(false);
+    await cargarDetalle();
   };
 
-  const handleEnviarInternacion = (data) => {
-    if (onAgregarSolicitudInternacion) {
-      onAgregarSolicitudInternacion(pacienteIndex, episodioIndex, data);
-    }
-    setMostrarModalInternacion(false);
-  };
-
-  const handleGuardarResultadoEstudio = (data) => {
+  const handleGuardarResultadoEstudio = async (data) => {
     if (onAgregarResultadoEstudio) {
-      onAgregarResultadoEstudio(pacienteIndex, episodioIndex, estudioSeleccionadoIndex, data);
+      await onAgregarResultadoEstudio(pacienteIndex, episodioIndex, estudioSeleccionadoIndex, data);
     }
     setMostrarModalCargarResultado(false);
+    await cargarDetalle();
   };
 
-  const handleGuardarSolicitudPase = (data) => {
-    onAgregarSolicitudPase(pacienteIndex, episodioIndex, data);
-    setMostrarModalSolicitudPase(false);
+  // Crea una solicitud de internación (persistida en backend) y refresca.
+  const handleEnviarInternacion = async (data) => {
+    try {
+      await solicitudCamaService.crear(paciente.core_patient_id, episodio.id_episodio, {
+        tipo: 'internacion',
+        prioridad: data.prioridad || 'Media',
+        sector: data.sector,
+        motivo: data.motivo,
+      });
+      setMostrarModalInternacion(false);
+      await cargarDetalle();
+    } catch (err) {
+      console.error('[EpisodioDetalle] Error al crear solicitud de internación:', err);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo registrar la solicitud de internación.' });
+    }
+  };
+
+  // Crea una solicitud de pase de cama (persistida en backend) y refresca.
+  const handleGuardarSolicitudPase = async (data) => {
+    try {
+      await solicitudCamaService.crear(paciente.core_patient_id, episodio.id_episodio, {
+        tipo: 'pase',
+        prioridad: data.prioridad || 'Media',
+        sector: data.sector,
+        motivo: data.motivo,
+      });
+      setMostrarModalSolicitudPase(false);
+      await cargarDetalle();
+    } catch (err) {
+      console.error('[EpisodioDetalle] Error al crear solicitud de pase:', err);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo registrar la solicitud de pase.' });
+    }
+  };
+
+  // Botón de cama del header: bloquea si ya hay una solicitud pendiente,
+  // y abre el modal correcto según el estado (internación o pase de cama).
+  const handleSolicitudCamaClick = () => {
+    if (hayPendiente) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Solicitud pendiente',
+        text: 'Ya existe una solicitud de internación o pase de cama pendiente. Espere la respuesta de Camas (M6) o cancélela antes de generar una nueva.',
+        confirmButtonColor: '#259A5E',
+      });
+      return;
+    }
+    if (hayInternacionAceptada) {
+      setMostrarModalSolicitudPase(true);
+    } else {
+      setMostrarModalInternacion(true);
+    }
+  };
+
+  const handleCancelarSolicitud = (tipo, id_solicitud) => {
+    Swal.fire({
+      title: '¿Cancelar solicitud?',
+      text: 'La solicitud quedará marcada como cancelada.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sí, cancelar',
+      cancelButtonText: 'Volver',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await solicitudCamaService.cancelar(id_solicitud);
+          await cargarDetalle();
+        } catch (err) {
+          console.error('[EpisodioDetalle] Error al cancelar solicitud:', err);
+          Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cancelar la solicitud.' });
+        }
+      }
+    });
+  };
+
+  // Simula la respuesta de M6: aceptar (pide cama) o rechazar (pide motivo).
+  const handleSimularIngreso = async (tipo, id_solicitud) => {
+    const { value: decision } = await Swal.fire({
+      title: 'Simular respuesta de M6 (Camas)',
+      input: 'radio',
+      inputOptions: { aceptada: '✅ Aceptar y asignar cama', rechazada: '❌ Rechazar' },
+      inputValue: 'aceptada',
+      showCancelButton: true,
+      confirmButtonColor: '#259A5E',
+      confirmButtonText: 'Continuar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (v) => (!v ? 'Elegí una opción' : undefined),
+    });
+    if (!decision) return;
+
+    try {
+      if (decision === 'aceptada') {
+        const { value: cama } = await Swal.fire({
+          title: 'Cama asignada por M6',
+          input: 'text',
+          inputPlaceholder: 'Ej: Cama 4 — Hab 201',
+          showCancelButton: true,
+          confirmButtonColor: '#259A5E',
+          confirmButtonText: 'Confirmar ingreso',
+          inputValidator: (v) => (!v || !v.trim() ? 'Ingresá la cama asignada' : undefined),
+        });
+        if (!cama) return;
+        await solicitudCamaService.resolver(id_solicitud, { decision: 'aceptada', cama: cama.trim() });
+        await cargarDetalle();
+        Swal.fire({
+          icon: 'success',
+          title: 'Ingreso confirmado (M6)',
+          text: tipo === 'pase'
+            ? `Pase de cama aceptado. Cama: ${cama.trim()}.`
+            : `Internación aceptada. Cama: ${cama.trim()}. Ahora puede solicitar pases de cama.`,
+          confirmButtonColor: '#259A5E',
+        });
+      } else {
+        const { value: motivo } = await Swal.fire({
+          title: 'Motivo del rechazo (M6)',
+          input: 'text',
+          inputPlaceholder: 'Ej: No hay camas disponibles en el sector',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          confirmButtonText: 'Rechazar',
+        });
+        await solicitudCamaService.resolver(id_solicitud, { decision: 'rechazada', motivo_rechazo: motivo || '' });
+        await cargarDetalle();
+        Swal.fire({ icon: 'info', title: 'Solicitud rechazada por M6', confirmButtonColor: '#259A5E' });
+      }
+    } catch (err) {
+      console.error('[EpisodioDetalle] Error al resolver solicitud:', err);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo registrar la respuesta de M6.' });
+    }
   };
 
   const handleDarDeAlta = () => {
@@ -229,19 +373,27 @@ const EpisodioDetalle = ({
       {/* Card del episodio */}
       <EpisodioHeaderCard
         episodio={episodio}
+        camaActual={camaActual}
         onDarDeAlta={handleDarDeAlta}
-        onSolicitarInternacionClick={() => setMostrarModalInternacion(true)}
+        onSolicitudCamaClick={handleSolicitudCamaClick}
+        labelSolicitudCama={labelSolicitudCama}
         esTurnoActivo={esTurnoActivo}
         onTerminarConsultaClick={handleTerminarConsulta}
       />
 
-      {/* Sub-tabs: Evoluciones | Recetas | Pedidos de Estudios | Solicitudes de Pase | Solicitudes de Internación */}
+      {/* Sub-tabs: Historial | Evoluciones | Recetas | Pedidos de Estudios | Internación y Pases */}
       <div className="ep-detalle__subtabs">
         <button
           className={`ep-detalle__subtab ${subTab === 'timeline' ? 'ep-detalle__subtab--activa' : ''}`}
           onClick={() => setSubTab('timeline')}
         >
-          Línea de Tiempo
+          Historial
+        </button>
+        <button
+          className={`ep-detalle__subtab ${subTab === 'evoluciones' ? 'ep-detalle__subtab--activa' : ''}`}
+          onClick={() => setSubTab('evoluciones')}
+        >
+          Evoluciones
         </button>
         <button
           className={`ep-detalle__subtab ${subTab === 'recetas' ? 'ep-detalle__subtab--activa' : ''}`}
@@ -256,27 +408,31 @@ const EpisodioDetalle = ({
           Pedidos de Estudios
         </button>
         <button
-          className={`ep-detalle__subtab ${subTab === 'solicitudespase' ? 'ep-detalle__subtab--activa' : ''}`}
-          onClick={() => setSubTab('solicitudespase')}
+          className={`ep-detalle__subtab ${subTab === 'internacion' ? 'ep-detalle__subtab--activa' : ''}`}
+          onClick={() => setSubTab('internacion')}
         >
-          Solicitudes de Pase
-        </button>
-        <button
-          className={`ep-detalle__subtab ${subTab === 'internaciones' ? 'ep-detalle__subtab--activa' : ''}`}
-          onClick={() => setSubTab('internaciones')}
-        >
-          Internaciones
+          Internación y Pases
         </button>
       </div>
 
-      {/* ── SUB-TAB: TIMELINE (Línea de Tiempo) ── */}
+      {/* ── SUB-TAB: HISTORIAL (timeline read-only) ── */}
       {subTab === 'timeline' && (
         <EvolucionesTab
           evoluciones={evoluciones}
           recetas={recetas}
           estudios={estudios}
-          pases={solicitudesPase}
-          internaciones={solicitudesInternacion}
+          pases={solicitudesPase.map((s) => ({ ...s, fecha: s.fecha_solicitud }))}
+          internaciones={solicitudesInternacion.map((s) => ({ ...s, fecha: s.fecha_solicitud }))}
+          esAbierto={esAbierto}
+          episodioIndex={episodioIndex}
+          onVerEvolucion={onVerEvolucion}
+        />
+      )}
+
+      {/* ── SUB-TAB: EVOLUCIONES (solo evoluciones + alta) ── */}
+      {subTab === 'evoluciones' && (
+        <EvolucionesListaTab
+          evoluciones={evoluciones}
           esAbierto={esAbierto}
           episodioIndex={episodioIndex}
           onVerEvolucion={onVerEvolucion}
@@ -312,23 +468,13 @@ const EpisodioDetalle = ({
         />
       )}
 
-      {/* ── SUB-TAB: SOLICITUDES DE PASE ── */}
-      {subTab === 'solicitudespase' && (
-        <PasesYInternacionesTab
-          tipo="pase"
-          solicitudes={solicitudesPase}
+      {/* ── SUB-TAB: INTERNACIÓN Y PASES (unificado) ── */}
+      {subTab === 'internacion' && (
+        <InternacionPasesTab
+          solicitudes={solicitudesCama}
           esAbierto={esAbierto}
-          onNuevaSolicitudClick={() => setMostrarModalSolicitudPase(true)}
-        />
-      )}
-
-      {/* ── SUB-TAB: SOLICITUDES DE INTERNACIÓN ── */}
-      {subTab === 'internaciones' && (
-        <PasesYInternacionesTab
-          tipo="internacion"
-          solicitudes={solicitudesInternacion}
-          esAbierto={esAbierto}
-          onNuevaSolicitudClick={() => setMostrarModalInternacion(true)}
+          onCancelarSolicitud={handleCancelarSolicitud}
+          onSimularIngreso={handleSimularIngreso}
         />
       )}
 

@@ -232,6 +232,137 @@
   color: #999;
 }
 
+/* ── Tabla de Analitos (Laboratorio) ── */
+.ped-detalle__analitos-container {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #E8ECE9;
+  border-radius: 8px;
+  background-color: #FAFBFA;
+  margin-top: 8px;
+}
+
+.ped-detalle__analitos-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.ped-detalle__analitos-table th,
+.ped-detalle__analitos-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #E8ECE9;
+}
+
+.ped-detalle__analitos-table th {
+  background-color: #F0F4F2;
+  color: #11352A;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.ped-detalle__analitos-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Alertas de analitos */
+.ped-detalle__analito-row--fuera-rango {
+  background-color: #FFF9E6; /* Soft yellow for warning */
+}
+
+.ped-detalle__analito-row--critico {
+  background-color: #FFF2F2; /* Soft red for critical */
+}
+
+.ped-detalle__analito-nombre {
+  font-weight: 600;
+  color: #11352A;
+}
+
+.ped-detalle__analito-valor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ped-detalle__valor-texto {
+  font-weight: 700;
+}
+
+.ped-detalle__critico-badge {
+  background-color: #D32F2F;
+  color: #FFFFFF;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  animation: pulse-critical 2s infinite;
+}
+
+.ped-detalle__fuera-rango-badge {
+  background-color: #F57C00;
+  color: #FFFFFF;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  display: inline-block;
+}
+
+.ped-detalle__analito-obs {
+  color: #555;
+  font-style: italic;
+}
+
+/* ── Botón PACS / DICOM (Imágenes) ── */
+.ped-detalle__pacs-container {
+  margin-top: 10px;
+}
+
+.ped-detalle__pacs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 10px 18px;
+  border-radius: 8px;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(13, 71, 161, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ped-detalle__pacs-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(13, 71, 161, 0.35);
+  background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);
+}
+
+.ped-detalle__pacs-icon {
+  font-size: 1rem;
+}
+
+@keyframes pulse-critical {
+  0% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(211, 47, 47, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0);
+  }
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .ped-detalle__resultado-meta {

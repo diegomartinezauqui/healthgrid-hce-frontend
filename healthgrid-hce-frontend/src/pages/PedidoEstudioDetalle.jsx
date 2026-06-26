@@ -24,6 +24,21 @@ const tipoEstudioColor = (tipo) => {
   return colores[tipo] || colores.otro;
 };
 
+const formatearRango = (rango, unidad) => {
+  if (!rango) return '—';
+  if (typeof rango === 'object') {
+    const minVal = rango.min !== undefined && rango.min !== null ? rango.min : '';
+    const maxVal = rango.max !== undefined && rango.max !== null ? rango.max : '';
+    if (minVal !== '' && maxVal !== '') {
+      return `${minVal} - ${maxVal} ${unidad || ''}`.trim();
+    }
+    if (minVal !== '') return `>= ${minVal} ${unidad || ''}`.trim();
+    if (maxVal !== '') return `<= ${maxVal} ${unidad || ''}`.trim();
+    return '—';
+  }
+  return `${rango} ${unidad || ''}`.trim();
+};
+
 const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
   if (!estudio) return null;
 
@@ -90,6 +105,74 @@ const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
               <span className="ped-detalle__resultado-meta-valor">{formatearFechaLarga(resultado.fechaResultado) || '—'}</span>
             </div>
           </div>
+
+          {/* Determinaciones detalladas de Laboratorio */}
+          {estudio.tipoEstudio === 'laboratorio' && resultado.analitos && resultado.analitos.length > 0 && (
+            <div className="ped-detalle__seccion" style={{ marginTop: 16 }}>
+              <h3 className="ped-detalle__seccion-label">Determinaciones detalladas</h3>
+              <div className="ped-detalle__analitos-container">
+                <table className="ped-detalle__analitos-table">
+                  <thead>
+                    <tr>
+                      <th>Determinación</th>
+                      <th>Valor</th>
+                      <th>Rango de Referencia</th>
+                      <th>Observaciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resultado.analitos.map((analito, index) => {
+                      const esCritico = analito.es_critico;
+                      const fueraRango = analito.fuera_de_rango;
+                      const rowClass = esCritico 
+                        ? 'ped-detalle__analito-row--critico' 
+                        : fueraRango 
+                        ? 'ped-detalle__analito-row--fuera-rango' 
+                        : '';
+                      return (
+                        <tr key={index} className={rowClass}>
+                          <td className="ped-detalle__analito-nombre">
+                            {analito.nombre}
+                          </td>
+                          <td className="ped-detalle__analito-valor">
+                            <span className="ped-detalle__valor-texto">
+                              {analito.valor} {analito.unidad}
+                            </span>
+                            {esCritico && <span className="ped-detalle__critico-badge">CRÍTICO</span>}
+                            {!esCritico && fueraRango && <span className="ped-detalle__fuera-rango-badge">FUERA DE RANGO</span>}
+                          </td>
+                          <td>
+                            {formatearRango(analito.rango_normal, analito.unidad)}
+                          </td>
+                          <td className="ped-detalle__analito-obs">
+                            {analito.observacion || '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Botón de placa PACS / DICOM */}
+          {estudio.tipoEstudio === 'imagenes' && resultado.link_imagen && (
+            <div className="ped-detalle__seccion" style={{ marginTop: 16 }}>
+              <h3 className="ped-detalle__seccion-label">Estudio de Imágenes digitalizadas (PACS/DICOM)</h3>
+              <div className="ped-detalle__pacs-container">
+                <a
+                  href={resultado.link_imagen}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ped-detalle__pacs-btn"
+                >
+                  <span className="ped-detalle__pacs-icon">🌐</span>
+                  Ver placa DICOM / PACS
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* Informe */}
           {resultado.informe && (

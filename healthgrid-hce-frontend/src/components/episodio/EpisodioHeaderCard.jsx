@@ -10,15 +10,17 @@ import { formatearFechaLarga } from '../../utils/helpers';
  */
 const EpisodioHeaderCard = ({
   episodio,
+  camaActual = null,
   onDarDeAlta,
-  onSolicitarInternacionClick,
+  onSolicitudCamaClick,
+  labelSolicitudCama = 'Solicitar Internación',
   esTurnoActivo,
   onTerminarConsultaClick,
 }) => {
   if (!episodio) return null;
 
   const esAbierto = episodio.estado === 'abierto';
-  const esInternado = episodio.tipoEpisodio === 'internado';
+  const esInternado = episodio.tipoEpisodio === 'internado' || !!camaActual;
 
   return (
     <div className="ep-detalle__card">
@@ -47,6 +49,17 @@ const EpisodioHeaderCard = ({
                 episodio.fechaAlta
               )}`}
         </p>
+        {camaActual && (camaActual.cama || camaActual.sector) && (
+          <p
+            className="ep-detalle__fecha"
+            style={{ color: '#1E8449', fontWeight: 600, marginTop: '4px' }}
+          >
+            <FaBed style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+            Internado en: {camaActual.cama || 'Cama s/n'}
+            {camaActual.habitacion ? ` · ${camaActual.habitacion}` : ''}
+            {camaActual.sector ? ` · ${camaActual.sector}` : ''}
+          </p>
+        )}
       </div>
       <div className="ep-detalle__card-right">
         {esAbierto && (
@@ -67,12 +80,12 @@ const EpisodioHeaderCard = ({
             </button>
             <button
               className="ep-detalle__btn ep-detalle__btn--solicitar"
-              onClick={onSolicitarInternacionClick}
+              onClick={onSolicitudCamaClick}
             >
               <FaBed
                 style={{ marginRight: '6px', verticalAlign: 'middle', fontSize: '1.1rem' }}
               />{' '}
-              Solicitar Internación
+              {labelSolicitudCama}
             </button>
           </>
         )}

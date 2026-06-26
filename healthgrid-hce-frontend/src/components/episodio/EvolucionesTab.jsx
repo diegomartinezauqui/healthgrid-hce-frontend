@@ -41,8 +41,8 @@ const EvolucionesTab = ({
       };
     }),
     ...estudios.map((e, i) => ({ ...e, _timelineType: 'estudio', _originalIndex: i, _sortDate: new Date(e.fecha) })),
-    ...pases.map((p, i) => ({ ...p, _timelineType: 'pase', _originalIndex: i, _sortDate: new Date(p.fecha) })),
-    ...internaciones.map((int, i) => ({ ...int, _timelineType: 'internacion', _originalIndex: i, _sortDate: new Date(int.fecha) }))
+    ...pases.map((p, i) => ({ ...p, _timelineType: 'pase', _originalIndex: i, _sortDate: new Date(p.fechaHoraSugerida || p.fecha) })),
+    ...internaciones.map((int, i) => ({ ...int, _timelineType: 'internacion', _originalIndex: i, _sortDate: new Date(int.fechaHoraSugerida || int.fecha) }))
   ].sort((a, b) => b._sortDate - a._sortDate);
 
   const getIcon = (type) => {
@@ -61,8 +61,8 @@ const EvolucionesTab = ({
       case 'evolucion': return tipoConsultaLabel(ev.tipoConsulta);
       case 'receta': return `Receta Médica - ${ev.medicamentos?.length || 0} medicamento(s)`;
       case 'estudio': return `Pedido de Estudio: ${ev.tipoEstudio}`;
-      case 'pase': return `Solicitud de Pase a ${ev.institucionDestino}`;
-      case 'internacion': return `Solicitud de Internación - Sector: ${ev.sectorDestino}`;
+      case 'pase': return `Solicitud de Pase de Cama → ${ev.sector || ev.institucionDestino || ''}`;
+      case 'internacion': return `Solicitud de Internación · Sector: ${ev.sector || ev.sectorDestino || ''}`;
       default: return 'Evento';
     }
   };
@@ -79,8 +79,8 @@ const EvolucionesTab = ({
         return medsStr ? `${medsStr}${obsStr}` : 'Sin medicamentos prescritos';
       }
       case 'estudio': return ev.diagnosticoPresuntivo ? `Diagnóstico: ${ev.diagnosticoPresuntivo}` : '';
-      case 'pase': return ev.motivoDerivacion ? `Motivo: ${ev.motivoDerivacion}` : '';
-      case 'internacion': return ev.motivoInternacion ? `Motivo: ${ev.motivoInternacion}` : '';
+      case 'pase': return ev.motivo ? `Motivo: ${ev.motivo}` : (ev.motivoDerivacion ? `Motivo: ${ev.motivoDerivacion}` : '');
+      case 'internacion': return ev.motivo ? `Motivo: ${ev.motivo}` : (ev.motivoInternacion ? `Motivo: ${ev.motivoInternacion}` : '');
       default: return '';
     }
   };
@@ -96,16 +96,11 @@ const EvolucionesTab = ({
     <div className="ep-detalle__seccion">
       <div className="ep-detalle__seccion-header">
         <div>
-          <h3 className="ep-detalle__seccion-titulo">Historia Clínica del Episodio</h3>
+          <h3 className="ep-detalle__seccion-titulo">Historial del Episodio</h3>
           <p className="ep-detalle__seccion-sub">
-            {allEvents.length} evento{allEvents.length !== 1 ? 's' : ''} registrado{allEvents.length !== 1 ? 's' : ''}
+            {allEvents.length} evento{allEvents.length !== 1 ? 's' : ''} registrado{allEvents.length !== 1 ? 's' : ''} · vista de solo lectura
           </p>
         </div>
-        {esAbierto && (
-          <button className="ep-detalle__btn-nueva" onClick={onNuevaEvolucionClick}>
-            <FiActivity style={{ marginRight: '5px', verticalAlign: 'middle' }} /> Añadir Evolución
-          </button>
-        )}
       </div>
 
       {/* Timeline unificado */}

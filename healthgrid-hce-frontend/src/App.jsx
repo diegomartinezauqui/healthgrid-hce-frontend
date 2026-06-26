@@ -2,8 +2,10 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import './App.css';
+import { Toaster } from 'sonner';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
+import Login from './pages/Login';
 import PacienteDetalle from './pages/PacienteDetalle';
 import { actualizarEstadoTurno } from './services/mockSalaEspera';
 import { authService } from './services/authService';
@@ -11,6 +13,16 @@ import { pacienteService } from './services/pacienteService';
 import { salaEsperaService } from './services/salaEsperaService';
 
 function App() {
+  // Estado de login mockeado
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return sessionStorage.getItem('healthgrid_logged_in') === 'true';
+  });
+
+  const handleLogin = (userData) => {
+    sessionStorage.setItem('healthgrid_logged_in', 'true');
+    setIsLoggedIn(true);
+  };
+
   // Estado para demorar el renderizado de la UI hasta asegurar que el login de desarrollo se completó (si no usamos mocks)
   const [authReady, setAuthReady] = useState(() => {
     const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
@@ -638,7 +650,7 @@ function App() {
 
     let idRecetaReal = Date.now();
     let id_evolucion_res = id_evolucion;
-    let estadoReal = 'vigente';
+    let estadoReal = 'Activa';
     let itemsReales = (recetaData.medicamentos || []).map((m, idx) => ({
       id: idx,
       nombre: m.nombre,
@@ -652,7 +664,7 @@ function App() {
         if (res) {
           idRecetaReal = res.id_receta;
           id_evolucion_res = res.id_evolucion || id_evolucion;
-          estadoReal = res.estado === 'Dispensada' ? 'vencida' : 'vigente';
+          estadoReal = res.estado || 'Activa';
           itemsReales = (res.items || []).map((it, idx) => ({
             id: it.id_item || idx,
             nombre: it.medicamento,
@@ -707,7 +719,7 @@ function App() {
     });
   };
 
-  // Cambiar estado de receta (vigente <-> vencida)
+  // Cambiar estado de receta (ciclo: Activa -> Dispensada -> Suspendida -> Vencida)
   const cambiarEstadoReceta = (pacienteIdx, episodioIdx, recetaIdx) => {
     setPacientes(prev => {
       const actualizados = [...prev];
@@ -715,9 +727,22 @@ function App() {
       const episodios = [...(paciente.episodios || [])];
       const episodio = { ...episodios[episodioIdx] };
       const recetas = [...(episodio.recetasData || [])];
+      
+      const current = (recetas[recetaIdx].estado || '').toLowerCase();
+      let nextState = 'Activa';
+      if (current === 'activa' || current === 'vigente') {
+        nextState = 'Dispensada';
+      } else if (current === 'dispensada') {
+        nextState = 'Suspendida';
+      } else if (current === 'suspendida') {
+        nextState = 'Vencida';
+      } else {
+        nextState = 'Activa';
+      }
+
       recetas[recetaIdx] = {
         ...recetas[recetaIdx],
-        estado: recetas[recetaIdx].estado === 'vigente' ? 'vencida' : 'vigente',
+        estado: nextState,
       };
       episodio.recetasData = recetas;
       episodios[episodioIdx] = episodio;
@@ -941,6 +966,11 @@ function App() {
     setVistaActual('detalle');
   };
 
+  // Si no está logueado, mostrar la pantalla de Login
+  if (!isLoggedIn) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   if (!authReady) {
     return (
       <div style={{
@@ -1003,6 +1033,7 @@ function App() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif', margin: 0, padding: 0 }}>
+      <Toaster position="top-right" richColors closeButton />
       <Sidebar />
 
       <div style={{ flex: 1, overflow: 'hidden' }}>

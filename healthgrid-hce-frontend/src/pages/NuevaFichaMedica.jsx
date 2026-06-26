@@ -1,5 +1,8 @@
 // src/pages/NuevaFichaMedica.jsx
 import { useForm, useFieldArray } from 'react-hook-form';
+import { toast } from 'sonner';
+import { FiAlertCircle } from 'react-icons/fi';
+import { RiAsterisk } from 'react-icons/ri';
 import ModalWrapper from '../components/ModalWrapper';
 import '../styles/NuevaFichaMedica.css';
 
@@ -30,7 +33,7 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
   const esEdicion = !!datosIniciales;
 
   // React Hook Form
-  const { register, handleSubmit, reset, control } = useForm({
+  const { register, handleSubmit, reset, control, getValues } = useForm({
     defaultValues,
   });
 
@@ -47,8 +50,50 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
     remove: removeAntecedente,
   } = useFieldArray({ control, name: 'antecedentes' });
 
+  // Validación manual de campos obligatorios
+  const validarCamposObligatorios = (data) => {
+    const errores = [];
+
+    // Validar contacto de emergencia (Datos Clínicos Básicos)
+    if (!data.contactoEmergencia || data.contactoEmergencia.trim() === '') {
+      errores.push('Contacto de Emergencia');
+    }
+
+    // Validar consideraciones: al menos una fila debe tener tipo y descripción
+    const consideracionesValidas = (data.consideraciones || []).some(
+      c => c.tipo && c.tipo.trim() !== '' && c.descripcion && c.descripcion.trim() !== ''
+    );
+    if (!consideracionesValidas) {
+      errores.push('Consideraciones (tipo y descripción)');
+    }
+
+    // Validar antecedentes: al menos una fila debe tener tipo y nombre/descripción
+    const antecedentesValidos = (data.antecedentes || []).some(
+      a => a.tipo && a.tipo.trim() !== '' && a.nombreDescripcion && a.nombreDescripcion.trim() !== ''
+    );
+    if (!antecedentesValidos) {
+      errores.push('Antecedentes (tipo y descripción)');
+    }
+
+    return errores;
+  };
+
   // Submit
   const onSubmit = (data) => {
+    const errores = validarCamposObligatorios(data);
+
+    if (errores.length > 0) {
+      toast.error('Falta rellenar campos obligatorios', {
+        description: errores.join(', '),
+        icon: <RiAsterisk style={{ color: '#e74c3c', fontSize: '1.1rem' }} />,
+        duration: 5000,
+        style: {
+          borderLeft: '4px solid #e74c3c',
+        },
+      });
+      return;
+    }
+
     if (onGuardar) {
       onGuardar(data);
     } else {
@@ -148,7 +193,10 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
 
           {/* ─── SECCIÓN 2: DATOS CLÍNICOS BÁSICOS ─── */}
           <section className="ficha-section">
-            <h2 className="ficha-section__titulo">DATOS CLÍNICOS BÁSICOS</h2>
+            <h2 className="ficha-section__titulo">
+              DATOS CLÍNICOS BÁSICOS
+              <RiAsterisk className="ficha-required-asterisk" />
+            </h2>
 
             <div className="ficha-row ficha-row--2cols">
               <div className="ficha-field">
@@ -170,7 +218,10 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
                 <span className="ficha-hint">Tipo: lista desplegable.</span>
               </div>
               <div className="ficha-field">
-                <label className="ficha-label">Contacto de Emergencia</label>
+                <label className="ficha-label">
+                  Contacto de Emergencia
+                  <RiAsterisk className="ficha-required-field-asterisk" />
+                </label>
                 <input
                   type="text"
                   placeholder="Nombre, parentesco y teléfono"
@@ -184,7 +235,10 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
 
           {/* ─── SECCIÓN 3: CONSIDERACIONES (OBLIGATORIO) ─── */}
           <section className="ficha-section">
-            <h2 className="ficha-section__titulo">CONSIDERACIONES (OBLIGATORIO)</h2>
+            <h2 className="ficha-section__titulo">
+              CONSIDERACIONES (OBLIGATORIO)
+              <RiAsterisk className="ficha-required-asterisk" />
+            </h2>
             <p className="ficha-section__subtitulo">
               Registro de alergias, implantes, condiciones, contraindicaciones, etc.
             </p>
@@ -241,7 +295,10 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
 
           {/* ─── SECCIÓN 4: ANTECEDENTES (OBLIGATORIO) ─── */}
           <section className="ficha-section">
-            <h2 className="ficha-section__titulo">ANTECEDENTES (OBLIGATORIO)</h2>
+            <h2 className="ficha-section__titulo">
+              ANTECEDENTES (OBLIGATORIO)
+              <RiAsterisk className="ficha-required-asterisk" />
+            </h2>
             <p className="ficha-section__subtitulo">
               Registro de antecedentes quirúrgicos, familiares, patológicos, hábitos e internaciones.
             </p>

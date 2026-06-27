@@ -156,20 +156,33 @@ const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
             </div>
           )}
 
-          {/* Botón de placa PACS / DICOM */}
-          {estudio.tipoEstudio === 'imagenes' && resultado.link_imagen && (
+          {/* Botones de PACS y Detalle de Informe (Módulo 5) */}
+          {estudio.tipoEstudio === 'imagenes' && (resultado.link_imagen || resultado.url_detalle) && (
             <div className="ped-detalle__seccion" style={{ marginTop: 16 }}>
-              <h3 className="ped-detalle__seccion-label">Estudio de Imágenes digitalizadas (PACS/DICOM)</h3>
-              <div className="ped-detalle__pacs-container">
-                <a
-                  href={resultado.link_imagen}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ped-detalle__pacs-btn"
-                >
-                  <span className="ped-detalle__pacs-icon">🌐</span>
-                  Ver placa DICOM / PACS
-                </a>
+              <h3 className="ped-detalle__seccion-label">Estudio de Imágenes digitalizadas (Módulo 5)</h3>
+              <div className="ped-detalle__pacs-container" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                {resultado.link_imagen && (
+                  <a
+                    href={resultado.link_imagen}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ped-detalle__pacs-btn"
+                  >
+                    <span className="ped-detalle__pacs-icon">🌐</span>
+                    Ver placa DICOM / PACS
+                  </a>
+                )}
+                {resultado.url_detalle && (
+                  <a
+                    href={resultado.url_detalle}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ped-detalle__pacs-btn ped-detalle__pacs-btn--informe"
+                  >
+                    <span className="ped-detalle__pacs-icon">📄</span>
+                    Ver informe completo
+                  </a>
+                )}
               </div>
             </div>
           )}

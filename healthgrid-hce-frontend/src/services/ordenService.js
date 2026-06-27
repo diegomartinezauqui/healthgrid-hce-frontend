@@ -90,31 +90,65 @@ export const ordenService = {
     if (useMocks || !id_episodio) return [];
     try {
       const cleanId = cleanCoreId(core_patient_id);
-      const data = await api.get(`/patients/${cleanId}/episodes/${id_episodio}/ordenes`);
-      const ordenes = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
-      return ordenes.map((o, idx) => ({
-        id: o.id_orden,
-        id_orden: o.id_orden,
-        numero: idx + 1,
-        tipoEstudio: mapTipoEstudioBackToFront(o.tipo_estudio),
-        tipo_estudio: o.tipo_estudio,
-        descripcion: o.descripcion_pedido,
-        prioridad: o.prioridad,
-        estado: o.resultado ? 'completado' : 'pendiente',
-        fecha: o.resultado?.fecha_resultado || null,
-        fechaSolicitud: o.resultado?.fecha_resultado || null,
-        resultado: o.resultado
-          ? {
-              informe: o.resultado.informe_resumen,
-              profesionalFirmante: o.resultado.id_profesional_firmante,
-              fechaResultado: o.resultado.fecha_resultado,
-              codigoExterno: o.resultado.id_externo_estudio,
-              link_imagen: o.resultado.link_imagen, // Enlace DICOM/PACS
-              analitos: o.resultado.analitos, // Lista de determinaciones detalladas
-              archivosAdjuntos: [],
+      const response = await api.get(`/pacientes/${cleanId}/ordenes`);
+      const rawOrdenes = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+
+      const filtered = rawOrdenes.filter(o => o.id_episodio === Number(id_episodio));
+
+      // Consultamos el resultado de todas las órdenes en paralelo usando el nuevo endpoint específico,
+      // asociándolo si ya existe un resultado cargado (independientemente del estado de la orden).
+      const resultadosMap = {};
+      await Promise.all(
+        filtered.map(async (o) => {
+          console.log(`[OrdenService] Consultando resultado para Orden ID: ${o.id_orden}, Tipo: ${o.tipo_estudio}, Estado: ${o.estado}`);
+          try {
+            const resObj = await api.get(`/ordenes/${o.id_orden}/resultado`, {
+              params: { tipo_estudio: o.tipo_estudio }
+            });
+            console.log(`[OrdenService] Respuesta recibida para Orden ID ${o.id_orden}:`, JSON.stringify(resObj));
+            if (resObj) {
+              resultadosMap[o.id_orden] = resObj;
             }
-          : null,
-      }));
+          } catch (err) {
+            const status = err?.response?.status || err?.status;
+            console.warn(`[OrdenService] Falló consulta de resultado para Orden ID ${o.id_orden}. Status: ${status}. Error:`, err);
+          }
+        })
+      );
+
+      const mapeadas = filtered.map((o, idx) => {
+        const resObj = resultadosMap[o.id_orden];
+        const esCompletado = (o.estado || '').toLowerCase() === 'finalizado' || !!resObj;
+        
+        const ordenMapeada = {
+          id: o.id_orden,
+          id_orden: o.id_orden,
+          numero: idx + 1,
+          tipoEstudio: mapTipoEstudioBackToFront(o.tipo_estudio),
+          tipo_estudio: o.tipo_estudio,
+          descripcion: o.descripcion_pedido,
+          prioridad: o.prioridad,
+          estado: esCompletado ? 'completado' : 'pendiente',
+          fecha: resObj?.fecha_resultado || o.fecha_creacion || null,
+          fechaSolicitud: o.fecha_creacion || null,
+          resultado: resObj
+            ? {
+                informe: resObj.resumen,
+                profesionalFirmante: resObj.profesional_firmante,
+                fechaResultado: resObj.fecha_resultado,
+                codigoExterno: resObj.id_externo_estudio || resObj.id_resultado || '',
+                link_imagen: resObj.link_imagen, // Enlace DICOM/PACS
+                url_detalle: resObj.url_detalle, // Enlace al informe completo en M5
+                analitos: resObj.analitos, // Lista de determinaciones detalladas
+                archivosAdjuntos: [],
+              }
+            : null,
+        };
+        console.log(`[OrdenService] Orden mapeada final para ID ${o.id_orden}:`, JSON.stringify(ordenMapeada));
+        return ordenMapeada;
+      });
+
+      return mapeadas;
     } catch (error) {
       console.error(`[OrdenService] Error al listar órdenes del episodio ${id_episodio}:`, error);
       return [];
@@ -173,11 +207,26 @@ export const ordenService = {
     if (useMocks) return [];
     try {
       const cleanId = cleanCoreId(core_patient_id);
-      const response = await api.get(`/pacientes/${cleanId}/historial-resultados`);
+      const response = await api.get(`/pacientes/${cleanId}/historial/resultados`);
       if (Array.isArray(response)) return response;
       return Array.isArray(response?.data) ? response.data : [];
     } catch (error) {
       console.error(`[OrdenService] Error al obtener resultados de ${core_patient_id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtiene el resultado de una orden médica específica por su ID y tipo de estudio.
+   */
+  obtenerResultadoOrden: async (id_orden, tipo_estudio) => {
+    if (useMocks) return null;
+    try {
+      return await api.get(`/ordenes/${id_orden}/resultado`, {
+        params: { tipo_estudio }
+      });
+    } catch (error) {
+      console.error(`[OrdenService] Error al obtener resultado para la orden ${id_orden}:`, error);
       throw error;
     }
   },

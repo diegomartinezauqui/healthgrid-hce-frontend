@@ -20,7 +20,31 @@ export const authService = {
     console.log('[Auth Dev] Solicitando token de desarrollo JWT a /dev/login...');
     try {
       // Enviamos cuerpo vacío para tomar los valores de médico por defecto en el backend
-      const response = await api.post('/dev/login', {});
+      const response = await api.post('/dev/login', {
+        permissions: [
+          "hce:read",
+          "hce:write",
+          "hce:alertas:read",
+          "hce:alertas:write",
+          "hce:antecedentes:read",
+          "hce:antecedentes:write",
+          "hce:ficha-medica:read",
+          "hce:ficha-medica:write",
+          "hce:recetas:read",
+          "hce:recetas:write",
+          "hce:ordenes:read",
+          "hce:ordenes:write",
+          "hce:resultados:read",
+          "hce:resultados:write",
+          "hce:internacion:write",
+          "hce:episodes:read",
+          "hce:episodes:write",
+          "hce:medical-acts:read",
+          "hce:insurance:read",
+          "hce:evoluciones:read",
+          "hce:evoluciones:write"
+        ]
+      });
       if (response && response.access_token) {
         localStorage.setItem('healthgrid_token', response.access_token);
         console.log('[Auth Dev] Token JWT de desarrollo guardado en localStorage.');

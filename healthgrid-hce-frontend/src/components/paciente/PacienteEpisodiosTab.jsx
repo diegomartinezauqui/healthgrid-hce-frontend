@@ -1,6 +1,7 @@
 
-import { FiClipboard } from 'react-icons/fi';
+import { FiClipboard, FiCheckCircle, FiCircle } from 'react-icons/fi';
 import { formatearFechaLarga } from '../../utils/helpers';
+import Swal from 'sweetalert2';
 
 /**
  * PacienteEpisodiosTab renderiza el listado de episodios clínicos asociados al paciente,
@@ -10,6 +11,7 @@ const PacienteEpisodiosTab = ({
   episodios = [],
   onAbrirEpisodio,
   onNuevoEpisodioClick,
+  pacienteYaAtendido = false,
 }) => {
   return (
     <div className="episodios-section">
@@ -19,13 +21,41 @@ const PacienteEpisodiosTab = ({
           <p className="episodios-header__subtitulo">Historial de interacciones clínicas del paciente</p>
         </div>
         {(() => {
-          const tieneEpisodioAbierto = episodios.some(e => e.estado === 'abierto');
+        const tieneEpisodioAbierto = episodios.some(e => e.estado === 'abierto');
+        const bloqueado = pacienteYaAtendido || tieneEpisodioAbierto;
           return (
             <button
-              className={`detalle-btn detalle-btn--nuevo ${tieneEpisodioAbierto ? 'detalle-btn--deshabilitado' : ''}`}
-              onClick={tieneEpisodioAbierto ? undefined : onNuevoEpisodioClick}
-              disabled={tieneEpisodioAbierto}
-              title={tieneEpisodioAbierto ? "El paciente ya posee un episodio clínico abierto" : "Crear un nuevo episodio clínico"}
+              className={`detalle-btn detalle-btn--nuevo ${bloqueado ? 'detalle-btn--deshabilitado' : ''}`}
+              onClick={() => {
+                if (pacienteYaAtendido) {
+                  Swal.fire({
+                    icon: 'info',
+                    title: 'Paciente ya atendido',
+                    html: `<p style="margin:0;font-size:0.95rem;color:#555">Este paciente ya fue <strong>atendido</strong> en la consulta de hoy.<br/>No se pueden abrir nuevos episodios para este turno.</p>
+                           <p style="margin:12px 0 0 0;font-size:0.85rem;color:#888">Si necesita continuar la atención, debe generarse un nuevo turno.</p>`,
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#259A5E',
+                    timer: 6000,
+                    timerProgressBar: true,
+                    showCloseButton: true,
+                  });
+                } else if (tieneEpisodioAbierto) {
+                  Swal.fire({
+                    icon: 'warning',
+                    title: 'Episodio ya abierto',
+                    html: `<p style="margin:0;font-size:0.95rem;color:#555">El paciente ya tiene un episodio clínico <strong>abierto</strong>.<br/>Solo puede haber un episodio abierto a la vez.</p>
+                           <p style="margin:12px 0 0 0;font-size:0.85rem;color:#888">Cerrá el episodio actual antes de abrir uno nuevo.</p>`,
+                    confirmButtonText: 'Entendido',
+                    confirmButtonColor: '#259A5E',
+                    timer: 6000,
+                    timerProgressBar: true,
+                    showCloseButton: true,
+                  });
+                } else {
+                  onNuevoEpisodioClick();
+                }
+              }}
+              title={pacienteYaAtendido ? "El paciente ya fue atendido en este turno" : tieneEpisodioAbierto ? "El paciente ya posee un episodio clínico abierto" : "Crear un nuevo episodio clínico"}
             >
               + Nuevo Episodio
             </button>
@@ -55,7 +85,9 @@ const PacienteEpisodiosTab = ({
                       : 'episodio-item__icono--cerrado'
                   }`}
                 >
-                  {esAbierto ? '⊕' : '✓'}
+                  {esAbierto
+                    ? <FiCircle size={20} style={{ color: '#9EAAA3' }} />
+                    : <FiCheckCircle size={20} style={{ color: '#259A5E' }} />}
                 </div>
                 <div className="episodio-item__info">
                   <div className="episodio-item__titulo-row">

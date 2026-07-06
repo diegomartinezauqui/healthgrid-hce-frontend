@@ -182,6 +182,8 @@ function App() {
   });
   // Flag para abrir modal de nueva ficha al volver a Home
   const [abrirModalNuevo, setAbrirModalNuevo] = useState(false);
+  // Flag que indica que el paciente actualmente en detalle ya fue atendido (su turno tiene estado 'Atendido')
+  const [pacienteYaAtendido, setPacienteYaAtendido] = useState(false);
 
   // Sincronizar estado de pacientes con localStorage
   useEffect(() => {
@@ -877,6 +879,7 @@ function App() {
   const volverAHome = () => {
     setVistaActual('home');
     setPacienteActualIndex(null);
+    setPacienteYaAtendido(false);
   };
 
   // Nuevo Registro: volver a Home y abrir modal de nueva ficha
@@ -884,6 +887,12 @@ function App() {
     setVistaActual('home');
     setPacienteActualIndex(null);
     setAbrirModalNuevo(true);
+  };
+
+  // Seleccionar paciente desde un turno ya atendido (bloquea crear nuevos episodios)
+  const seleccionarPacienteAtendido = async (indexOrData) => {
+    setPacienteYaAtendido(true);
+    await seleccionarPaciente(indexOrData);
   };
 
   // Seleccionar paciente cargando sus datos de forma diferida (Lazy Load) si es necesario
@@ -1053,6 +1062,7 @@ function App() {
           <Home
             pacientes={pacientes}
             onSeleccionarPaciente={seleccionarPaciente}
+            onSeleccionarPacienteAtendido={seleccionarPacienteAtendido}
             onGuardarPaciente={guardarPaciente}
             onIniciarAtencion={iniciarAtencion}
             abrirModalNuevo={abrirModalNuevo}
@@ -1070,6 +1080,7 @@ function App() {
             pacientes={pacientes}
             onSeleccionarPaciente={seleccionarPaciente}
             turnoActivo={turnoActivo}
+            pacienteYaAtendido={pacienteYaAtendido}
             onVolver={volverAHome}
             onNuevoRegistro={nuevoRegistro}
             onActualizar={actualizarPaciente}

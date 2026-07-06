@@ -206,20 +206,28 @@
 
 /* ── Volver a búsqueda ── */
 .detalle-volver {
-  background: none;
-  border: none;
-  color: #777;
-  font-size: 0.82rem;
+  background: #ffffff;
+  border: 1.5px solid #D4DAD7;
+  color: #11352A;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0;
-  margin-bottom: 16px;
-  display: inline-block;
-  transition: color 0.2s ease;
+  padding: 8px 18px 8px 14px;
+  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
   font-family: inherit;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .detalle-volver:hover {
-  color: #11352A;
+  background: #F0F9F4;
+  border-color: #259A5E;
+  color: #259A5E;
+  box-shadow: 0 2px 8px rgba(37,154,94,0.12);
 }
 
 /* ── Card de paciente (header con avatar) ── */
@@ -350,7 +358,6 @@
   cursor: not-allowed !important;
   opacity: 0.7 !important;
   box-shadow: none !important;
-  pointer-events: none !important;
 }
 
 .detalle-btn:disabled:hover,
@@ -565,15 +572,15 @@
 }
 
 .episodio-item__icono--abierto {
-  background-color: #E8F5E9;
-  color: #259A5E;
-  border: 2px solid #C8E6C9;
+  background-color: #F2F4F3;
+  color: #9EAAA3;
+  border: 2px solid #E0E4E2;
 }
 
 .episodio-item__icono--cerrado {
-  background-color: #F0F2F1;
-  color: #888;
-  border: 2px solid #E0E0E0;
+  background-color: #E8F5E9;
+  color: #259A5E;
+  border: 2px solid #C8E6C9;
 }
 
 /* Info central */

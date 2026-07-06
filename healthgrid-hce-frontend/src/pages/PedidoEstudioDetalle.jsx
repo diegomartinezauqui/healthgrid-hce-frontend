@@ -1,6 +1,7 @@
 // src/pages/PedidoEstudioDetalle.jsx
 import '../styles/PedidoEstudioDetalle.css';
 import { formatearFechaLarga } from '../utils/helpers';
+import { FiClock, FiCalendar, FiFileText } from 'react-icons/fi';
 
 const tipoEstudioLabel = (tipo) => {
   const mapa = {
@@ -70,7 +71,8 @@ const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
             </span>
           </div>
           <p className="ped-detalle__fecha">
-            📅 Fecha de solicitud: {formatearFechaLarga(estudio.fechaSolicitud)}
+            <FiCalendar style={{ marginRight: 5, verticalAlign: 'middle', color: '#888' }} />
+            Fecha de solicitud: {formatearFechaLarga(estudio.fechaSolicitud)}
           </p>
         </div>
       </div>
@@ -87,7 +89,8 @@ const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
       {esCompletado && (
         <div className="ped-detalle__resultado">
           <h3 className="ped-detalle__resultado-titulo">
-            📋 Resultado del estudio
+            <FiFileText style={{ marginRight: 8, verticalAlign: 'middle', color: '#259A5E' }} />
+            Resultado del estudio
           </h3>
 
           {/* Metadata del resultado */}
@@ -230,7 +233,9 @@ const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
       {/* Estado pendiente sin resultados */}
       {!esCompletado && (
         <div className="ped-detalle__pendiente">
-          <div className="ped-detalle__pendiente-icon">⏳</div>
+          <div className="ped-detalle__pendiente-icon">
+            <FiClock size={36} style={{ color: '#E67E22' }} />
+          </div>
           <p className="ped-detalle__pendiente-texto">
             Este estudio se encuentra pendiente de resultados.
           </p>

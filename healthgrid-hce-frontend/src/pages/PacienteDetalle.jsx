@@ -97,6 +97,7 @@ const PacienteDetalle = ({
   onAgregarResultadoEstudio,
   onSiguiente,
   turnoActivo,
+  pacienteYaAtendido = false,
   onFinalizarAtencion,
   onActualizarEpisodios,
   onActualizarDetalleEpisodio,
@@ -237,11 +238,34 @@ const PacienteDetalle = ({
 
   const [loadingEpisodios, setLoadingEpisodios] = useState(false);
 
-  // Carga diferida de episodios desde el backend al activar la pestaña "Episodios"
+  // Carga silenciosa de episodios al montar el componente (o cambiar de paciente).
+  // Esto garantiza que PacienteHeaderCard siempre tenga datos actuales para el check
+  // de "episodio abierto", independientemente de la pestaña activa.
   useEffect(() => {
-    const cargarEpisodiosReal = async () => {
+    const cargarEpisodiosSilencioso = async () => {
+      const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+      if (useMocks) return;
+      try {
+        const eps = await pacienteService.obtenerEpisodios(paciente.core_patient_id);
+        if (onActualizarEpisodios && eps) {
+          onActualizarEpisodios(pacienteIndex, eps);
+        }
+      } catch (err) {
+        console.error('[PacienteDetalle] Error en carga silenciosa de episodios:', err);
+      }
+    };
+    cargarEpisodiosSilencioso();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paciente.core_patient_id, pacienteIndex]);
+
+  // Carga con indicador visual de progreso al activar la pestaña "Episodios"
+  // (solo si aún no tenemos episodios cargados para evitar doble fetch)
+  useEffect(() => {
+    const cargarEpisodiosConSpinner = async () => {
       const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
       if (useMocks || tabActiva !== 'episodios') return;
+      // Si ya tenemos episodios (cargados por el efecto silencioso), no volvemos a pedir
+      if (paciente.episodios && paciente.episodios.length > 0) return;
 
       setLoadingEpisodios(true);
       try {
@@ -255,7 +279,7 @@ const PacienteDetalle = ({
         setLoadingEpisodios(false);
       }
     };
-    cargarEpisodiosReal();
+    cargarEpisodiosConSpinner();
   }, [tabActiva, paciente.core_patient_id, pacienteIndex]);
 
   const esTurnoActivo = turnoActivo && turnoActivo.paciente?.core_patient_id === paciente.core_patient_id;
@@ -358,6 +382,7 @@ const PacienteDetalle = ({
           tabActiva={tabActiva}
           onEditarClick={() => setMostrarModalEdicion(true)}
           onNuevoEpisodioClick={() => setMostrarModalEpisodio(true)}
+          pacienteYaAtendido={pacienteYaAtendido}
         />
 
         {/* ─── TAB: FICHA MÉDICA ─── */}
@@ -379,6 +404,7 @@ const PacienteDetalle = ({
                   episodios={episodios}
                   onAbrirEpisodio={abrirEpisodio}
                   onNuevoEpisodioClick={() => setMostrarModalEpisodio(true)}
+                  pacienteYaAtendido={pacienteYaAtendido}
                 />
               )
             )}

@@ -9,6 +9,7 @@ import { formatearNumeroHC } from '../utils/helpers';
 const Home = ({ 
   pacientes = [], 
   onSeleccionarPaciente, 
+  onSeleccionarPacienteAtendido,
   onGuardarPaciente, 
   onIniciarAtencion, 
   abrirModalNuevo = false, 
@@ -346,7 +347,7 @@ const Home = ({
                         <button
                           onClick={() => {
                             if (tieneFicha) {
-                              onSeleccionarPaciente(fichaMedicaIdx);
+                              (onSeleccionarPacienteAtendido || onSeleccionarPaciente)(fichaMedicaIdx);
                             } else {
                               setCorePatientToCreate(turno.paciente);
                               setMostrarModal(true);

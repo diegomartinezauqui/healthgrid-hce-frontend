@@ -1,6 +1,6 @@
 // src/pages/NuevaFichaMedica.jsx
 import { useForm, useFieldArray } from 'react-hook-form';
-import { toast } from 'sonner';
+import Swal from 'sweetalert2';
 import { FiAlertCircle } from 'react-icons/fi';
 import { RiAsterisk } from 'react-icons/ri';
 import ModalWrapper from '../components/ModalWrapper';
@@ -69,12 +69,20 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
     const errores = validarCamposObligatorios(data);
 
     if (errores.length > 0) {
-      toast.error('Falta rellenar campos obligatorios', {
-        description: errores.join(', '),
-        icon: <RiAsterisk style={{ color: '#e74c3c', fontSize: '1.1rem' }} />,
-        duration: 5000,
-        style: {
-          borderLeft: '4px solid #e74c3c',
+      Swal.fire({
+        title: 'Campos obligatorios incompletos',
+        html: `<p style="margin:0;font-size:0.95rem;color:#555">Por favor completá los siguientes campos antes de guardar:</p>
+               <ul style="text-align:left;margin-top:10px;padding-left:20px;color:#c0392b;font-weight:600">
+                 ${errores.map(e => `<li>${e}</li>`).join('')}
+               </ul>`,
+        icon: 'warning',
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#2d7d46',
+        timer: 5000,
+        timerProgressBar: true,
+        showCloseButton: true,
+        customClass: {
+          popup: 'swal-ficha-popup',
         },
       });
       return;

@@ -1,0 +1,919 @@
+/* ================================================
+   EPISODIO DETALLE — Vista de un episodio
+   ================================================ */
+
+/* ── Volver ── */
+.ep-detalle__volver {
+  background: #ffffff;
+  border: 1.5px solid #D4DAD7;
+  color: #11352A;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 18px 8px 14px;
+  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.ep-detalle__volver:hover {
+  background: #F0F9F4;
+  border-color: #259A5E;
+  color: #259A5E;
+  box-shadow: 0 2px 8px rgba(37,154,94,0.12);
+}
+
+/* ── Card del episodio ── */
+.ep-detalle__card {
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ep-detalle__card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ep-detalle__titulo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ep-detalle__titulo {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+/* Badge tipo */
+.ep-detalle__tipo-badge {
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.ep-detalle__tipo-badge--ambulatorio {
+  background-color: #E8F5E9;
+  color: #259A5E;
+}
+
+.ep-detalle__tipo-badge--internado {
+  background-color: #FFF3E0;
+  color: #E65100;
+}
+
+/* Badge estado */
+.ep-detalle__estado-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ep-detalle__estado-badge--abierto {
+  color: #259A5E;
+}
+
+.ep-detalle__estado-badge--cerrado {
+  color: #999;
+}
+
+.ep-detalle__fecha {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* Botones de acción del episodio */
+.ep-detalle__card-right {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ep-detalle__btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.ep-detalle__btn--alta {
+  background-color: transparent;
+  border: 1.5px solid #D4DAD7;
+  color: #444;
+}
+
+.ep-detalle__btn--alta:hover {
+  border-color: #999;
+  background-color: #F5F5F5;
+}
+
+.ep-detalle__btn--terminar {
+  background-color: #0284c7;
+  border: 1.5px solid #0284c7;
+  color: white;
+}
+
+.ep-detalle__btn--terminar:hover {
+  background-color: #0369a1;
+  border-color: #0369a1;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.2);
+}
+
+.ep-detalle__btn--solicitar {
+  background-color: #C0392B;
+  border: 1.5px solid #C0392B;
+  color: white;
+}
+
+.ep-detalle__btn--solicitar:hover {
+  background-color: #a93226;
+  box-shadow: 0 3px 10px rgba(192, 57, 43, 0.3);
+}
+
+/* ── Sub-tabs (Segmented control con mayor definición) ── */
+.ep-detalle__subtabs {
+  display: flex;
+  background-color: #E8EDEB;
+  border-radius: 10px;
+  padding: 5px;
+  gap: 3px;
+  margin-bottom: 16px;
+  border: 1.5px solid #D0D8D4;
+  width: fit-content;
+}
+
+.ep-detalle__subtab {
+  padding: 9px 20px;
+  background: transparent;
+  border: 1.5px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5A6E65;
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+}
+
+.ep-detalle__subtab:hover {
+  color: #11352A;
+  background-color: rgba(255,255,255,0.6);
+  border-color: #C0CEC8;
+}
+
+.ep-detalle__subtab--activa {
+  background-color: #ffffff;
+  color: #11352A;
+  font-weight: 700;
+  border-color: #B0C4BB;
+  box-shadow: 0 2px 6px rgba(17, 53, 42, 0.10), 0 1px 2px rgba(0,0,0,0.06);
+  border-bottom: 2.5px solid #259A5E;
+}
+
+/* ── Sección de contenido ── */
+.ep-detalle__seccion {
+  margin-top: 4px;
+}
+
+.ep-detalle__seccion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.ep-detalle__seccion-titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.ep-detalle__seccion-sub {
+  margin: 2px 0 0 0;
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.ep-detalle__btn-nueva {
+  padding: 9px 18px;
+  background-color: #11352A;
+  border: 1.5px solid #11352A;
+  color: white;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.ep-detalle__btn-nueva:hover {
+  background-color: #1a4a3a;
+  box-shadow: 0 3px 10px rgba(17, 53, 42, 0.2);
+}
+
+/* ── Timeline Unificado ── */
+.ep-timeline-container {
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  padding: 30px 24px;
+  overflow: hidden;
+}
+
+.ep-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Línea conectora central */
+.ep-timeline::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 20px;
+  width: 2px;
+  background-color: #E8ECE9;
+  z-index: 0;
+}
+
+/* ── Item del Timeline ── */
+.ep-timeline-item {
+  display: flex;
+  position: relative;
+  gap: 20px;
+  z-index: 1;
+}
+
+.ep-timeline-item[onClick] {
+  cursor: pointer;
+}
+
+/* Iconos circulares sobre la línea */
+.ep-timeline-item__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  background-color: #ffffff;
+  border: 3px solid #ffffff; /* para tapar la línea debajo */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease;
+}
+
+.ep-timeline-item:hover .ep-timeline-item__icon {
+  transform: scale(1.05);
+}
+
+/* Colores semánticos por tipo de evento */
+.ep-timeline-item__icon--evolucion {
+  background-color: #11352A;
+  color: #259A5E;
+}
+
+.ep-timeline-item__icon--receta {
+  background-color: #259A5E;
+  color: #ffffff;
+}
+
+.ep-timeline-item__icon--estudio {
+  background-color: #2E86AB;
+  color: #ffffff;
+}
+
+.ep-timeline-item__icon--pase {
+  background-color: #F39C12;
+  color: #ffffff;
+}
+
+.ep-timeline-item__icon--internacion {
+  background-color: #C0392B;
+  color: #ffffff;
+}
+
+/* Contenido de la tarjeta */
+.ep-timeline-item__content {
+  flex: 1;
+  background-color: #FAFBFA;
+  border: 1px solid #F0F4F2;
+  border-radius: 12px;
+  padding: 18px 22px;
+  min-width: 0;
+  transition: all 0.2s ease;
+}
+
+.ep-timeline-item[onClick]:hover .ep-timeline-item__content {
+  background-color: #ffffff;
+  border-color: #D4DAD7;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+/* Header del contenido */
+.ep-timeline-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.ep-timeline-item__titulo {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.ep-timeline-item__fecha {
+  font-size: 0.78rem;
+  color: #999;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Profesional */
+.ep-timeline-item__profesional {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ep-timeline-item__profesional-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #E8F5E9;
+  color: #259A5E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.ep-timeline-item__profesional-nombre {
+  font-size: 0.8rem;
+  color: #444;
+  font-weight: 600;
+}
+
+.ep-timeline-item__profesional-rol {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Descripción */
+.ep-timeline-item__descripcion {
+  margin: 0 0 12px 0;
+  font-size: 0.86rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Tags */
+.ep-timeline-item__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ep-timeline-item__tag {
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background-color: #E8F5E9;
+  color: #11352A;
+}
+
+/* Estado vacío */
+.ep-detalle__vacio {
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  padding: 50px 30px;
+  text-align: center;
+}
+
+.ep-detalle__vacio-icono {
+  margin-bottom: 12px;
+  color: #c0ccc6;
+}
+
+.ep-detalle__vacio p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* ================================================
+   RECETAS — Cards de prescripciones
+   ================================================ */
+
+.recetas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Card de receta ── */
+.receta-card {
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+
+.receta-card:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+/* Header */
+.receta-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 22px 12px 22px;
+  border-bottom: 1px solid #F2F4F3;
+}
+
+.receta-card__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.receta-card__numero {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.receta-card__fecha {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #11352A;
+}
+
+/* Estado badge */
+.receta-card__estado {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 12px;
+}
+
+.receta-card__estado--vigente {
+  color: #259A5E;
+  background-color: #E8F5E9;
+}
+
+.receta-card__estado--vencida {
+  color: #999;
+  background-color: #F5F5F5;
+}
+
+.receta-card__estado--dispensada {
+  color: #0284c7;
+  background-color: #e0f2fe;
+}
+
+.receta-card__estado--suspendida {
+  color: #dc2626;
+  background-color: #fee2e2;
+}
+
+/* Medicamentos */
+.receta-card__medicamentos {
+  padding: 14px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.receta-card__medicamento {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.receta-card__med-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: #E8F5E9;
+  color: #259A5E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.receta-card__med-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.receta-card__med-nombre {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.receta-card__med-indicacion {
+  font-size: 0.8rem;
+  color: #777;
+  line-height: 1.4;
+}
+
+/* Observaciones */
+.receta-card__observaciones {
+  padding: 0 22px 14px 22px;
+  font-size: 0.82rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.receta-card__observaciones strong {
+  color: #333;
+  font-weight: 600;
+}
+
+/* Footer */
+.receta-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 22px;
+  border-top: 1px solid #F2F4F3;
+  background-color: #FAFBFA;
+}
+
+.receta-card__footer-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.receta-card__evol-link {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.receta-card__btn-estado {
+  padding: 6px 14px;
+  border: 1.5px solid #D4DAD7;
+  background-color: transparent;
+  color: #555;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.receta-card__btn-estado:hover {
+  border-color: #999;
+  background-color: #F0F0F0;
+}
+
+/* ================================================
+   ESTUDIOS — Cards de pedidos de estudio
+   ================================================ */
+
+.estudios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.estudio-item {
+  padding: 16px 22px;
+  border-bottom: 1px solid #F2F4F3;
+  transition: background-color 0.15s ease;
+}
+
+.estudio-item:last-child {
+  border-bottom: none;
+}
+
+.estudio-item:hover {
+  background-color: #FAFBFA;
+}
+
+.estudio-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.estudio-item__header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.estudio-item__tipo-badge {
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.estudio-item__numero {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.estudio-item__header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.estudio-item__fecha {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.estudio-item__estado {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.estudio-item__estado--completado {
+  color: #259A5E;
+}
+
+.estudio-item__estado--pendiente {
+  color: #E67E22;
+}
+
+.estudio-item__descripcion {
+  margin: 0 0 10px 0;
+  font-size: 0.84rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.estudio-item__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.estudio-item__resultado-info {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.estudio-item__ver-detalle {
+  background: none;
+  border: none;
+  color: #259A5E;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.estudio-item__ver-detalle:hover {
+  color: #1e8a50;
+  text-decoration: underline;
+}
+
+/* ================================================
+   SOLICITUDES DE PASE — Lista de solicitudes
+   ================================================ */
+
+.pase-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background-color: #ffffff;
+  border: 1px solid #E8ECE9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pase-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 22px;
+  border-bottom: 1px solid #F2F4F3;
+  transition: background-color 0.15s ease;
+}
+
+.pase-item:last-child {
+  border-bottom: none;
+}
+
+.pase-item:hover {
+  background-color: #FAFBFA;
+}
+
+.pase-item__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.pase-item__dot--pendiente  { background-color: #E67E22; }
+.pase-item__dot--completado { background-color: #259A5E; }
+.pase-item__dot--cancelado  { background-color: #999; }
+
+.pase-item__contenido {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pase-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pase-item__titulo {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #259A5E;
+}
+
+.pase-item__fecha {
+  font-size: 0.76rem;
+  color: #999;
+  white-space: nowrap;
+}
+
+.pase-item__destino {
+  margin: 0;
+  font-size: 0.83rem;
+  color: #333;
+}
+
+.pase-item__destino strong {
+  color: #259A5E;
+}
+
+.pase-item__motivo {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.pase-item__estado-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.pase-item__estado-badge--pendiente {
+  background-color: #FEF3E2;
+  color: #C47A0E;
+  border: 1px solid #F9D78C;
+}
+
+.pase-item__estado-badge--completado {
+  background-color: #E8F5E9;
+  color: #259A5E;
+  border: 1px solid #C8E6C9;
+}
+
+.pase-item__estado-badge--cancelado {
+  background-color: #F5F5F5;
+  color: #777;
+  border: 1px solid #E0E0E0;
+}
+.estudio-item__cargar-resultado {
+  background-color: transparent;
+  border: 1.5px solid #259A5E;
+  color: #259A5E;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.estudio-item__cargar-resultado:hover {
+  background-color: #259A5E;
+  color: white;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .ep-detalle__card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ep-detalle__card-right {
+    width: 100%;
+  }
+
+  .ep-detalle__btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .evol-item {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .evol-item__fecha {
+    text-align: left;
+  }
+
+  .receta-card__header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .receta-card__footer {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .estudio-item__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .estudio-item__footer {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+}
+

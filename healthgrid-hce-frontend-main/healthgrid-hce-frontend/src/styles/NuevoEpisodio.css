@@ -1,0 +1,207 @@
+/* ================================================
+   NUEVO EPISODIO — Modal pequeño centrado
+   ================================================ */
+
+/* ── Overlay ── */
+.episodio-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: epiFadeIn 0.2s ease-out;
+}
+
+@keyframes epiFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal ── */
+.episodio-modal {
+  background-color: #ffffff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.25),
+    0 6px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: epiSlideUp 0.25s ease-out;
+}
+
+@keyframes epiSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Header ── */
+.episodio-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 22px 24px 14px 24px;
+  border-bottom: 1px solid #F0F2F1;
+}
+
+.episodio-modal__titulo {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #11352A;
+}
+
+.episodio-modal__subtitulo {
+  margin: 3px 0 0 0;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.episodio-modal__cerrar {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #999;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  line-height: 1;
+  font-family: inherit;
+}
+
+.episodio-modal__cerrar:hover {
+  background-color: #F0F2F1;
+  color: #333;
+}
+
+/* ── Form ── */
+.episodio-form {
+  padding: 20px 24px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.episodio-form__row {
+  display: flex;
+  gap: 14px;
+}
+
+.episodio-form__row > .episodio-form__field {
+  flex: 1;
+}
+
+.episodio-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.episodio-form__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #2D3B34;
+}
+
+.episodio-form__input {
+  padding: 9px 12px;
+  border: 1px solid #D4DAD7;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  color: #333;
+  background-color: #FAFBFA;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.episodio-form__input:focus {
+  border-color: #259A5E;
+  box-shadow: 0 0 0 3px rgba(37, 154, 94, 0.1);
+}
+
+.episodio-form__select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.episodio-form__textarea {
+  padding: 9px 12px;
+  border: 1px solid #D4DAD7;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  color: #333;
+  background-color: #FAFBFA;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.episodio-form__textarea::placeholder {
+  color: #A0ADA6;
+}
+
+.episodio-form__textarea:focus {
+  border-color: #259A5E;
+  box-shadow: 0 0 0 3px rgba(37, 154, 94, 0.1);
+}
+
+/* ── Botones ── */
+.episodio-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.episodio-form__btn {
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.episodio-form__btn--cancelar {
+  background-color: transparent;
+  border: 1.5px solid #D4DAD7;
+  color: #555;
+}
+
+.episodio-form__btn--cancelar:hover {
+  border-color: #999;
+  background-color: #F5F5F5;
+}
+
+.episodio-form__btn--crear {
+  background-color: #11352A;
+  border: 1.5px solid #11352A;
+  color: white;
+}
+
+.episodio-form__btn--crear:hover {
+  background-color: #1a4a3a;
+  box-shadow: 0 3px 10px rgba(17, 53, 42, 0.2);
+}
+
+/* ── Responsive ── */
+@media (max-width: 520px) {
+  .episodio-form__row {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,71 @@
+/* src/index.css */
+:root {
+  --color-primary-dark: #11352A;
+  --color-primary-dark-hover: #1a4a3a;
+  --color-primary-accent: #259A5E;
+  --color-primary-accent-light: #259a5e1c;
+  --color-bg-clinical: #F4F7F6;
+  --color-surface: #FFFFFF;
+  --color-border: #E0E0E0;
+  --color-text-dark: #333333;
+  --color-text-muted: #666666;
+  
+  /* Sombras y Radios */
+  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  --modal-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  --border-radius-lg: 15px;
+  --border-radius-md: 10px;
+  --border-radius-sm: 8px;
+  
+  /* Fuentes */
+  --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-serif: Georgia, "Times New Roman", serif;
+  
+  /* Transiciones */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-family-sans);
+  background-color: var(--color-bg-clinical);
+  color: var(--color-text-dark);
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Animaciones globales */
+.animate-fade-in {
+  animation: fadeIn var(--transition-fast) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp var(--transition-normal) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,13 +1,92 @@
 // src/components/Sidebar.jsx
+import Swal from 'sweetalert2';
+import { ssoService } from '../services/ssoService';
 import '../styles/Sidebar.css';
 
-const Sidebar = () => {
-  // Cuando tengan backend, estos datos vendrán de una API o del JWT
-  const usuarioLogueado = {
-    iniciales: "SR",
-    nombre: "Dr. Santiago Rossi",
-    rol: "Jefe de Guardia"
+const Sidebar = ({ onLogout }) => {
+  const modulosExternos = {
+    'Farmacia e Insumos': { name: 'Farmacia', url: 'https://farmacia.healthcare.cantero.ar' },
+    'Laboratorio': { name: 'Laboratorio', url: 'https://laboratorio.healthcare.cantero.ar' },
+    'Imágenes': { name: 'Imágenes', url: 'https://imagenes.healthcare.cantero.ar' },
+    'Internación y Camas': { name: 'Internación y Camas', url: 'https://internacion.healthcare.cantero.ar' },
+    'Facturación': { name: 'Facturación', url: 'https://facturacion.healthcare.cantero.ar' },
+    'Portal Paciente': { name: 'Portal Paciente', url: 'https://portal-paciente.healthcare.cantero.ar' }
   };
+
+  const handleModuloClick = async (item) => {
+    if (item.name === 'Historia Clínica') return;
+    
+    const modulo = modulosExternos[item.name];
+    if (!modulo) return;
+
+    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+    if (useMocks) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Módulo de Desarrollo',
+        text: `En producción, este enlace te redirigiría automáticamente de forma segura al módulo de ${modulo.name} mediante SSO.`,
+        confirmButtonColor: '#259A5E'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Redirigiendo de forma segura',
+      text: `Solicitando credenciales SSO para el módulo de ${modulo.name}...`,
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      const ticket = await ssoService.generarTicketSso();
+      Swal.close();
+      
+      if (ticket) {
+        const targetUrl = `${modulo.url}/auth/sso?ticket=${ticket}&redirect=/`;
+        window.open(targetUrl, '_blank');
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de Conexión',
+          text: 'No se pudo generar el ticket de inicio de sesión SSO. Por favor, reintenta.',
+          confirmButtonColor: '#d33'
+        });
+      }
+    } catch (err) {
+      Swal.close();
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de Red',
+        text: 'Ocurrió un error al contactar al Core central.',
+        confirmButtonColor: '#d33'
+      });
+    }
+  };
+  const getUsuarioLogueado = () => {
+    try {
+      const ssoUser = JSON.parse(localStorage.getItem('healthgrid_sso_user'));
+      if (ssoUser) {
+        const nombre = `${ssoUser.first_name || ''} ${ssoUser.last_name || ''}`.trim() || ssoUser.email || 'Médico';
+        const iniciales = ((ssoUser.first_name?.[0] || '') + (ssoUser.last_name?.[0] || '')).toUpperCase() || 'M';
+        return {
+          iniciales,
+          nombre,
+          rol: 'Médico'
+        };
+      }
+    } catch (e) {
+      console.error('[Sidebar] Error al obtener usuario de sesión:', e);
+    }
+    return {
+      iniciales: "SR",
+      nombre: "Dr. Santiago Rossi",
+      rol: "Jefe de Guardia"
+    };
+  };
+
+  const usuarioLogueado = getUsuarioLogueado();
 
   const navItems = [
     {
@@ -133,6 +212,8 @@ const Sidebar = () => {
             <div 
               key={item.name} 
               className={`nav-item ${item.active ? 'active' : ''}`}
+              onClick={() => handleModuloClick(item)}
+              style={{ cursor: 'pointer' }}
             >
               {item.icon}
               {item.name}
@@ -146,9 +227,28 @@ const Sidebar = () => {
         <div style={{ width: '40px', height: '40px', backgroundColor: '#259A5E', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
           {usuarioLogueado.iniciales}
         </div>
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem' }}>{usuarioLogueado.nombre}</p>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: '#A0B8B0' }}>{usuarioLogueado.rol}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: '#A0B8B0' }}>{usuarioLogueado.rol}</p>
+            {onLogout && (
+              <button 
+                onClick={onLogout}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#FF8A80',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline',
+                  fontWeight: '600'
+                }}
+              >
+                Salir
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </aside>

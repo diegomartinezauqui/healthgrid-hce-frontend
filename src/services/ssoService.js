@@ -59,5 +59,32 @@ export async function establecerSesionDesdeTicket(ticket) {
   return true;
 }
 
-export const ssoService = { getSsoParams, safeRedirect, establecerSesionDesdeTicket };
+/**
+ * Solicita un ticket temporal de un solo uso al Core para SSO saliente.
+ */
+export async function generarTicketSso() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) {
+    console.error('[SSO] No hay sesión activa para generar ticket SSO.');
+    return null;
+  }
+
+  const res = await fetch(`${CORE_API_URL}/auth/sso-ticket`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!res.ok) {
+    console.error(`[SSO] sso-ticket falló: HTTP ${res.status}`);
+    return null;
+  }
+
+  const data = await res.json();
+  return data?.ticket || null;
+}
+
+export const ssoService = { getSsoParams, safeRedirect, establecerSesionDesdeTicket, generarTicketSso };
 export default ssoService;

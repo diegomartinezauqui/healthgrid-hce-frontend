@@ -1,24 +1,14 @@
-# 🏥 Health Grid — Historia Clínica Electrónica (Frontend)
+# HealthGrid HCE — Frontend
 
-> Sistema integrado de gestión de historias clínicas electrónicas, desarrollado para la materia **Desarrollo de Aplicaciones II**.
-
-[![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+> **Sistema de Historia Clínica Electrónica (HCE)** para la gestión integral de pacientes en entornos clínicos.
 
 ---
 
-## 📋 Descripción
+## 📋 Descripción del Proyecto
 
-HealthGrid HCE es el módulo frontend del sistema **Health Grid**. Permite a profesionales de la salud gestionar el ciclo de vida clínico completo de un paciente:
+HealthGrid HCE es una aplicación web de gestión de historias clínicas electrónicas. Permite a los profesionales de la salud registrar pacientes, crear episodios clínicos, documentar evoluciones médicas, emitir recetas, solicitar estudios y gestionar internaciones y pases entre servicios.
 
-- 📝 **Ficha Médica** — Registro y edición de datos personales, antecedentes, consideraciones y observaciones.
-- 📂 **Episodios Clínicos** — Creación, seguimiento y alta de episodios ambulatorios e internados.
-- 📊 **Evoluciones** — Documentación cronológica de cada consulta dentro de un episodio.
-- 💊 **Recetas** — Prescripciones médicas con control de estado (vigente / vencida).
-- 🔬 **Pedidos de Estudios** — Órdenes de laboratorio e imágenes con seguimiento de estado.
-- 🏥 **Solicitud de Internación** — Formulario de pedido de cama e internación.
-- 🔄 **Solicitudes de Pase** — Derivaciones entre servicios u hospitales.
+**Estado actual**: Prototipo funcional con estado en memoria (sin backend conectado). La interfaz está completa y lista para integrar con el backend FastAPI.
 
 ---
 
@@ -26,96 +16,88 @@ HealthGrid HCE es el módulo frontend del sistema **Health Grid**. Permite a pro
 
 | Tecnología | Versión | Uso |
 |---|---|---|
-| [React](https://react.dev/) | 19.x | Librería de interfaces de usuario |
-| [Vite](https://vitejs.dev/) | 8.x | Bundler y servidor de desarrollo (HMR) |
-| [react-hook-form](https://react-hook-form.com/) | 7.x | Gestión y validación de formularios |
-| [react-icons](https://react-icons.github.io/react-icons/) | 5.x | Iconografía (Feather Icons + Font Awesome) |
-| [SweetAlert2](https://sweetalert2.github.io/) | 11.x | Alertas, confirmaciones y feedback al usuario |
-| CSS Vanilla | — | Estilos modulares por componente (convención BEM) |
+| **React** | 19.x | Librería de UI |
+| **Vite** | 8.x | Bundler y dev server |
+| **react-hook-form** | 7.x | Formularios con validación |
+| **react-icons** | 5.x | Iconografía (Feather Icons + Font Awesome) |
+| **sweetalert2** | 11.x | Alertas y confirmaciones |
+| **CSS Vanilla** | — | Estilos modulares por componente |
 
 ---
 
 ## 🚀 Instalación y Ejecución
 
-### Prerrequisitos
-
-- **Node.js** v18 o superior ([descargar](https://nodejs.org/))
-
 ```bash
-node -v   # Verificar versión instalada
-```
-
-### Pasos
-
-```bash
-# 1. Clonar el repositorio
+# Clonar el repositorio
 git clone https://github.com/diegomartinezauqui/healthgrid-hce-frontend.git
 
-# 2. Entrar al directorio del proyecto
+# Entrar al directorio del proyecto
 cd healthgrid-hce-frontend/healthgrid-hce-frontend
 
-# 3. Instalar dependencias
+# Instalar dependencias
 npm install
 
-# 4. Levantar el servidor de desarrollo
+# Ejecutar en modo desarrollo
 npm run dev
 ```
 
-La aplicación estará disponible en `http://localhost:5174/`.
-Vite soporta **Hot Module Replacement (HMR)**, por lo que cualquier cambio se refleja en tiempo real.
+La app se levanta por defecto en `http://localhost:5174/`.
 
 ---
 
 ## 📁 Estructura del Proyecto
 
 ```
-healthgrid-hce-frontend/
-├── src/
-│   ├── App.jsx                     # Componente raíz — Estado global y navegación
-│   ├── App.css                     # Estilos del layout principal
-│   ├── main.jsx                    # Entry point (React + Vite)
-│   ├── index.css                   # Reset CSS y fuentes base
-│   │
-│   ├── components/
-│   │   └── Sidebar.jsx             # Barra lateral de navegación
-│   │
-│   ├── pages/
-│   │   ├── Home.jsx                # Dashboard con búsqueda y registro
-│   │   ├── PacienteDetalle.jsx     # Ficha médica + episodios del paciente
-│   │   ├── NuevaFichaMedica.jsx    # Formulario de registro/edición
-│   │   ├── NuevoEpisodio.jsx       # Crear episodio clínico
-│   │   ├── EpisodioDetalle.jsx     # Detalle del episodio (sub-tabs)
-│   │   ├── NuevaEvolucion.jsx      # Formulario de evolución
-│   │   ├── EvolucionDetalle.jsx    # Vista de lectura de evolución
-│   │   ├── NuevaReceta.jsx         # Formulario de prescripción
-│   │   ├── NuevoPedidoEstudio.jsx  # Formulario de pedido de estudio
-│   │   ├── PedidoEstudioDetalle.jsx# Vista detallada de estudio
-│   │   ├── SolicitarInternacion.jsx# Solicitud de internación
-│   │   └── NuevaSolicitudPase.jsx  # Solicitud de pase/derivación
-│   │
-│   └── styles/                     # Un .css por cada componente (BEM)
-│       ├── Sidebar.css
-│       ├── PacienteDetalle.css
-│       ├── EpisodioDetalle.css
-│       └── ... (12 archivos)
+src/
+├── App.jsx                  # Componente raíz — Estado global y navegación
+├── App.css                  # Estilos globales de layout
+├── main.jsx                 # Entry point de React + Vite
+├── index.css                # Reset CSS y fuentes base
 │
-├── CHANGELOG.md                    # Bitácora de cambios del proyecto
-├── package.json
-└── vite.config.js
+├── components/
+│   └── Sidebar.jsx          # Barra lateral de navegación (iconos SVG, logo)
+│
+├── pages/
+│   ├── Home.jsx             # Dashboard principal con búsqueda de pacientes
+│   ├── PacienteDetalle.jsx  # Vista de ficha médica y episodios del paciente
+│   ├── NuevaFichaMedica.jsx # Modal/formulario de registro/edición de paciente
+│   ├── NuevoEpisodio.jsx    # Formulario de creación de episodio clínico
+│   ├── EpisodioDetalle.jsx  # Vista detallada del episodio con sub-tabs
+│   ├── NuevaEvolucion.jsx   # Formulario de nueva evolución clínica
+│   ├── EvolucionDetalle.jsx # Vista de lectura de una evolución
+│   ├── NuevaReceta.jsx      # Formulario de prescripción médica
+│   ├── NuevoPedidoEstudio.jsx      # Formulario de pedido de estudio
+│   ├── PedidoEstudioDetalle.jsx    # Vista detallada de un estudio
+│   ├── SolicitarInternacion.jsx    # Formulario de solicitud de internación
+│   └── NuevaSolicitudPase.jsx      # Formulario de solicitud de pase/derivación
+│
+└── styles/
+    ├── Sidebar.css
+    ├── PacienteDetalle.css
+    ├── NuevaFichaMedica.css
+    ├── NuevoEpisodio.css
+    ├── EpisodioDetalle.css
+    ├── NuevaEvolucion.css
+    ├── EvolucionDetalle.css
+    ├── NuevaReceta.css
+    ├── NuevoPedidoEstudio.css
+    ├── PedidoEstudioDetalle.css
+    ├── SolicitarInternacion.css
+    └── NuevaSolicitudPase.css
 ```
 
 ---
 
-## 🏗 Arquitectura
+## 🏗 Arquitectura y Flujo de Datos
 
 ### Estado Global
 
-El estado vive en `App.jsx` mediante `useState`. Toda la data es **volátil** (se pierde al recargar) hasta que se integre con el backend.
+El estado de la aplicación vive **exclusivamente en `App.jsx`** mediante `useState`. No se usa Context API, Redux, ni Zustand por ahora. Toda la data es volátil (se pierde al recargar).
 
 ```
-App.jsx
-├── pacientes[]
-│   ├── episodios[]
+App.jsx (estado central)
+├── pacientes[]              ← Array de objetos paciente
+│   ├── episodios[]          ← Cada paciente tiene N episodios
 │   │   ├── evolucionesData[]
 │   │   ├── recetasData[]
 │   │   ├── estudiosData[]
@@ -123,49 +105,139 @@ App.jsx
 │   ├── consideraciones[]
 │   ├── antecedentes[]
 │   └── observaciones
-├── vistaActual → 'home' | 'detalle'
-└── pacienteActualIndex
+├── vistaActual              ← 'home' | 'detalle'
+└── pacienteActualIndex      ← Índice del paciente activo
 ```
+
+### Funciones de Mutación (definidas en App.jsx)
+
+| Función | Propósito |
+|---|---|
+| `guardarPaciente(data)` | Crea un paciente nuevo y navega a su detalle |
+| `actualizarPaciente(idx, data)` | Edita la ficha de un paciente existente |
+| `agregarEpisodio(idx, data)` | Añade un episodio al paciente |
+| `agregarEvolucion(pIdx, eIdx, data)` | Registra una evolución en un episodio |
+| `darDeAlta(pIdx, eIdx)` | Cierra un episodio (estado → 'cerrado') |
+| `agregarReceta(pIdx, eIdx, data)` | Crea una receta médica |
+| `cambiarEstadoReceta(pIdx, eIdx, rIdx)` | Alterna estado vigente/vencida |
+| `agregarEstudio(pIdx, eIdx, data)` | Registra un pedido de estudio |
+| `agregarSolicitudPase(pIdx, eIdx, data)` | Crea una solicitud de pase |
 
 ### Navegación
 
-No se usa React Router. La vista se controla con `vistaActual` en `App.jsx`:
-- `'home'` → `<Home />`
-- `'detalle'` → `<PacienteDetalle />`
+La navegación es manual mediante `vistaActual`:
+- `'home'` → Renderiza `<Home />`
+- `'detalle'` → Renderiza `<PacienteDetalle />` con el paciente seleccionado
 
-La navegación interna (tabs, sub-vistas) se maneja con estados locales en cada componente.
-
----
-
-## 🎨 Identidad Visual
-
-| Elemento | Valor |
-|---|---|
-| **Verde Oscuro (primario)** | `#11352A` |
-| **Verde Corporativo** | `#259A5E` |
-| **Fondo General** | `#F4F7F6` |
-| **Rojo Internación** | `#C0392B` |
-| **Iconografía** | `react-icons/fi` (Feather) + `react-icons/fa` |
-| **Logo** | Tipografía serif + ícono EKG SVG |
+No se usa React Router. La navegación interna dentro de PacienteDetalle se maneja con estados locales (`tabActiva`, `subVistaEpisodio`, etc.).
 
 ---
 
-## 🗺 Roadmap
+## 🎨 Sistema de Diseño
 
-- [ ] **Integración API** — Conectar con backend FastAPI + PostgreSQL
-- [ ] **Autenticación** — JWT para login y permisos
-- [ ] **React Router** — Navegación por URLs
-- [ ] **Upload de archivos** — Adjuntos en Pedidos de Estudios
-- [ ] **Testing** — Vitest + validaciones con Zod
+### Paleta de Colores
+
+| Color | Hex | Uso |
+|---|---|---|
+| Verde Oscuro (primario) | `#11352A` | Headers, botones, bordes de búsqueda |
+| Verde Corporativo | `#259A5E` | Acentos, badges activos, tabs activas |
+| Fondo General | `#F4F7F6` | Background de las páginas |
+| Blanco | `#FFFFFF` | Cards, contenedores |
+| Gris Borde | `#E0E0E0` | Bordes sutiles |
+| Rojo Solicitar | `#C0392B` | Botón "Solicitar Internación" |
+
+### Tipografía
+
+- **Cuerpo**: `sans-serif` (system font stack)
+- **Títulos del banner**: `Georgia, "Times New Roman", serif`
+- **Sidebar logo**: Serif + ícono EKG SVG
+
+### Iconografía
+
+Se utiliza **react-icons** con dos familias:
+- `react-icons/fi` (Feather Icons) — Para la mayoría de iconos UI
+- `react-icons/fa` (Font Awesome) — Para iconos específicos como `FaBed`
+
+**Iconos clave usados**:
+- `FiUser` → Datos personales
+- `FiActivity` → Resumen clínico / Evoluciones
+- `FiAlertTriangle` → Consideraciones
+- `FiClipboard` → Antecedentes / Episodios vacíos
+- `FiEdit3` / `FiEdit2` → Observaciones / Editar ficha
+- `FiCheckCircle` → Dar de alta
+- `FiBed` / `FaBed` → Solicitar internación
+- `FiPlusCircle` → Botones "Nuevo"
+- `FiCalendar`, `FiCreditCard`, `FiFileText` → Metadata del paciente
+- `FiLayers` → Pedidos de estudio
+- `FiSend` → Solicitudes de pase
+
+### Componentes UI Recurrentes
+
+- **Barra de búsqueda unificada**: Input + botón con ícono de lupa, borde `#11352A`, border-radius `8-10px`. Presente en Home (header y body) y PacienteDetalle.
+- **Tabs tipo clipboard**: Border-radius `8px`, fondo verde `#259A5E` cuando activa, gris `#E0E4E2` cuando inactiva.
+- **Sub-tabs tipo pill/segmented control**: Contenedor gris `#F0F4F2` con tabs internas que se iluminan en blanco con sombra al estar activas.
+- **Empty states**: Ícono grande gris + texto principal + subtexto de ayuda.
+- **Formularios modales**: Construidos con `react-hook-form`, confirmación con `SweetAlert2`.
 
 ---
 
-## 📝 Changelog
+## 📐 Convenciones de Código
 
-Consultá el archivo [`CHANGELOG.md`](healthgrid-hce-frontend/CHANGELOG.md) para ver la bitácora completa de cambios del proyecto.
+### Nombrado de Archivos
+- **Pages**: `PascalCase.jsx` (ej: `NuevaEvolucion.jsx`)
+- **Components**: `PascalCase.jsx` (ej: `Sidebar.jsx`)
+- **Styles**: Mismo nombre que su componente, en `src/styles/` (ej: `NuevaEvolucion.css`)
+
+### CSS
+- Un archivo CSS por componente/page
+- Nomenclatura BEM: `.bloque__elemento--modificador`
+- Ejemplo: `.ep-detalle__subtab--activa`, `.detalle-btn--editar`
+
+### IDs Únicos
+- Los registros nuevos usan `Date.now()` como ID temporal
+- **Importante**: Esto deberá migrar a UUIDs del backend cuando se integre la API
+
+### Formularios
+- Todos usan `react-hook-form` con `useForm()` y validaciones nativas (`required`, etc.)
+- Feedback al usuario mediante `Swal.fire()` de SweetAlert2
 
 ---
 
-## 👥 Equipo — Desarrollo de Aplicaciones II
+## 🗺 Roadmap / Próximos Pasos
 
-Proyecto académico desarrollado como parte del sistema integrado **Health Grid**.
+### Integración Backend (Prioridad Alta)
+- [ ] Conectar con API FastAPI mediante `axios` o `fetch`
+- [ ] Reemplazar funciones de estado local por llamadas HTTP
+- [ ] Implementar autenticación JWT
+- [ ] Persistir datos en PostgreSQL
+
+### Mejoras UI/UX
+- [ ] Implementar React Router para navegación con URLs
+- [ ] Agregar loading states y skeleton screens
+- [ ] Manejo de errores global
+- [ ] Upload de archivos en Pedidos de Estudios
+
+### Testing
+- [ ] Tests unitarios con Vitest
+- [ ] Tests de integración para formularios
+- [ ] Validación con Zod (migrar desde validaciones básicas de RHF)
+
+---
+
+## ⚠️ Notas Importantes para Desarrolladores
+
+1. **Estado volátil**: Todo vive en memoria. Al recargar la página se pierde toda la data. Esto es intencional hasta que se conecte el backend.
+
+2. **Sin routing**: No hay React Router. La navegación se maneja con condicionales en `App.jsx`. Si necesitás agregar una nueva vista, modificá `vistaActual` y agregá el condicional correspondiente.
+
+3. **CSS modular manual**: Cada componente tiene su propio `.css`. No se usa CSS Modules ni Tailwind. Respetá la convención BEM existente.
+
+4. **Emojis eliminados**: Se migraron todos los emojis a `react-icons`. No uses emojis para iconos en UI, usá siempre componentes de `react-icons/fi` o `react-icons/fa`.
+
+5. **SweetAlert2 para feedback**: Las confirmaciones de acciones destructivas (dar de alta, etc.) y los mensajes de éxito usan SweetAlert2, **no** `alert()` ni `window.confirm()`.
+
+---
+
+## 👥 Equipo
+
+Para consultas sobre este proyecto, referirse al historial de cambios en `CHANGELOG.md`.

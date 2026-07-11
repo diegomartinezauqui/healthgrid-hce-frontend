@@ -15,14 +15,25 @@ import { salaEsperaService } from './services/salaEsperaService';
 import { ordenService } from './services/ordenService';
 
 function App() {
-  // Estado de login mockeado
+  // Estado de login. Considera el token en localStorage para producción/SSO y sessionStorage para desarrollo local/mock.
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return sessionStorage.getItem('healthgrid_logged_in') === 'true';
+    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+    if (useMocks) {
+      return sessionStorage.getItem('healthgrid_logged_in') === 'true';
+    }
+    return !!localStorage.getItem('healthgrid_token');
   });
 
   const handleLogin = (userData) => {
     sessionStorage.setItem('healthgrid_logged_in', 'true');
     setIsLoggedIn(true);
+  };
+
+  const handleLogout = async () => {
+    await authService.logout();
+    sessionStorage.removeItem('healthgrid_logged_in');
+    setIsLoggedIn(false);
+    window.location.href = '/';
   };
 
   // Estado para demorar el renderizado de la UI hasta asegurar que el login de desarrollo se completó (si no usamos mocks)
@@ -1108,7 +1119,7 @@ function App() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif', margin: 0, padding: 0 }}>
       <Toaster position="top-right" richColors closeButton />
-      <Sidebar />
+      <Sidebar onLogout={handleLogout} />
 
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {vistaActual === 'home' && (

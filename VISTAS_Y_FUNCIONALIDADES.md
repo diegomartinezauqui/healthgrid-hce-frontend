@@ -68,7 +68,7 @@ Este documento detalla el propósito, los campos de datos y la interactividad de
 ## 4. EpisodioDetalle (Gestión de Episodios Médicos)
 
 * **Archivo:** `src/pages/EpisodioDetalle.jsx` y `src/styles/EpisodioDetalle.css`
-* **Propósito:** Componente contenedor de las actividades y registros clínicas vinculados a un episodio específico (una internación o un ciclo de consultas ambulatorias).
+* **Propósito:** Componente contenedor de las actividades y registros clínicos vinculados a un episodio específico (una internación o un ciclo de consultas ambulatorias).
 * **Funcionalidad:**
   * **Detalle del Episodio:** Muestra el número de episodio, fecha de apertura, estado (abierto/cerrado), motivo de consulta e indicador de tipo (Ambulatorio / Internado).
   * **Barra de Sub-pestañas "Pill-Style":** Control segmentado interactivo con sombras suaves para navegar entre las distintas áreas del episodio:

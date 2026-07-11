@@ -45,14 +45,51 @@ function App() {
         // 1) SSO del Core: si llegamos con ?ticket=..., lo canjeamos por el JWT.
         const { ticket, redirect } = ssoService.getSsoParams();
         if (ticket) {
+          console.log('[SSO] Detectado ticket de inicio de sesión. Canjeando...');
+          setAuthReady(false);
           try {
-            await ssoService.establecerSesionDesdeTicket(ticket);
+            const exito = await ssoService.establecerSesionDesdeTicket(ticket);
+            if (exito) {
+              let user = null;
+              try {
+                user = JSON.parse(localStorage.getItem('healthgrid_sso_user'));
+              } catch (e) {
+                console.error('[SSO] Error al parsear usuario de sesión:', e);
+              }
+              
+              Swal.fire({
+                icon: 'success',
+                title: 'Sesión iniciada',
+                text: `Bienvenido/a, ${user?.first_name || 'Médico'}`,
+                timer: 2000,
+                showConfirmButton: false
+              });
+
+              const target = ssoService.safeRedirect(redirect);
+              window.history.replaceState({}, '', target);
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error de Autenticación',
+                text: 'El enlace de inicio de sesión es inválido o ha expirado. Por favor, reintente desde el portal de Health Grid.',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Entendido'
+              });
+              window.history.replaceState({}, '', '/');
+            }
           } catch (error) {
-            console.error('[App] Error en el canje del ticket SSO:', error);
+            console.error('❌ [SSO] Falló la autenticación por ticket:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error de Autenticación',
+              text: 'Ocurrió un error inesperado al validar tu sesión. Por favor, reintenta.',
+              confirmButtonColor: '#d33',
+              confirmButtonText: 'Entendido'
+            });
+            window.history.replaceState({}, '', '/');
           }
-          // Limpiamos el ticket de la URL (no queda en el historial).
-          const target = ssoService.safeRedirect(redirect);
-          window.history.replaceState({}, '', target);
+          setAuthReady(true);
+          return;
         }
 
         // 2) Fallback dev (local): si no hay token, pedimos uno a /dev/login.

@@ -15,7 +15,8 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
       descripcion: '',
       estado: 'pendiente',
       subtipo: 'RADIOLOGY',
-      estudio_ids: []
+      estudio_ids: [],
+      origen: 'Ambulatorio'
     }
   });
 
@@ -126,17 +127,27 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
             </div>
           )}
 
-          {/* Evolución asociada */}
-          <div className="pedido-form__field">
-            <label className="pedido-form__label">Evolución asociada</label>
-            <select className="pedido-form__input pedido-form__select" {...register('evolucionAsociada')}>
-              <option value="">— Sin vincular —</option>
-              {(evoluciones || []).map((ev, i) => (
-                <option key={ev.id || i} value={i}>
-                  Evolución #{ev.numero} — {tipoConsultaLabel(ev.tipoConsulta)} ({formatearFechaCorta(ev.fechaHora)})
-                </option>
-              ))}
-            </select>
+          {/* Fila: Evolución asociada + Origen */}
+          <div className="pedido-form__row">
+            <div className="pedido-form__field">
+              <label className="pedido-form__label">Evolución asociada</label>
+              <select className="pedido-form__input pedido-form__select" {...register('evolucionAsociada')}>
+                <option value="">— Sin vincular —</option>
+                {(evoluciones || []).map((ev, i) => (
+                  <option key={ev.id || i} value={i}>
+                    Evolución #{ev.numero} — {tipoConsultaLabel(ev.tipoConsulta)} ({formatearFechaCorta(ev.fechaHora)})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="pedido-form__field">
+              <label className="pedido-form__label">Origen de la orden</label>
+              <select className="pedido-form__input pedido-form__select" {...register('origen')}>
+                <option value="Ambulatorio">Ambulatorio</option>
+                <option value="Internacion">Internación</option>
+                <option value="Turno">Turno</option>
+              </select>
+            </div>
           </div>
 
           {/* Descripción del pedido */}

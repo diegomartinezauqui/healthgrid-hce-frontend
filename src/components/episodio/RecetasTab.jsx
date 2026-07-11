@@ -35,12 +35,21 @@ const RecetasTab = ({
       <div className="recetas-lista">
         {recetas.length > 0 ? (
           recetas.map((rec, i) => {
+            const fechaReceta = new Date(rec.fecha);
+            const hoy = new Date();
+            const diffTime = hoy - fechaReceta;
+            // 30 días de vigencia (30 * 24 * 60 * 60 * 1000)
+            const esVencidaPorTiempo = diffTime > 30 * 24 * 60 * 60 * 1000;
+
             const estadoLower = (rec.estado || '').toLowerCase();
-            const esVigente = estadoLower === 'vigente' || estadoLower === 'activa';
+            const esVigente = (estadoLower === 'vigente' || estadoLower === 'activa') && !esVencidaPorTiempo;
             let badgeClass = 'receta-card__estado--vencida';
             let badgeLabel = 'Vencida';
 
-            if (esVigente) {
+            if (esVencidaPorTiempo) {
+              badgeClass = 'receta-card__estado--vencida';
+              badgeLabel = 'Vencida (Expirada)';
+            } else if (esVigente) {
               badgeClass = 'receta-card__estado--vigente';
               badgeLabel = 'Vigente';
             } else if (estadoLower === 'dispensada') {

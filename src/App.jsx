@@ -9,31 +9,32 @@ import Login from './pages/Login';
 import PacienteDetalle from './pages/PacienteDetalle';
 import { actualizarEstadoTurno } from './services/mockSalaEspera';
 import { authService } from './services/authService';
-import { ssoService } from './services/ssoService';
 import { pacienteService } from './services/pacienteService';
 import { salaEsperaService } from './services/salaEsperaService';
 import { ordenService } from './services/ordenService';
+import { useAuth } from './context/AuthContext';
 
 function App() {
-  // Estado de login. Considera el token en localStorage para producción/SSO y sessionStorage para desarrollo local/mock.
+  // Contexto global de autenticación (JWT)
+  const auth = useAuth();
+
+  // Estado de login mockeado (sesión de UI — independiente del JWT)
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
-    if (useMocks) {
-      return sessionStorage.getItem('healthgrid_logged_in') === 'true';
-    }
-    return !!localStorage.getItem('healthgrid_token');
+    return sessionStorage.getItem('healthgrid_logged_in') === 'true';
   });
 
+  /**
+   * handleLogin — llamado por Login.jsx al autenticarse.
+   * Si viene un access_token real (del Core), lo persiste en el contexto.
+   * Si es acceso rápido demo (sin token), solo marca la sesión de UI.
+   */
   const handleLogin = (userData) => {
     sessionStorage.setItem('healthgrid_logged_in', 'true');
+    if (userData?.access_token) {
+      // Login real contra el Core: persistir el JWT en AuthContext + localStorage
+      auth.login({ access_token: userData.access_token, user: userData.user || null });
+    }
     setIsLoggedIn(true);
-  };
-
-  const handleLogout = async () => {
-    await authService.logout();
-    sessionStorage.removeItem('healthgrid_logged_in');
-    setIsLoggedIn(false);
-    window.location.href = '/';
   };
 
   // Estado para demorar el renderizado de la UI hasta asegurar que el login de desarrollo se completó (si no usamos mocks)
@@ -44,6 +45,18 @@ function App() {
     return !!token;
   });
 
+  // Escuchar el evento global de 401 emitido por los interceptores de Axios
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.warn('[App] Sesión expirada o token inválido. Cerrando sesión...');
+      auth.logout();
+      sessionStorage.removeItem('healthgrid_logged_in');
+      setIsLoggedIn(false);
+    };
+    window.addEventListener('healthgrid:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('healthgrid:unauthorized', handleUnauthorized);
+  }, [auth]);
+
   // Dev Login inicial si no estamos usando mocks
   useEffect(() => {
     const initAuth = async () => {
@@ -52,61 +65,13 @@ function App() {
         // Limpiamos los pacientes y fichas recientes del localStorage para evitar interferencias
         localStorage.removeItem('healthgrid_pacientes');
         localStorage.removeItem('healthgrid_fichas_recientes');
-
-        // 1) SSO del Core: si llegamos con ?ticket=..., lo canjeamos por el JWT.
-        const { ticket, redirect } = ssoService.getSsoParams();
-        if (ticket) {
-          console.log('[SSO] Detectado ticket de inicio de sesión. Canjeando...');
-          setAuthReady(false);
-          try {
-            const exito = await ssoService.establecerSesionDesdeTicket(ticket);
-            if (exito) {
-              let user = null;
-              try {
-                user = JSON.parse(localStorage.getItem('healthgrid_sso_user'));
-              } catch (e) {
-                console.error('[SSO] Error al parsear usuario de sesión:', e);
-              }
-              
-              Swal.fire({
-                icon: 'success',
-                title: 'Sesión iniciada',
-                text: `Bienvenido/a, ${user?.first_name || 'Médico'}`,
-                timer: 2000,
-                showConfirmButton: false
-              });
-
-              const target = ssoService.safeRedirect(redirect);
-              window.history.replaceState({}, '', target);
-            } else {
-              Swal.fire({
-                icon: 'error',
-                title: 'Error de Autenticación',
-                text: 'El enlace de inicio de sesión es inválido o ha expirado. Por favor, reintente desde el portal de Health Grid.',
-                confirmButtonColor: '#d33',
-                confirmButtonText: 'Entendido'
-              });
-              window.history.replaceState({}, '', '/');
-            }
-          } catch (error) {
-            console.error('❌ [SSO] Falló la autenticación por ticket:', error);
-            Swal.fire({
-              icon: 'error',
-              title: 'Error de Autenticación',
-              text: 'Ocurrió un error inesperado al validar tu sesión. Por favor, reintenta.',
-              confirmButtonColor: '#d33',
-              confirmButtonText: 'Entendido'
-            });
-            window.history.replaceState({}, '', '/');
-          }
-          setAuthReady(true);
-          return;
-        }
-
-        // 2) Fallback dev (local): si no hay token, pedimos uno a /dev/login.
         if (!localStorage.getItem('healthgrid_token')) {
           try {
-            await authService.checkAndLoginDev();
+            const devToken = await authService.checkAndLoginDev();
+            // Persistir también en el contexto si obtuvimos un token de dev
+            if (devToken) {
+              auth.login({ access_token: devToken });
+            }
           } catch (error) {
             console.error('[App] Error en la inicialización de autenticación de desarrollo:', error);
           }
@@ -115,6 +80,7 @@ function App() {
       setAuthReady(true);
     };
     initAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Historial de fichas médicas vistas recientemente (máximo 5)
@@ -1119,7 +1085,7 @@ function App() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif', margin: 0, padding: 0 }}>
       <Toaster position="top-right" richColors closeButton />
-      <Sidebar onLogout={handleLogout} />
+      <Sidebar />
 
       <div style={{ flex: 1, overflow: 'hidden' }}>
         {vistaActual === 'home' && (

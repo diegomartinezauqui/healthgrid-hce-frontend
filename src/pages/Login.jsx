@@ -1,197 +1,60 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
-import { FiUser, FiLock, FiEye, FiEyeOff, FiBriefcase, FiShield, FiMail } from 'react-icons/fi';
+import { FiUser, FiLock, FiEye, FiEyeOff, FiBriefcase, FiShield, FiAlertCircle, FiLoader } from 'react-icons/fi';
 import { RiStethoscopeLine } from 'react-icons/ri';
-import Swal from 'sweetalert2';
 import { authService } from '../services/authService';
 import '../styles/Login.css';
 
 function Login({ onLogin }) {
-  const [email, setEmail] = useState('');
+  const [dni, setDni] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
   const handleQuickAccess = (role) => {
-    // Cualquier botón de acceso rápido te manda directo al home
+    // Acceso rápido demo: sin token real, solo marca la sesión de UI
     onLogin({ role, nombre: role === 'Paciente' ? 'Paciente Demo' : role === 'Profesional' ? 'Dr. García' : 'Admin Demo' });
-  };
-
-  const handleForgotOrRegister = async (e, action) => {
-    e.preventDefault();
-    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
-    if (useMocks) {
-      handleQuickAccess('Profesional');
-      return;
-    }
-
-    if (action === 'forgot') {
-      const { value: emailInput } = await Swal.fire({
-        title: 'Recuperar Contraseña',
-        input: 'email',
-        inputLabel: 'Ingresá tu correo electrónico registrado en el Core',
-        inputPlaceholder: 'ejemplo@healthcare.com',
-        showCancelButton: true,
-        confirmButtonColor: '#259A5E',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Enviar código',
-        cancelButtonText: 'Cancelar',
-        validationMessage: 'Por favor, ingresá un correo electrónico válido'
-      });
-
-      if (emailInput) {
-        Swal.fire({
-          title: 'Procesando solicitud',
-          text: 'Conectando con el Core API...',
-          allowOutsideClick: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
-
-        try {
-          const msg = await authService.recuperarContrasena(emailInput);
-          
-          // Segundo paso: Solicitud de código y nueva contraseña
-          const { value: formValues } = await Swal.fire({
-            title: 'Establecer Nueva Contraseña',
-            html:
-              '<p style="font-size: 0.9rem; margin-bottom: 10px; color: #666;">Ingresa el código que recibiste por correo electrónico y tu nueva contraseña.</p>' +
-              '<input id="swal-code" class="swal2-input" placeholder="Código de verificación" style="margin-bottom: 10px;">' +
-              '<input id="swal-password" type="password" class="swal2-input" placeholder="Nueva Contraseña (mínimo 6 caracteres)">',
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonColor: '#259A5E',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Confirmar cambio',
-            cancelButtonText: 'Cancelar',
-            preConfirm: () => {
-              const code = document.getElementById('swal-code').value;
-              const password = document.getElementById('swal-password').value;
-              if (!code.trim()) {
-                Swal.showValidationMessage('Por favor, ingresa el código');
-                return false;
-              }
-              if (!password.trim() || password.length < 6) {
-                Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
-                return false;
-              }
-              return { code, password };
-            }
-          });
-
-          if (formValues) {
-            Swal.fire({
-              title: 'Restableciendo contraseña',
-              text: 'Guardando los cambios en el Core...',
-              allowOutsideClick: false,
-              didOpen: () => {
-                Swal.showLoading();
-              }
-            });
-
-            try {
-              const resetMsg = await authService.confirmarResetPassword(emailInput, formValues.code, formValues.password);
-              Swal.fire({
-                icon: 'success',
-                title: 'Contraseña Cambiada',
-                text: resetMsg || 'Tu contraseña fue restablecida correctamente. Ya puedes iniciar sesión.',
-                confirmButtonColor: '#259A5E',
-                confirmButtonText: 'Entendido'
-              });
-            } catch (err) {
-              Swal.fire({
-                icon: 'error',
-                title: 'Fallo al restablecer',
-                text: err.message || 'No se pudo restablecer la contraseña.',
-                confirmButtonColor: '#d33',
-                confirmButtonText: 'Entendido'
-              });
-            }
-          }
-        } catch (err) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error al procesar',
-            text: err.message || 'No se pudo procesar la solicitud de recuperación.',
-            confirmButtonColor: '#d33',
-            confirmButtonText: 'Entendido'
-          });
-        }
-      }
-    } else {
-      // Registro
-      Swal.fire({
-        icon: 'info',
-        title: 'Creación de Cuenta',
-        text: 'Para solicitar un nuevo acceso al portal, ponte en contacto con la recepción o el personal administrativo de tu centro de salud.',
-        confirmButtonColor: '#259A5E',
-        confirmButtonText: 'Entendido'
-      });
-    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoginError('');
     const newErrors = {};
 
-    if (!email.trim()) {
-      newErrors.email = 'Ingresá tu correo electrónico';
-    }
-    if (!password.trim()) {
-      newErrors.password = 'Ingresá tu contraseña';
-    }
+    if (!dni.trim()) newErrors.dni = 'Ingresá tu DNI o CUIL';
+    if (!password.trim()) newErrors.password = 'Ingresá tu contraseña';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
-    if (useMocks) {
-      // Mock local
-      onLogin({ role: 'Profesional', nombre: 'Dr. García', email });
-      return;
-    }
-
-    // Login real con el Core
-    Swal.fire({
-      title: 'Iniciando sesión',
-      text: 'Conectando con el portal de Health Grid Core...',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
+    setLoading(true);
     try {
-      const user = await authService.loginConCore(email, password);
-      Swal.close();
-      
-      Swal.fire({
-        icon: 'success',
-        title: 'Sesión iniciada',
-        text: `Bienvenido/a, ${user.first_name || 'Médico'}`,
-        timer: 1500,
-        showConfirmButton: false
-      });
-
-      // Guardamos bandera en sessionStorage para compatibilidad del front
-      sessionStorage.setItem('healthgrid_logged_in', 'true');
-      onLogin({ 
-        role: 'Profesional', 
-        nombre: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Médico',
-        email: user.email 
-      });
+      // Intentar login real contra el Core (M10)
+      const { access_token, user } = await authService.loginCore(dni.trim(), password);
+      onLogin({ role: user?.role || 'Profesional', nombre: user?.username || 'Dr. García', dni, access_token, user });
     } catch (err) {
-      Swal.close();
-      Swal.fire({
-        icon: 'error',
-        title: 'Error de Inicio de Sesión',
-        text: err.message || 'Ocurrió un error inesperado al autenticar.',
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Reintentar'
-      });
+      console.error('[Login] Fallo el login contra el Core:', err);
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        setLoginError('Credenciales incorrectas. Verificá tu DNI y contraseña.');
+      } else if (!status) {
+        // Sin respuesta del Core: modo dev (solo si no es producción)
+        const isProd = import.meta.env.VITE_APP_ENV === 'production';
+        if (!isProd) {
+          console.warn('[Login] Core no disponible. Usando acceso demo de desarrollo.');
+          onLogin({ role: 'Profesional', nombre: 'Dr. García', dni });
+        } else {
+          setLoginError('No se pudo conectar con el servidor de autenticación. Intente más tarde.');
+        }
+      } else {
+        setLoginError('Error al iniciar sesión. Intente más tarde.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -250,7 +113,7 @@ function Login({ onLogin }) {
         <div className="login-form-container">
           <div className="login-form-header">
             <h2>Iniciar sesión</h2>
-            <p>Accedé al portal de Health Grid.</p>
+            <p>Accedé al portal con tu DNI.</p>
           </div>
 
           {/* Acceso rápido demo */}
@@ -294,22 +157,22 @@ function Login({ onLogin }) {
           {/* Formulario */}
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             <div className="login-field">
-              <label htmlFor="login-email">CORREO ELECTRÓNICO</label>
-              <div className={`login-input-wrapper ${errors.email ? 'login-input-error' : ''}`}>
-                <FiMail className="login-input-icon" size={18} />
+              <label htmlFor="login-dni">DNI / CUIL</label>
+              <div className={`login-input-wrapper ${errors.dni ? 'login-input-error' : ''}`}>
+                <FiUser className="login-input-icon" size={18} />
                 <input
-                  id="login-email"
-                  type="email"
-                  placeholder="ejemplo@healthcare.com"
-                  value={email}
+                  id="login-dni"
+                  type="text"
+                  placeholder="DNI o CUIL"
+                  value={dni}
                   onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                    setDni(e.target.value);
+                    if (errors.dni) setErrors(prev => ({ ...prev, dni: '' }));
                   }}
-                  autoComplete="email"
+                  autoComplete="username"
                 />
               </div>
-              {errors.email && <span className="login-error-msg">{errors.email}</span>}
+              {errors.dni && <span className="login-error-msg">{errors.dni}</span>}
             </div>
 
             <div className="login-field">
@@ -340,19 +203,47 @@ function Login({ onLogin }) {
               {errors.password && <span className="login-error-msg">{errors.password}</span>}
             </div>
 
-            <button type="submit" className="login-submit-btn" id="login-submit">
-              <FiShield size={18} />
-              Ingresar al portal
+            <button
+              type="submit"
+              className="login-submit-btn"
+              id="login-submit"
+              disabled={loading}
+              style={loading ? { opacity: 0.75, cursor: 'not-allowed' } : {}}
+            >
+              {loading ? (
+                <>
+                  <FiLoader size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                  Verificando...
+                </>
+              ) : (
+                <>
+                  <FiShield size={18} />
+                  Ingresar al portal
+                </>
+              )}
             </button>
+
+            {/* Mensaje de error del servidor */}
+            {loginError && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                backgroundColor: '#FFF3F3', border: '1px solid #FFCDD2',
+                borderRadius: '8px', padding: '10px 14px',
+                color: '#C62828', fontSize: '0.875rem', marginTop: '4px'
+              }}>
+                <FiAlertCircle size={16} style={{ flexShrink: 0 }} />
+                {loginError}
+              </div>
+            )}
           </form>
 
           <div className="login-form-footer">
-            <a href="#" className="login-forgot-link" onClick={(e) => handleForgotOrRegister(e, 'forgot')}>
+            <a href="#" className="login-forgot-link" onClick={(e) => { e.preventDefault(); handleQuickAccess('Profesional'); }}>
               ¿Olvidaste tu contraseña?
             </a>
             <p className="login-register-text">
               ¿Primera vez? Registrate con tu número de afiliado en la recepción o{' '}
-              <a href="#" className="login-register-link" onClick={(e) => handleForgotOrRegister(e, 'register')}>
+              <a href="#" className="login-register-link" onClick={(e) => { e.preventDefault(); handleQuickAccess('Profesional'); }}>
                 solicitá acceso online
               </a>.
             </p>

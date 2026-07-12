@@ -73,11 +73,6 @@ const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
           <p className="ped-detalle__fecha">
             <FiCalendar style={{ marginRight: 5, verticalAlign: 'middle', color: '#888' }} />
             Fecha de solicitud: {formatearFechaLarga(estudio.fechaSolicitud)}
-            {estudio.origen && (
-              <span style={{ marginLeft: '15px', color: '#555', fontWeight: '500' }}>
-                🏢 Origen: <strong style={{ color: '#11352A' }}>{estudio.origen === 'Internacion' ? 'Internación' : estudio.origen}</strong>
-              </span>
-            )}
           </p>
         </div>
       </div>

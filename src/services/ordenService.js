@@ -63,7 +63,6 @@ export const ordenService = {
           descripcion_pedido: estudioData.descripcion || 'Muestras bioquímicas',
           prioridad: mapPrioridadOrden(estudioData.prioridad),
           id_episodio: id_episodio || null,
-          origen: estudioData.origen || 'Ambulatorio',
         };
         const response = await api.post(`/pacientes/${cleanId}/ordenes/laboratorio`, payload);
         return { id_orden: response?.id_orden, tipo_estudio: 'Laboratorio' };
@@ -74,7 +73,6 @@ export const ordenService = {
           descripcion_pedido: estudioData.descripcion || 'Estudio de imágenes',
           prioridad: mapPrioridadOrden(estudioData.prioridad),
           id_episodio: id_episodio || null,
-          origen: estudioData.origen || 'Ambulatorio',
         };
         const response = await api.post(`/pacientes/${cleanId}/ordenes/imagenes`, payload);
         return { id_orden: response?.id_orden, tipo_estudio: 'Imagen' };
@@ -133,7 +131,6 @@ export const ordenService = {
           estado: esCompletado ? 'completado' : 'pendiente',
           fecha: resObj?.fecha_resultado || o.fecha_creacion || null,
           fechaSolicitud: o.fecha_creacion || null,
-          origen: o.origen || 'Ambulatorio',
           resultado: resObj
             ? {
                 informe: resObj.resumen,

@@ -71,23 +71,6 @@ const EstudiosTab = ({
                     >
                       {tipoLabel}
                     </span>
-                    {est.origen && (
-                      <span
-                        className="estudio-item__origen-badge"
-                        style={{
-                          backgroundColor: '#ECEFF1',
-                          color: '#37474F',
-                          border: '1px solid #CFD8DC',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
-                          fontSize: '0.72rem',
-                          fontWeight: 'bold',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {est.origen === 'Internacion' ? 'Internación' : est.origen}
-                      </span>
-                    )}
                     <span className="estudio-item__numero">Orden #{est.numero}</span>
                   </div>
                   <div className="estudio-item__header-right">

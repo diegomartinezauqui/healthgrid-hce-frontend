@@ -139,6 +139,16 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
             </select>
           </div>
 
+          {/* Origen Clínico (Ambulatorio, Internacion, Turno) */}
+          <div className="pedido-form__field">
+            <label className="pedido-form__label">Origen Clínico</label>
+            <select className="pedido-form__input pedido-form__select" {...register('origen')}>
+              <option value="Ambulatorio">Ambulatorio</option>
+              <option value="Internacion">Internación</option>
+              <option value="Turno">Turno / Guardia</option>
+            </select>
+          </div>
+
           {/* Descripción del pedido */}
           <div className="pedido-form__field">
             <label className="pedido-form__label">Descripción / Indicaciones del pedido</label>

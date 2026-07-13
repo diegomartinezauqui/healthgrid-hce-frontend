@@ -72,6 +72,21 @@ const EstudiosTab = ({
                       {tipoLabel}
                     </span>
                     <span className="estudio-item__numero">Orden #{est.numero}</span>
+                    {est.origen && (
+                      <span
+                        className="estudio-item__tipo-badge"
+                        style={{
+                          backgroundColor: '#e9ecef',
+                          color: '#495057',
+                          border: '1px solid #ced4da',
+                          marginLeft: '8px',
+                          fontSize: '0.75rem',
+                          padding: '2px 6px',
+                        }}
+                      >
+                        {est.origen}
+                      </span>
+                    )}
                   </div>
                   <div className="estudio-item__header-right">
                     <span className="estudio-item__fecha">

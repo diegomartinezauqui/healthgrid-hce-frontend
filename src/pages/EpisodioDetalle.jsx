@@ -63,7 +63,7 @@ const EpisodioDetalle = ({
     try {
       const [evoluciones, todasLasRecetas, ordenes, solicitudesResp] = await Promise.all([
         pacienteService.obtenerEvoluciones(paciente.core_patient_id, episodio.id_episodio),
-        pacienteService.obtenerRecetas(paciente.core_patient_id),
+        pacienteService.obtenerRecetas(paciente.core_patient_id, episodio.id_episodio),
         ordenService.listarOrdenesEpisodio(paciente.core_patient_id, episodio.id_episodio),
         solicitudCamaService.listar(paciente.core_patient_id, episodio.id_episodio),
       ]);

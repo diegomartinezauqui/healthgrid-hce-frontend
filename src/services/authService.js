@@ -59,11 +59,10 @@ export const authService = {
 
     const response = await coreApi.post(loginPath, payload, { headers });
 
-    // response ya es response.data gracias al interceptor de coreApi
-    const { access_token } = response;
+    const access_token = response?.token || response?.access_token;
 
     if (!access_token) {
-      throw new Error('El Core no retornó un access_token válido.');
+      throw new Error('El Core no retornó un token válido.');
     }
 
     // Guardar en localStorage para que el interceptor de Axios lo inyecte

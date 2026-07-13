@@ -48,10 +48,10 @@ export const authService = {
     let headers = {};
 
     if (useFormEncoded) {
-      payload = new URLSearchParams({ username, password });
+      payload = new URLSearchParams({ email: username, password });
       headers['Content-Type'] = 'application/x-www-form-urlencoded';
     } else {
-      payload = { username, password };
+      payload = { email: username, password };
     }
 
     // El endpoint de login del Core (ajustá si es distinto)

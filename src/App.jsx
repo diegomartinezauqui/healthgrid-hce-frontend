@@ -368,8 +368,29 @@ function App() {
     }
   };
 
-  // Actualizar paciente existente (editar ficha)
-  const actualizarPaciente = (index, data) => {
+  // Actualizar paciente existente (editar ficha) — persiste en backend + estado local
+  const actualizarPaciente = async (index, data) => {
+    const useMocksLocal = import.meta.env.VITE_USE_MOCKS === 'true';
+    const pacienteActual = pacientes[index];
+    const corePatientId = pacienteActual?.core_patient_id || pacienteActual?.id;
+
+    // 1. Persistir en backend (upsert via /ficha-completa)
+    if (!useMocksLocal && corePatientId) {
+      try {
+        console.log(`[App] Actualizando ficha médica para paciente ${corePatientId} en el backend...`);
+        await pacienteService.crearFichaCompleta(corePatientId, data);
+        console.log(`[App] Ficha médica actualizada exitosamente en el backend.`);
+      } catch (err) {
+        console.error('[App] Error al persistir edición de ficha en el backend:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al Guardar',
+          text: 'No se pudo guardar la ficha médica en el servidor. Los cambios se mantendrán solo en memoria.',
+        });
+      }
+    }
+
+    // 2. Actualizar estado local de React
     setPacientes(prev => {
       const actualizados = [...prev];
       actualizados[index] = {

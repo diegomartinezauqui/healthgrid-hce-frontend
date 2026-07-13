@@ -1,9 +1,11 @@
 // src/pages/NuevaFichaMedica.jsx
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import { FiAlertCircle } from 'react-icons/fi';
 import { RiAsterisk } from 'react-icons/ri';
 import ModalWrapper from '../components/ModalWrapper';
+import { pacienteService } from '../services/pacienteService';
 import '../styles/NuevaFichaMedica.css';
 
 const valoresVacios = {
@@ -13,13 +15,21 @@ const valoresVacios = {
   consideraciones: [{ tipo: '', descripcion: '', detalleReaccion: '' }],
   antecedentes: [{ tipo: '', nombreDescripcion: '', fecha: '', observaciones: '' }],
   observaciones: '',
+  dni: '',
+  fechaNacimiento: '',
+  genero: '',
+  obraSocial: '',
 };
 
 const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePatient = null }) => {
-  // Si hay datos iniciales (modo edición), usarlos; sino, usar valores vacíos
+  // Si hay datos iniciales (modo edición), usarlos; sino, usar valores vacíos y pre-cargar con datos del Core
   const defaultValues = datosIniciales
     ? {
         ...datosIniciales,
+        dni: datosIniciales.dni || corePatient?.dni || '',
+        fechaNacimiento: datosIniciales.fechaNacimiento || datosIniciales.fecha_nacimiento || corePatient?.fechaNacimiento || corePatient?.fecha_nacimiento || '',
+        genero: datosIniciales.genero || datosIniciales.sexo || corePatient?.genero || corePatient?.sexo || '',
+        obraSocial: datosIniciales.obraSocial || datosIniciales.obra_social || corePatient?.obraSocial || corePatient?.obra_social || '',
         // Asegurar que siempre haya al menos una fila en los arrays
         consideraciones: datosIniciales.consideraciones?.length
           ? datosIniciales.consideraciones
@@ -28,7 +38,13 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
           ? datosIniciales.antecedentes
           : [{ tipo: '', nombreDescripcion: '', fecha: '', observaciones: '' }],
       }
-    : valoresVacios;
+    : {
+        ...valoresVacios,
+        dni: corePatient?.dni || '',
+        fechaNacimiento: corePatient?.fechaNacimiento || corePatient?.fecha_nacimiento || '',
+        genero: corePatient?.genero || corePatient?.sexo || '',
+        obraSocial: corePatient?.obraSocial || corePatient?.obra_social || '',
+      };
 
   const esEdicion = !!datosIniciales;
 
@@ -49,6 +65,55 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
     append: appendAntecedente,
     remove: removeAntecedente,
   } = useFieldArray({ control, name: 'antecedentes' });
+
+  // ── Estado para selectores de cobertura en cascada (M7) ──
+  const [obrasSociales, setObrasSociales] = useState([]);
+  const [planes, setPlanes] = useState([]);
+  const [selectedObraSocialId, setSelectedObraSocialId] = useState(
+    datosIniciales?.idObraSocial || datosIniciales?.id_obra_social_entidad || ''
+  );
+  const [selectedPlanId, setSelectedPlanId] = useState(
+    datosIniciales?.idObraSocial || datosIniciales?.id_obra_social || ''
+  );
+  const [cargandoOS, setCargandoOS] = useState(false);
+  const [cargandoPlanes, setCargandoPlanes] = useState(false);
+
+  // Cargar obras sociales al montar
+  useEffect(() => {
+    const cargarObrasSociales = async () => {
+      setCargandoOS(true);
+      try {
+        const data = await pacienteService.obtenerObrasSociales();
+        setObrasSociales(data || []);
+      } catch (err) {
+        console.error('Error cargando obras sociales:', err);
+      } finally {
+        setCargandoOS(false);
+      }
+    };
+    cargarObrasSociales();
+  }, []);
+
+  // Cargar planes cuando cambie la obra social seleccionada
+  useEffect(() => {
+    if (!selectedObraSocialId) {
+      setPlanes([]);
+      setSelectedPlanId('');
+      return;
+    }
+    const cargarPlanes = async () => {
+      setCargandoPlanes(true);
+      try {
+        const data = await pacienteService.obtenerPlanes(parseInt(selectedObraSocialId));
+        setPlanes(data || []);
+      } catch (err) {
+        console.error('Error cargando planes:', err);
+      } finally {
+        setCargandoPlanes(false);
+      }
+    };
+    cargarPlanes();
+  }, [selectedObraSocialId]);
 
   // Validación manual de campos obligatorios
   const validarCamposObligatorios = (data) => {
@@ -88,10 +153,20 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
       return;
     }
 
+    // Inyectar datos de cobertura seleccionados por cascada
+    const planSeleccionado = planes.find(p => String(p.id) === String(selectedPlanId));
+    const obraSocialSeleccionada = obrasSociales.find(os => String(os.id) === String(selectedObraSocialId));
+    const datosConCobertura = {
+      ...data,
+      obraSocial: planSeleccionado?.nombre || obraSocialSeleccionada?.nombre || data.obraSocial || '',
+      idObraSocial: selectedObraSocialId ? parseInt(selectedObraSocialId) : null,
+      idPlan: selectedPlanId ? parseInt(selectedPlanId) : null,
+    };
+
     if (onGuardar) {
-      onGuardar(data);
+      onGuardar(datosConCobertura);
     } else {
-      console.log('Ficha Médica a guardar:', data);
+      console.log('Ficha Médica a guardar:', datosConCobertura);
     }
   };
 
@@ -128,15 +203,18 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
 
           {/* ─── SECCIÓN 1: IDENTIFICACIÓN DEL PACIENTE ─── */}
           <section className="ficha-section">
-            <h2 className="ficha-section__titulo">IDENTIFICACIÓN DEL PACIENTE (Datos desde Core)</h2>
+            <h2 className="ficha-section__titulo">IDENTIFICACIÓN DEL PACIENTE (Datos Personales HCE)</h2>
 
             {/* Fila 1: DNI, Nro Historia, Nombre */}
             <div className="ficha-row ficha-row--3cols">
               <div className="ficha-field">
                 <label className="ficha-label">DNI</label>
-                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666' }}>
-                  {corePatient?.dni || '—'}
-                </div>
+                <input
+                  type="text"
+                  placeholder="Ej: 12345678"
+                  className="ficha-input"
+                  {...register('dni')}
+                />
               </div>
               <div className="ficha-field">
                 <label className="ficha-label">Número de Historia Clínica</label>
@@ -156,28 +234,90 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
               </div>
             </div>
 
-            {/* Fila 2: Fecha Nacimiento, Sexo, Teléfono, Domicilio */}
-            <div className="ficha-row ficha-row--4cols">
+            {/* Fila 2: Fecha Nacimiento, Sexo, Obra Social */}
+            <div className="ficha-row ficha-row--3cols">
               <div className="ficha-field">
                 <label className="ficha-label">Fecha de Nacimiento</label>
-                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666' }}>
-                  {corePatient?.fechaNacimiento || '—'}
-                </div>
+                <input
+                  type="date"
+                  className="ficha-input"
+                  {...register('fechaNacimiento')}
+                />
               </div>
               <div className="ficha-field">
-                <label className="ficha-label">Sexo</label>
-                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666' }}>
-                  {corePatient?.sexo || '—'}
-                </div>
+                <label className="ficha-label">Sexo / Género</label>
+                <select
+                  className="ficha-input ficha-select"
+                  {...register('genero')}
+                >
+                  <option value="">Seleccionar</option>
+                  <option value="M">Masculino (M)</option>
+                  <option value="F">Femenino (F)</option>
+                  <option value="Otro">Otro</option>
+                </select>
               </div>
               <div className="ficha-field">
-                <label className="ficha-label">Teléfono</label>
+                <label className="ficha-label">Obra Social</label>
+                <select
+                  className="ficha-input ficha-select"
+                  value={selectedObraSocialId}
+                  onChange={(e) => {
+                    setSelectedObraSocialId(e.target.value);
+                    setSelectedPlanId('');
+                  }}
+                  disabled={cargandoOS}
+                >
+                  <option value="">{cargandoOS ? 'Cargando...' : 'Seleccionar Obra Social'}</option>
+                  {obrasSociales.map(os => (
+                    <option key={os.id} value={os.id}>{os.nombre}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Fila 2b: Plan de Cobertura y Nro de Afiliado */}
+            <div className="ficha-row ficha-row--2cols">
+              <div className="ficha-field">
+                <label className="ficha-label">Plan de Cobertura</label>
+                <select
+                  className="ficha-input ficha-select"
+                  value={selectedPlanId}
+                  onChange={(e) => setSelectedPlanId(e.target.value)}
+                  disabled={!selectedObraSocialId || cargandoPlanes}
+                >
+                  <option value="">
+                    {!selectedObraSocialId
+                      ? 'Seleccione una obra social primero'
+                      : cargandoPlanes
+                        ? 'Cargando planes...'
+                        : 'Seleccionar Plan'}
+                  </option>
+                  {planes.map(plan => (
+                    <option key={plan.id} value={plan.id}>{plan.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="ficha-field">
+                <label className="ficha-label">Nro. de Afiliado</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 123456789012"
+                  className="ficha-input"
+                  {...register('numeroAfiliado')}
+                />
+              </div>
+            </div>
+
+            {/* Fila 3: Teléfono, Domicilio (Estáticos del Core) */}
+            <div className="ficha-row ficha-row--2cols">
+              <div className="ficha-field">
+                <label className="ficha-label">Teléfono (Core)</label>
                 <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666' }}>
                   {corePatient?.telefono || '—'}
                 </div>
               </div>
               <div className="ficha-field">
-                <label className="ficha-label">Domicilio</label>
+                <label className="ficha-label">Domicilio (Core)</label>
                 <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={corePatient?.direccion}>
                   {corePatient?.direccion || '—'}
                 </div>

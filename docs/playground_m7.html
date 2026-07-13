@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playground de Integración Módulo 7 (Facturación)</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --panel-bg: #1e293b;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --border: #334155;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin: 0;
+      background: linear-gradient(135deg, #60a5fa, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      margin-top: -0.5rem;
+      font-size: 0.95rem;
+    }
+
+    .panel {
+      background-color: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    input, select, textarea {
+      background-color: #0f172a;
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    button {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .response-area {
+      background-color: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.85rem;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #38bdf8;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .badge-success { background-color: rgba(16, 185, 129, 0.2); color: var(--success); }
+    .badge-error { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div>
+      <h1>Playground de Integración - Módulo 7 (Facturación)</h1>
+      <p class="subtitle">Probador visual local para interactuar con la API de facturación y nomenclador.</p>
+    </div>
+
+    <!-- Panel de Configuración de Credenciales -->
+    <div class="panel">
+      <div class="panel-title">🔑 1. Credenciales de Acceso</div>
+      <div class="form-group">
+        <label for="jwt-token">Token JWT del Core (SSO)</label>
+        <textarea id="jwt-token" rows="3" placeholder="Pega aquí el token JWT obtenido del login de Core..."></textarea>
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label for="api-key">API Key del Módulo 7</label>
+          <input type="text" id="api-key" value="billing-secret-key">
+        </div>
+        <div class="form-group">
+          <label for="base-url">M7 Base URL (Render)</label>
+          <input type="text" id="base-url" value="https://modulo7-backend.onrender.com">
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel de Búsqueda de Nomenclador -->
+    <div class="panel">
+      <div class="panel-title">🏥 2. Buscar en el Nomenclador Médico</div>
+      <div class="row">
+        <div class="form-group">
+          <label for="search-desc">Descripción (ej: Consulta)</label>
+          <input type="text" id="search-desc" placeholder="Buscar por descripción...">
+        </div>
+        <div class="form-group">
+          <label for="search-code">Código (ej: 01.01.01)</label>
+          <input type="text" id="search-code" placeholder="Buscar por código de nomenclador...">
+        </div>
+      </div>
+      <button onclick="buscarPrestaciones()">Consultar Nomenclador</button>
+    </div>
+
+    <!-- Panel de Resultados -->
+    <div class="panel">
+      <div class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>📡 Respuesta de la API</span>
+        <span id="status-badge" class="badge">PENDIENTE</span>
+      </div>
+      <pre id="response-output" class="response-area">Las respuestas de las peticiones se mostrarán aquí...</pre>
+    </div>
+  </div>
+
+  <script>
+    // Recuperar token de localStorage al iniciar
+    document.getElementById('jwt-token').value = localStorage.getItem('m7_test_jwt') || '';
+
+    // Guardar token en localStorage cuando cambie
+    document.getElementById('jwt-token').addEventListener('input', (e) => {
+      localStorage.setItem('m7_test_jwt', e.target.value);
+    });
+
+    async function buscarPrestaciones() {
+      const token = document.getElementById('jwt-token').value.trim();
+      const apiKey = document.getElementById('api-key').value.trim();
+      const baseUrl = document.getElementById('base-url').value.trim();
+      const desc = document.getElementById('search-desc').value.trim();
+      const code = document.getElementById('search-code').value.trim();
+
+      const output = document.getElementById('response-output');
+      const badge = document.getElementById('status-badge');
+
+      if (!token) {
+        alert('Por favor, ingresá el token JWT de Core primero.');
+        return;
+      }
+
+      badge.className = 'badge';
+      badge.textContent = 'ENVIANDO...';
+      badge.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+      badge.style.color = '#3b82f6';
+      output.textContent = 'Enviando petición HTTP a Render...';
+
+      // Construir query params
+      const params = new URLSearchParams();
+      if (desc) params.append('descripcion', desc);
+      if (code) params.append('codigo', code);
+
+      const url = `${baseUrl}/api/prestaciones-nomenclador?${params.toString()}`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'x-api-key': apiKey
+          }
+        });
+
+        const status = response.status;
+        const text = await response.text();
+        
+        let json;
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = null;
+        }
+
+        if (response.ok) {
+          badge.textContent = `${status} OK`;
+          badge.className = 'badge badge-success';
+          output.style.color = '#10b981';
+          output.textContent = json ? JSON.stringify(json, null, 2) : text;
+        } else {
+          badge.textContent = `${status} ERROR`;
+          badge.className = 'badge badge-error';
+          output.style.color = '#ef4444';
+          output.textContent = json ? JSON.stringify(json, null, 2) : text;
+        }
+      } catch (err) {
+        badge.textContent = 'ERROR RED';
+        badge.className = 'badge badge-error';
+        output.style.color = '#ef4444';
+        output.textContent = `Error de conexión:\n${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>

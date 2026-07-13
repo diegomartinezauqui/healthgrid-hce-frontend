@@ -101,7 +101,15 @@ export const pacienteService = {
           observaciones_generales: data.observaciones || ''
         },
         antecedentes,
-        alertas_clinicas
+        alertas_clinicas,
+        // Sincronizar datos demográficos del paciente si vienen en los datos de entrada
+        dni: data.dni || null,
+        fecha_nacimiento: data.fechaNacimiento || data.fecha_nacimiento || null,
+        genero: data.genero || data.sexo || null,
+        obra_social: data.obraSocial || data.obra_social || null,
+        id_obra_social: data.idObraSocial ? parseInt(data.idObraSocial) : (data.id_obra_social ? parseInt(data.id_obra_social) : null),
+        id_plan: data.idPlan ? parseInt(data.idPlan) : (data.id_plan ? parseInt(data.id_plan) : null),
+        numero_afiliado: data.numeroAfiliado || data.numero_afiliado || null
       };
 
       const response = await api.post(`/pacientes/${cleanId}/ficha-completa`, payload);
@@ -279,15 +287,16 @@ export const pacienteService = {
     }
   },
 
-  /**
-   * Obtiene todas las recetas de un paciente desde el backend de HCE.
-   */
-  obtenerRecetas: async (core_patient_id) => {
+  obtenerRecetas: async (core_patient_id, id_episodio = null) => {
     if (useMocks) return null;
 
     try {
       const cleanId = core_patient_id.replace('core-', '').replace(/^0+/, '');
-      const response = await api.get('/recetas', { params: { id_paciente: cleanId } });
+      const params = { id_paciente: cleanId };
+      if (id_episodio) {
+        params.id_episodio = id_episodio;
+      }
+      const response = await api.get('/recetas', { params });
       if (response && Array.isArray(response.data)) {
         return response.data.map(rec => ({
           id: rec.id_receta,
@@ -495,6 +504,84 @@ export const pacienteService = {
     } catch (error) {
       console.error(`[PacienteService] Error al buscar medicamentos con query '${query}':`, error);
       throw error;
+    }
+  },
+
+  /**
+   * Obtiene la lista de obras sociales (entidades financiadoras) desde el nomenclador M7.
+   */
+  obtenerObrasSociales: async () => {
+    if (useMocks) {
+      return [
+        { id: 1, nombre: 'OSDE', cuit: '30-54678912-9', tipoFinanciador: 'PREPAGA', activa: true },
+        { id: 2, nombre: 'Swiss Medical', cuit: '30-68951234-8', tipoFinanciador: 'PREPAGA', activa: true },
+        { id: 3, nombre: 'Particular', cuit: '00-00000000-0', tipoFinanciador: 'OTRO', activa: true }
+      ];
+    }
+    try {
+      const response = await api.get('/nomenclador/obras-sociales');
+      return response;
+    } catch (error) {
+      console.error('[PacienteService] Error al obtener obras sociales de M7:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Obtiene la lista de planes de una obra social desde el nomenclador M7.
+   */
+  obtenerPlanes: async (entidadFinanciadoraId) => {
+    if (useMocks) {
+      if (entidadFinanciadoraId === 1) {
+        return [
+          { id: 1, entidadFinanciadoraId: 1, nombre: 'OSDE 310', codigo: '310', activo: true },
+          { id: 2, entidadFinanciadoraId: 1, nombre: 'OSDE 410', codigo: '410', activo: true }
+        ];
+      }
+      if (entidadFinanciadoraId === 2) {
+        return [
+          { id: 3, entidadFinanciadoraId: 2, nombre: 'Swiss Medical SMG20', codigo: 'SMG20', activo: true },
+          { id: 4, entidadFinanciadoraId: 2, nombre: 'Swiss Medical SMG30', codigo: 'SMG30', activo: true }
+        ];
+      }
+      return [{ id: 5, entidadFinanciadoraId: entidadFinanciadoraId, nombre: 'Plan Particular', codigo: 'PART', activo: true }];
+    }
+    try {
+      const response = await api.get('/nomenclador/planes', {
+        params: { entidad_financiadora_id: entidadFinanciadoraId }
+      });
+      return response;
+    } catch (error) {
+      console.error(`[PacienteService] Error al obtener planes para entidad ${entidadFinanciadoraId}:`, error);
+      return [];
+    }
+  },
+
+  /**
+   * Busca prestaciones nomencladas del Módulo 7.
+   */
+  buscarPrestacionesM7: async (query) => {
+    if (useMocks) {
+      const mockPrestaciones = [
+        { id: 1, codigoNomenclador: '01.01.01', descripcion: 'Consulta médica ambulatoria', tipoPrestacion: 'CONSULTA', activa: true },
+        { id: 2, codigoNomenclador: '42.01.01', descripcion: 'Radiografía de tórax frente', tipoPrestacion: 'PRACTICA', activa: true },
+        { id: 3, codigoNomenclador: '66.01.02', descripcion: 'Hemograma completo', tipoPrestacion: 'LABORATORIO', activa: true },
+        { id: 4, codigoNomenclador: '99.01.05', descripcion: 'Gasa estéril 10x10', tipoPrestacion: 'INSUMO', activa: true }
+      ];
+      if (query) {
+        const q = query.toLowerCase();
+        return mockPrestaciones.filter(p => p.descripcion.toLowerCase().includes(q) || p.codigoNomenclador.includes(q));
+      }
+      return mockPrestaciones;
+    }
+    try {
+      const response = await api.get('/nomenclador/prestaciones', {
+        params: { descripcion: query }
+      });
+      return response;
+    } catch (error) {
+      console.error('[PacienteService] Error al buscar prestaciones en M7:', error);
+      return [];
     }
   }
 };

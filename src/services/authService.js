@@ -69,14 +69,15 @@ export const authService = {
     localStorage.setItem(TOKEN_KEY, access_token);
     console.log('[Auth] JWT del Core guardado en localStorage.');
 
-    // Intentar extraer datos del usuario del payload del token (sin validar firma)
-    let user = null;
-    try {
-      const payloadB64 = access_token.split('.')[1];
-      user = JSON.parse(atob(payloadB64));
-    } catch {
-      // Si no se puede decodificar el payload, no es crítico
-      console.warn('[Auth] No se pudo decodificar el payload del JWT.');
+    // Intentar extraer datos del usuario de la respuesta o decodificar el payload del token como fallback
+    let user = response?.user || null;
+    if (!user) {
+      try {
+        const payloadB64 = access_token.split('.')[1];
+        user = JSON.parse(atob(payloadB64));
+      } catch {
+        console.warn('[Auth] No se pudo decodificar el payload del JWT.');
+      }
     }
 
     return { access_token, user };
@@ -136,10 +137,80 @@ export const authService = {
   },
 
   /**
-   * Cierra la sesión limpiando el token del localStorage.
+   * Cierra la sesión limpiando el token del localStorage e invalidándolo en el Core.
    */
-  logout: () => {
+  logout: async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    
+    // Limpiamos los tokens localmente al instante de forma síncrona
     localStorage.removeItem(TOKEN_KEY);
-    console.log('[Auth] Token JWT eliminado de localStorage.');
+    localStorage.removeItem('healthgrid_sso_user');
+    console.log('[Auth] Token JWT eliminado de localStorage de forma síncrona.');
+
+    if (token) {
+      const coreApiUrl = import.meta.env.VITE_CORE_API_URL || 'https://api.healthcare.cantero.ar';
+      console.log('[Auth Core] Solicitando invalidación de token a /auth/logout en segundo plano...');
+      try {
+        await fetch(`${coreApiUrl}/auth/logout`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          keepalive: true // Mantiene el fetch activo incluso si la pestaña se redirecciona de inmediato
+        });
+        console.log('[Auth Core] Token invalidado en el Core con éxito.');
+      } catch (error) {
+        console.error('[Auth Core] Error al invalidar token en el Core:', error);
+      }
+    }
   },
+
+  /**
+   * Envía una solicitud de restablecimiento de contraseña para el email dado al Core API.
+   */
+  recuperarContrasena: async (email) => {
+    const coreApiUrl = import.meta.env.VITE_CORE_API_URL || 'https://api.healthcare.cantero.ar';
+    console.log('[Auth Core] Solicitando recuperación de contraseña a /auth/forgot-password...');
+    
+    const response = await fetch(`${coreApiUrl}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('No se encontró ninguna cuenta registrada con ese correo electrónico.');
+      }
+      throw new Error(`Error al solicitar restablecimiento: HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data?.message || 'Código de restablecimiento enviado con éxito a tu casilla de correo.';
+  },
+
+  /**
+   * Confirma el restablecimiento de contraseña usando el código recibido y la nueva contraseña.
+   */
+  confirmarResetPassword: async (email, code, newPassword) => {
+    const coreApiUrl = import.meta.env.VITE_CORE_API_URL || 'https://api.healthcare.cantero.ar';
+    console.log('[Auth Core] Enviando confirmación de reset de password a /auth/reset-password...');
+    
+    const response = await fetch(`${coreApiUrl}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, new_password: newPassword })
+    });
+
+    if (!response.ok) {
+      if (response.status === 400) {
+        throw new Error('El código ingresado es inválido, ya fue usado o ha expirado.');
+      }
+      throw new Error(`Error al restablecer la contraseña: HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data?.message || 'Contraseña restablecida con éxito. Ya puedes iniciar sesión.';
+  }
 };

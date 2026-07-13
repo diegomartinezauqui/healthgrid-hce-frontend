@@ -1,13 +1,112 @@
 // src/components/Sidebar.jsx
+import Swal from 'sweetalert2';
+import { useAuth } from '../context/AuthContext';
+import { ssoService } from '../services/ssoService';
+import { authService } from '../services/authService';
 import '../styles/Sidebar.css';
 
 const Sidebar = () => {
-  // Cuando tengan backend, estos datos vendrán de una API o del JWT
-  const usuarioLogueado = {
-    iniciales: "SR",
-    nombre: "Dr. Santiago Rossi",
-    rol: "Jefe de Guardia"
+  const { user: authUser, logout: contextLogout } = useAuth();
+
+  const modulosExternos = {
+    'Farmacia e Insumos': { name: 'Farmacia', url: 'https://farmacia.healthcare.cantero.ar' },
+    'Laboratorio': { name: 'Laboratorio', url: 'https://laboratorio.healthcare.cantero.ar' },
+    'Imágenes': { name: 'Imágenes', url: 'https://imagenes.healthcare.cantero.ar' },
+    'Internación y Camas': { name: 'Internación y Camas', url: 'https://internacion.healthcare.cantero.ar' },
+    'Facturación': { name: 'Facturación', url: 'https://facturacion.healthcare.cantero.ar' },
+    'Portal Paciente': { name: 'Portal Paciente', url: 'https://portal-paciente.healthcare.cantero.ar' }
   };
+
+  const handleModuloClick = async (item) => {
+    if (item.name === 'Historia Clínica') return;
+    
+    const modulo = modulosExternos[item.name];
+    if (!modulo) return;
+
+    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+    if (useMocks) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Módulo de Desarrollo',
+        text: `En producción, este enlace te redirigiría automáticamente de forma segura al módulo de ${modulo.name} mediante SSO.`,
+        confirmButtonColor: '#259A5E'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Redirigiendo de forma segura',
+      text: `Solicitando credenciales SSO para el módulo de ${modulo.name}...`,
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      const ticket = await ssoService.generarTicketSso();
+      Swal.close();
+      
+      if (ticket) {
+        const targetUrl = `${modulo.url}/auth/sso?ticket=${ticket}&redirect=/`;
+        window.open(targetUrl, '_blank');
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error de Conexión',
+          text: 'No se pudo generar el ticket de inicio de sesión SSO. Por favor, reintenta.',
+          confirmButtonColor: '#d33'
+        });
+      }
+    } catch (err) {
+      Swal.close();
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de Red',
+        text: 'Ocurrió un error al contactar al Core central.',
+        confirmButtonColor: '#d33'
+      });
+    }
+  };
+
+  const getUsuarioLogueado = () => {
+    if (authUser) {
+      const nombre = authUser.first_name || authUser.last_name 
+        ? `${authUser.first_name || ''} ${authUser.last_name || ''}`.trim() 
+        : (authUser.nombre || authUser.name || authUser.username || authUser.email || 'Profesional');
+      const iniciales = nombre.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase();
+      return {
+        nombre,
+        iniciales: iniciales || 'PR',
+        rol: authUser.rol || authUser.role || 'Médico HCE'
+      };
+    }
+    
+    try {
+      const ssoUser = JSON.parse(localStorage.getItem('healthgrid_sso_user'));
+      if (ssoUser) {
+        const nombre = ssoUser.first_name || ssoUser.last_name 
+          ? `${ssoUser.first_name || ''} ${ssoUser.last_name || ''}`.trim() 
+          : (ssoUser.name || ssoUser.nombre || ssoUser.username || 'Profesional');
+        const iniciales = nombre.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        return {
+          nombre,
+          iniciales: iniciales || 'PR',
+          rol: ssoUser.role || ssoUser.rol || 'Médico HCE'
+        };
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    return {
+      iniciales: "SR",
+      nombre: "Dr. Santiago Rossi",
+      rol: "Jefe de Guardia"
+    };
+  };
+
+  const usuarioLogueado = getUsuarioLogueado();
 
   const navItems = [
     {
@@ -133,6 +232,8 @@ const Sidebar = () => {
             <div 
               key={item.name} 
               className={`nav-item ${item.active ? 'active' : ''}`}
+              onClick={() => handleModuloClick(item)}
+              style={{ cursor: 'pointer' }}
             >
               {item.icon}
               {item.name}
@@ -142,13 +243,34 @@ const Sidebar = () => {
       </div>
 
       {/* Parte Inferior: Perfil del Usuario */}
-      <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ width: '40px', height: '40px', backgroundColor: '#259A5E', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold' }}>
+      <div style={{ padding: '0 20px', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+        <div style={{ width: '40px', height: '40px', backgroundColor: '#259A5E', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', flexShrink: 0 }}>
           {usuarioLogueado.iniciales}
         </div>
-        <div>
-          <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem' }}>{usuarioLogueado.nombre}</p>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: '#A0B8B0' }}>{usuarioLogueado.rol}</p>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem', color: '#E8F5E9', lineHeight: '1.2' }}>{usuarioLogueado.nombre}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: '#A0B8B0' }}>{usuarioLogueado.rol}</p>
+            <button 
+              onClick={() => {
+                authService.logout();
+                sessionStorage.removeItem('healthgrid_logged_in');
+                window.location.href = '/';
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#C8E6C9',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                textDecoration: 'underline',
+                padding: 0,
+                display: 'inline-block'
+              }}
+            >
+              Salir
+            </button>
+          </div>
         </div>
       </div>
     </aside>

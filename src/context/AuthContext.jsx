@@ -13,6 +13,7 @@
  */
 
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { authService } from '../services/authService';
 
 const TOKEN_KEY = 'healthgrid_token';
 const USER_KEY  = 'healthgrid_user';
@@ -62,7 +63,8 @@ export function AuthProvider({ children }) {
    * Borra el token del estado y del localStorage.
    */
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
+    // Invalida el token en el Core de fondo sin bloquear el hilo visual
+    authService.logout();
     localStorage.removeItem(USER_KEY);
     setToken(null);
     setUser(null);

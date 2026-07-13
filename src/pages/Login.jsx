@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FiUser, FiLock, FiEye, FiEyeOff, FiBriefcase, FiShield, FiAlertCircle, FiLoader } from 'react-icons/fi';
 import { RiStethoscopeLine } from 'react-icons/ri';
 import { authService } from '../services/authService';
+import Swal from 'sweetalert2';
 import '../styles/Login.css';
 
 function Login({ onLogin }) {
@@ -16,6 +17,126 @@ function Login({ onLogin }) {
   const handleQuickAccess = (role) => {
     // Acceso rápido demo: sin token real, solo marca la sesión de UI
     onLogin({ role, nombre: role === 'Paciente' ? 'Paciente Demo' : role === 'Profesional' ? 'Dr. García' : 'Admin Demo' });
+  };
+
+  const handleForgotOrRegister = async (e, action) => {
+    e.preventDefault();
+    const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+    if (useMocks) {
+      handleQuickAccess('Profesional');
+      return;
+    }
+
+    if (action === 'forgot') {
+      const { value: emailInput } = await Swal.fire({
+        title: 'Recuperar Contraseña',
+        input: 'email',
+        inputLabel: 'Ingresá tu correo electrónico registrado en el Core',
+        inputPlaceholder: 'ejemplo@healthcare.com',
+        showCancelButton: true,
+        confirmButtonColor: '#259A5E',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Enviar código',
+        cancelButtonText: 'Cancelar',
+        validationMessage: 'Por favor, ingresá un correo electrónico válido'
+      });
+
+      if (emailInput) {
+        Swal.fire({
+          title: 'Procesando solicitud',
+          text: 'Conectando con el Core API...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        try {
+          const msg = await authService.recuperarContrasena(emailInput);
+          
+          // Segundo paso: Solicitud de código y nueva contraseña
+          const { value: formValues } = await Swal.fire({
+            title: 'Establecer Nueva Contraseña',
+            html:
+              '<p style="font-size: 0.9rem; margin-bottom: 10px; color: #666;">Ingresa el código que recibiste por correo electrónico y tu nueva contraseña.</p>' +
+              '<input id="swal-code" class="swal2-input" placeholder="Código de verificación" style="margin-bottom: 10px;">' +
+              '<input id="swal-password" type="password" class="swal2-input" placeholder="Nueva Contraseña (mínimo 6 caracteres)">',
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonColor: '#259A5E',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Confirmar cambio',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+              const code = document.getElementById('swal-code').value;
+              const password = document.getElementById('swal-password').value;
+              if (!code.trim()) {
+                Swal.showValidationMessage('Por favor, ingresa el código');
+                return false;
+              }
+              if (!password.trim() || password.length < 6) {
+                Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
+                return false;
+              }
+              return { code, password };
+            }
+          });
+
+          if (formValues) {
+            Swal.fire({
+              title: 'Restableciendo contraseña',
+              text: 'Guardando los cambios en el Core...',
+              allowOutsideClick: false,
+              didOpen: () => {
+                Swal.showLoading();
+              }
+            });
+
+            try {
+              const resetMsg = await authService.confirmarResetPassword(emailInput, formValues.code, formValues.password);
+              Swal.fire({
+                icon: 'success',
+                title: 'Contraseña Cambiada',
+                text: resetMsg || 'Tu contraseña fue restablecida correctamente. Ya puedes iniciar sesión.',
+                confirmButtonColor: '#259A5E',
+                confirmButtonText: 'Entendido'
+              });
+            } catch (err) {
+              Swal.fire({
+                icon: 'error',
+                title: 'Fallo al restablecer',
+                text: err.message || 'No se pudo restablecer la contraseña.',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Entendido'
+              });
+            }
+          }
+        } catch (err) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error al procesar',
+            text: err.message || 'No se pudo procesar la solicitud de recuperación.',
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Entendido'
+          });
+        }
+      }
+    } else {
+      // Registro
+      Swal.fire({
+        icon: 'info',
+        title: 'Creación de Cuenta',
+        html: 
+          '<p style="text-align: left; font-size: 0.95rem; line-height: 1.5; color: #444;">' +
+          'Para solicitar un nuevo acceso al portal, ponte en contacto con la ' +
+          '<strong>recepción</strong> o el <strong>personal administrativo</strong> de tu centro de salud.<br/><br/>' +
+          'Ellos te darán de alta en el sistema y recibirás un correo de verificación ' +
+          'para establecer tu contraseña.' +
+          '</p>',
+        confirmButtonColor: '#259A5E',
+        confirmButtonText: 'Entendido'
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -238,12 +359,12 @@ function Login({ onLogin }) {
           </form>
 
           <div className="login-form-footer">
-            <a href="#" className="login-forgot-link" onClick={(e) => { e.preventDefault(); handleQuickAccess('Profesional'); }}>
+            <a href="#" className="login-forgot-link" onClick={(e) => handleForgotOrRegister(e, 'forgot')}>
               ¿Olvidaste tu contraseña?
             </a>
             <p className="login-register-text">
               ¿Primera vez? Registrate con tu número de afiliado en la recepción o{' '}
-              <a href="#" className="login-register-link" onClick={(e) => { e.preventDefault(); handleQuickAccess('Profesional'); }}>
+              <a href="#" className="login-register-link" onClick={(e) => handleForgotOrRegister(e, 'register')}>
                 solicitá acceso online
               </a>.
             </p>

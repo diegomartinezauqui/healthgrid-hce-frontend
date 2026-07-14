@@ -3,8 +3,19 @@ import api from './api';
 import { getAgendaDelDia, actualizarEstadoTurno, salaEsperaMock } from './mockSalaEspera';
 
 const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
-const ID_MEDICO_ACTUAL = 42;
-const ID_SEDE_ACTUAL = 3;
+const obtenerMedicoIdDesdeToken = () => {
+  const token = localStorage.getItem('healthgrid_token');
+  if (!token) return 42;
+  try {
+    const payloadBase64 = token.split('.')[1];
+    const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+    const payload = JSON.parse(payloadJson);
+    return payload.user_id || payload.sub || 42;
+  } catch (e) {
+    console.error('Error decodificando JWT:', e);
+    return 42;
+  }
+};
 
 // Mapeadores para aislar el modelo del backend respecto a las pantallas del frontend
 const mapPrioridadToTriage = (prioridad) => {
@@ -85,8 +96,9 @@ export const salaEsperaService = {
     }
 
     try {
+      const idMedico = obtenerMedicoIdDesdeToken();
       const data = await api.get('/sala-espera', {
-        params: { id_medico: ID_MEDICO_ACTUAL, id_sede: ID_SEDE_ACTUAL }
+        params: { id_medico: idMedico }
       });
       return Array.isArray(data) ? data.map(mapTurnoRealToFrontend) : [];
     } catch (error) {

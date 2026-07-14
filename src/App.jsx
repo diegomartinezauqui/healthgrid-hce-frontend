@@ -598,6 +598,39 @@ function App() {
         evolucionData
       );
 
+      // Si la evolución contiene actos médicos/prácticas, los registramos en el backend
+      if (Array.isArray(evolucionData.practicas) && evolucionData.practicas.length > 0) {
+        const token = localStorage.getItem('healthgrid_token');
+        let idProfesional = 32;
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+            idProfesional = payload.user_id || payload.sub || 32;
+          } catch (e) {
+            console.error('[App] Error decodificando JWT para profesional:', e);
+          }
+        }
+
+        console.log(`[App] Registrando ${evolucionData.practicas.length} actos médicos en HCE para episodio ${idEpDb}...`);
+        try {
+          await Promise.all(
+            evolucionData.practicas.map(practica =>
+              pacienteService.registrarActoMedico(pacienteObj.core_patient_id, idEpDb, {
+                tipo: 'consulta',
+                codigo_nomenclador: practica.codigo_nomenclador,
+                descripcion: practica.descripcion || 'Práctica clínica',
+                id_profesional: idProfesional,
+                cantidad: parseInt(practica.cantidad) || 1,
+                observaciones: practica.observaciones || ''
+              })
+            )
+          );
+          console.log('[App] Todos los actos médicos fueron registrados con éxito.');
+        } catch (actError) {
+          console.error('[App] Error al registrar algunos actos médicos:', actError);
+        }
+      }
+
       const realEvolucionId = response?.id_evolucion || Date.now();
 
       setPacientes(prev => {

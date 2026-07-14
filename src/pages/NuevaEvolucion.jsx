@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import ModalWrapper from '../components/ModalWrapper';
+import { pacienteService } from '../services/pacienteService';
 import '../styles/NuevaEvolucion.css';
 
 const NuevaEvolucion = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC }) => {
@@ -16,11 +18,96 @@ const NuevaEvolucion = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC }) => 
     }
   });
 
+  // Estados locales para la grilla de Actos Médicos (M7)
+  const [practicas, setPracticas] = useState([]);
+  const [busqueda, setBusqueda] = useState('');
+  const [sugerencias, setSugerencias] = useState([]);
+  const [practicaSeleccionada, setPracticaSeleccionada] = useState(null);
+  const [cantidad, setCantidad] = useState(1);
+  const [observacionesActo, setObservacionesActo] = useState('');
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+
+  // Efecto para buscar prestaciones con autocompletado reactivo (debounce de 300ms)
+  useEffect(() => {
+    if (busqueda.trim().length < 3) {
+      setSugerencias([]);
+      return;
+    }
+
+    // Evitamos re-buscar si lo que se escribió es exactamente la práctica ya seleccionada
+    if (practicaSeleccionada && practicaSeleccionada.descripcion === busqueda) {
+      return;
+    }
+
+    const buscar = async () => {
+      const res = await pacienteService.buscarPrestacionesM7(busqueda);
+      setSugerencias(res || []);
+    };
+
+    const delayDebounce = setTimeout(() => {
+      buscar();
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [busqueda, practicaSeleccionada]);
+
+  // Cierra el dropdown al hacer clic fuera (opcional, para una UX más fluida)
+  useEffect(() => {
+    const clickOutside = () => setMostrarSugerencias(false);
+    window.addEventListener('click', clickOutside);
+    return () => window.removeEventListener('click', clickOutside);
+  }, []);
+
+  const handleAgregarPractica = () => {
+    if (!practicaSeleccionada) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Seleccioná una práctica',
+        text: 'Buscá y seleccioná una práctica válida del nomenclador oficial antes de agregarla.',
+        confirmButtonColor: '#259A5E'
+      });
+      return;
+    }
+
+    // Validación de duplicados
+    if (practicas.some(p => p.codigo_nomenclador === practicaSeleccionada.codigoNomenclador)) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Práctica duplicada',
+        text: 'Esta práctica ya fue agregada a la lista de esta evolución.',
+        confirmButtonColor: '#d33'
+      });
+      return;
+    }
+
+    const nueva = {
+      codigo_nomenclador: practicaSeleccionada.codigoNomenclador,
+      descripcion: practicaSeleccionada.descripcion,
+      cantidad: cantidad,
+      observaciones: observacionesActo,
+      tipo_prestacion: practicaSeleccionada.tipoPrestacion || 'PRACTICA'
+    };
+
+    setPracticas(prev => [...prev, nueva]);
+
+    // Limpiar inputs de carga
+    setBusqueda('');
+    setPracticaSeleccionada(null);
+    setCantidad(1);
+    setObservacionesActo('');
+    setSugerencias([]);
+  };
+
+  const handleQuitarPractica = (codigo) => {
+    setPracticas(prev => prev.filter(p => p.codigo_nomenclador !== codigo));
+  };
+
   const onSubmit = (data) => {
-    onGuardar(data);
+    // Adjuntamos el array de actos médicos al guardar la evolución
+    onGuardar({ ...data, practicas });
     Swal.fire({
       title: '¡Evolución guardada!',
-      text: 'La evolución clínica ha sido registrada exitosamente.',
+      text: 'La evolución clínica y las prácticas de facturación han sido registradas.',
       icon: 'success',
       confirmButtonColor: '#259A5E',
       timer: 2000,
@@ -122,6 +209,103 @@ const NuevaEvolucion = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC }) => 
               rows={3}
               {...register('observacionesAdicionales')}
             />
+          </div>
+
+          {/* Sección de Actos Médicos (M7) */}
+          <div className="evol-acts-section">
+            <h3 className="evol-acts-section__title">
+              ⚖️ Prácticas Clínicas / Actos Médicos (Facturables)
+            </h3>
+
+            <div className="evol-acts-form">
+              <div className="evol-form__field evol-acts-search-container">
+                <label className="evol-form__label">Buscar Práctica (Nomenclador M7)</label>
+                <input
+                  type="text"
+                  className="evol-form__input"
+                  placeholder="Ej: Radiografía de tórax, Hemograma..."
+                  value={busqueda}
+                  onChange={(e) => {
+                    setBusqueda(e.target.value);
+                    setMostrarSugerencias(true);
+                  }}
+                  onFocus={() => setMostrarSugerencias(true)}
+                  onClick={(e) => e.stopPropagation()} // Evita cerrar el dropdown al hacer clic en el input
+                />
+                {mostrarSugerencias && sugerencias.length > 0 && (
+                  <div className="evol-acts-search-results" onClick={(e) => e.stopPropagation()}>
+                    {sugerencias.map((sug) => (
+                      <button
+                        key={sug.id || sug.codigoNomenclador}
+                        type="button"
+                        className="evol-acts-search-item"
+                        onClick={() => {
+                          setPracticaSeleccionada(sug);
+                          setBusqueda(sug.descripcion);
+                          setMostrarSugerencias(false);
+                        }}
+                      >
+                        <strong>{sug.codigoNomenclador}</strong>
+                        <span>{sug.descripcion} ({sug.tipoPrestacion})</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="evol-acts-form__row">
+                <div className="evol-form__field" style={{ flex: '0 0 90px' }}>
+                  <label className="evol-form__label">Cantidad</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="evol-form__input"
+                    value={cantidad}
+                    onChange={(e) => setCantidad(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+                <div className="evol-form__field">
+                  <label className="evol-form__label">Observaciones del acto</label>
+                  <input
+                    type="text"
+                    className="evol-form__input"
+                    placeholder="Notas sobre esta práctica..."
+                    value={observacionesActo}
+                    onChange={(e) => setObservacionesActo(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="evol-acts-form__btn-add"
+                  onClick={handleAgregarPractica}
+                >
+                  + Agregar
+                </button>
+              </div>
+            </div>
+
+            {/* Listado de Prácticas Agregadas */}
+            {practicas.length > 0 && (
+              <div className="evol-acts-list">
+                {practicas.map((p) => (
+                  <div key={p.codigo_nomenclador} className="evol-acts-item">
+                    <div className="evol-acts-item__details">
+                      <span className="evol-acts-item__code">{p.codigo_nomenclador} (Cant: {p.cantidad})</span>
+                      <span className="evol-acts-item__desc">{p.descripcion}</span>
+                      {p.observaciones && <span className="evol-acts-item__obs">Obs: {p.observaciones}</span>}
+                    </div>
+                    <button
+                      type="button"
+                      className="evol-acts-item__delete"
+                      onClick={() => handleQuitarPractica(p.codigo_nomenclador)}
+                      title="Quitar práctica"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Botones */}

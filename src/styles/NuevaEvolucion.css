@@ -193,3 +193,182 @@
 @media (max-width: 520px) {
   .evol-form__row { flex-direction: column; }
 }
+
+/* ================================================
+   SECCIÓN DE ACTOS MÉDICOS / PRÁCTICAS NOMENCLADAS
+   ================================================ */
+.evol-acts-section {
+  border-top: 1.5px dashed #E2E6E4;
+  padding-top: 14px;
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.evol-acts-section__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #11352A;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.evol-acts-form {
+  background-color: #F6F8F7;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #E2E6E4;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.evol-acts-form__row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.evol-acts-form__row > .evol-form__field {
+  flex: 1;
+}
+
+.evol-acts-search-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.evol-acts-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #D4DAD7;
+  border-radius: 7px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 100;
+  margin-top: 2px;
+}
+
+.evol-acts-search-item {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-bottom: 1px solid #F0F2F1;
+  transition: background-color 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.evol-acts-search-item:last-child {
+  border-bottom: none;
+}
+
+.evol-acts-search-item:hover {
+  background-color: #F0F7F3;
+}
+
+.evol-acts-search-item strong {
+  color: #11352A;
+  font-size: 0.82rem;
+}
+
+.evol-acts-search-item span {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+.evol-acts-form__btn-add {
+  padding: 9px 15px;
+  background-color: #259A5E;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.evol-acts-form__btn-add:hover {
+  background-color: #1c7e4b;
+}
+
+.evol-acts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.evol-acts-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #FAFBFA;
+  border: 1px solid #E2E6E4;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.evol-acts-item__details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.evol-acts-item__code {
+  background-color: #E6F4EA;
+  color: #137333;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.evol-acts-item__desc {
+  font-weight: 600;
+  color: #333;
+}
+
+.evol-acts-item__obs {
+  font-size: 0.75rem;
+  color: #777;
+  font-style: italic;
+}
+
+.evol-acts-item__delete {
+  background: none;
+  border: none;
+  color: #ea4335;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.evol-acts-item__delete:hover {
+  background-color: #fce8e6;
+}

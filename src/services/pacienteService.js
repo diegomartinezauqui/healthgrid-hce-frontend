@@ -522,7 +522,7 @@ export const pacienteService = {
       const response = await api.get('/nomenclador/obras-sociales');
       return response;
     } catch (error) {
-      console.error('[PacienteService] Error al obtener obras sociales de M7:', error);
+      console.error('[PacienteService] Error al obtener Obras Sociales de M7:', error);
       return [];
     }
   },
@@ -582,6 +582,24 @@ export const pacienteService = {
     } catch (error) {
       console.error('[PacienteService] Error al buscar prestaciones en M7:', error);
       return [];
+    }
+  },
+
+  /**
+   * Registra un acto médico en un episodio de atención.
+   */
+  registrarActoMedico: async (corePatientId, idEpisodio, data) => {
+    if (useMocks) {
+      console.log('[Mock] Guardando acto médico en episodio:', idEpisodio, data);
+      return { id: Date.now(), ...data };
+    }
+    try {
+      const cleanPatientId = corePatientId.replace('core-', '').replace(/^0+/, '');
+      const response = await api.post(`/patients/${cleanPatientId}/episodes/${idEpisodio}/medical-acts`, data);
+      return response;
+    } catch (error) {
+      console.error(`[PacienteService] Error al registrar acto médico en episodio ${idEpisodio}:`, error);
+      throw error;
     }
   }
 };

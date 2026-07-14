@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Swal from 'sweetalert2';
 import './App.css';
 import { Toaster } from 'sonner';
@@ -13,10 +13,14 @@ import { pacienteService } from './services/pacienteService';
 import { salaEsperaService } from './services/salaEsperaService';
 import { ordenService } from './services/ordenService';
 import { useAuth } from './context/AuthContext';
+import { ssoService } from './services/ssoService';
 
 function App() {
   // Contexto global de autenticación (JWT)
   const auth = useAuth();
+  
+  // Evitar doble canje de ticket SSO en React Strict Mode
+  const ssoValidadoRef = useRef(false);
 
   // Estado de login mockeado (sesión de UI — independiente del JWT)
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
@@ -57,23 +61,99 @@ function App() {
     return () => window.removeEventListener('healthgrid:unauthorized', handleUnauthorized);
   }, [auth]);
 
-  // Dev Login inicial si no estamos usando mocks
+  // Dev Login inicial o canje de ticket SSO
   useEffect(() => {
     const initAuth = async () => {
-      const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
-      if (!useMocks) {
-        // Limpiamos los pacientes y fichas recientes del localStorage para evitar interferencias
-        localStorage.removeItem('healthgrid_pacientes');
-        localStorage.removeItem('healthgrid_fichas_recientes');
-        if (!localStorage.getItem('healthgrid_token')) {
-          try {
-            const devToken = await authService.checkAndLoginDev();
-            // Persistir también en el contexto si obtuvimos un token de dev
-            if (devToken) {
-              auth.login({ access_token: devToken });
+      const { ticket, redirect } = ssoService.getSsoParams();
+      
+      if (ticket) {
+        if (ssoValidadoRef.current) return;
+        ssoValidadoRef.current = true;
+
+        Swal.fire({
+          title: 'Iniciando sesión...',
+          text: 'Validando tus credenciales de Single Sign-On (SSO)',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        try {
+          const success = await ssoService.establecerSesionDesdeTicket(ticket);
+          Swal.close();
+
+          if (success) {
+            const token = localStorage.getItem('healthgrid_token');
+            const ssoUserRaw = localStorage.getItem('healthgrid_sso_user');
+            const ssoUser = ssoUserRaw ? JSON.parse(ssoUserRaw) : null;
+
+            const nombreCompleto = ssoUser
+              ? `${ssoUser.first_name || ''} ${ssoUser.last_name || ''}`.trim() || ssoUser.name || ssoUser.nombre || ssoUser.username || 'Profesional'
+              : 'Profesional';
+
+            sessionStorage.setItem('healthgrid_logged_in', 'true');
+            auth.login({ access_token: token, user: ssoUser });
+            setIsLoggedIn(true);
+
+            // Limpiamos los parámetros de la URL para que no quede el ticket expuesto
+            const cleanUrl = window.location.origin + window.location.pathname;
+
+            Swal.fire({
+              icon: 'success',
+              title: '¡Sesión Iniciada!',
+              html: `<p style="margin: 0 0 10px 0; font-size: 1.05rem;">Bienvenido/a, <strong>${nombreCompleto}</strong>.</p>
+                     <p style="margin: 0; color: #666; font-size: 0.9rem;">Acceso concedido de forma segura mediante SSO.</p>`,
+              confirmButtonText: 'Entrar a HCE',
+              confirmButtonColor: '#2d7d46',
+              allowOutsideClick: false
+            }).then(() => {
+              // Redireccionamos a la URL limpia forzando un reload completo de la SPA.
+              // Esto limpia en seco la memoria de React del médico anterior y recarga la sala de espera del nuevo.
+              window.location.href = cleanUrl;
+            });
+
+            // Si hay una ruta de redirección interna específica
+            if (redirect) {
+              const targetPath = ssoService.safeRedirect(redirect);
+              console.log(`[SSO] Redirigiendo a ruta solicitada: ${targetPath}`);
+              // Aquí podrías cambiar la vista si se usa enrutador custom
             }
-          } catch (error) {
-            console.error('[App] Error en la inicialización de autenticación de desarrollo:', error);
+          } else {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error de Autenticación',
+              text: 'El ticket de sesión única es inválido o ha expirado. Por favor, reintentá iniciar sesión.'
+            });
+            // Limpiamos la URL de todos modos
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+          }
+        } catch (err) {
+          console.error('[SSO] Error durante el canje del ticket:', err);
+          Swal.close();
+          Swal.fire({
+            icon: 'error',
+            title: 'Error de Conexión',
+            text: 'No se pudo conectar con el Core para validar la sesión única.'
+          });
+        }
+      } else {
+        // Flujo normal de desarrollo (sin ticket de SSO en la URL)
+        const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+        if (!useMocks) {
+          // Limpiamos los pacientes y fichas recientes del localStorage para evitar interferencias
+          localStorage.removeItem('healthgrid_pacientes');
+          localStorage.removeItem('healthgrid_fichas_recientes');
+          if (!localStorage.getItem('healthgrid_token')) {
+            try {
+              const devToken = await authService.checkAndLoginDev();
+              if (devToken) {
+                auth.login({ access_token: devToken });
+              }
+            } catch (error) {
+              console.error('[App] Error en la inicialización de autenticación de desarrollo:', error);
+            }
           }
         }
       }

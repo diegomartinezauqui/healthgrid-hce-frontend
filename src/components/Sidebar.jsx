@@ -9,17 +9,19 @@ const Sidebar = () => {
   const { user: authUser, logout: contextLogout } = useAuth();
 
   const modulosExternos = {
-    'Farmacia e Insumos': { name: 'Farmacia', url: 'https://farmacia.healthcare.cantero.ar' },
-    'Laboratorio': { name: 'Laboratorio', url: 'https://laboratorio.healthcare.cantero.ar' },
-    'Imágenes': { name: 'Imágenes', url: 'https://imagenes.healthcare.cantero.ar' },
-    'Internación y Camas': { name: 'Internación y Camas', url: 'https://internacion.healthcare.cantero.ar' },
-    'Facturación': { name: 'Facturación', url: 'https://facturacion.healthcare.cantero.ar' },
-    'Portal Paciente': { name: 'Portal Paciente', url: 'https://portal-paciente.healthcare.cantero.ar' }
+    'Turnos': { name: 'Turnos', url: 'https://turnos.solefrancisco.com' },
+    'Farmacia e Insumos': { name: 'Farmacia', url: 'https://front-modulo3-farmacia.vercel.app' },
+    'Laboratorio': { name: 'Laboratorio', url: 'https://modulo-laboratorio.up.railway.app' },
+    'Imágenes': { name: 'Imágenes', url: 'https://uade-da-2-frontend.vercel.app' },
+    'Internación y Camas': { name: 'Internación y Camas', url: 'https://internaciones-y-camas.vercel.app' },
+    'Facturación': { name: 'Facturación', url: 'https://modulo7-frontend.onrender.com/facturacion' },
+    'Portal Paciente': { name: 'Portal Paciente', url: 'https://da2frontend.onrender.com' },
+    'Configuración': { name: 'Configuración', url: 'https://healthgrid.cantero.ar' }
   };
 
   const handleModuloClick = async (item) => {
     if (item.name === 'Historia Clínica') return;
-    
+
     const modulo = modulosExternos[item.name];
     if (!modulo) return;
 
@@ -46,9 +48,9 @@ const Sidebar = () => {
     try {
       const ticket = await ssoService.generarTicketSso();
       Swal.close();
-      
+
       if (ticket) {
-        const targetUrl = `${modulo.url}/auth/sso?ticket=${ticket}&redirect=/`;
+        const targetUrl = `${modulo.url}/auth/sso?ticket=${ticket}`;
         window.open(targetUrl, '_blank');
       } else {
         Swal.fire({
@@ -71,8 +73,8 @@ const Sidebar = () => {
 
   const getUsuarioLogueado = () => {
     if (authUser) {
-      const nombre = authUser.first_name || authUser.last_name 
-        ? `${authUser.first_name || ''} ${authUser.last_name || ''}`.trim() 
+      const nombre = authUser.first_name || authUser.last_name
+        ? `${authUser.first_name || ''} ${authUser.last_name || ''}`.trim()
         : (authUser.nombre || authUser.name || authUser.username || authUser.email || 'Profesional');
       const iniciales = nombre.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase();
       return {
@@ -81,12 +83,12 @@ const Sidebar = () => {
         rol: authUser.rol || authUser.role || 'Médico HCE'
       };
     }
-    
+
     try {
       const ssoUser = JSON.parse(localStorage.getItem('healthgrid_sso_user'));
       if (ssoUser) {
-        const nombre = ssoUser.first_name || ssoUser.last_name 
-          ? `${ssoUser.first_name || ''} ${ssoUser.last_name || ''}`.trim() 
+        const nombre = ssoUser.first_name || ssoUser.last_name
+          ? `${ssoUser.first_name || ''} ${ssoUser.last_name || ''}`.trim()
           : (ssoUser.name || ssoUser.nombre || ssoUser.username || 'Profesional');
         const iniciales = nombre.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase();
         return {
@@ -118,6 +120,18 @@ const Sidebar = () => {
           <polyline points="14 2 14 8 20 8"></polyline>
           <line x1="12" y1="18" x2="12" y2="12"></line>
           <line x1="9" y1="15" x2="15" y2="15"></line>
+        </svg>
+      )
+    },
+    {
+      name: 'Turnos',
+      active: false,
+      icon: (
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
         </svg>
       )
     },
@@ -210,7 +224,7 @@ const Sidebar = () => {
         <div style={{ padding: '0 20px', marginBottom: '40px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
             <h2 style={{ margin: 0, fontSize: '2.2rem', fontFamily: 'Georgia, "Times New Roman", serif', color: '#C8E6C9', lineHeight: '1.1', fontWeight: 'bold' }}>
-              Health<br/>Grid
+              Health<br />Grid
             </h2>
             <div style={{ width: '34px', height: '34px', backgroundColor: '#C8E6C9', borderRadius: '6px', marginBottom: '4px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               {/* Icono EKG */}
@@ -229,8 +243,8 @@ const Sidebar = () => {
         {/* Opciones de Menú */}
         <nav className="sidebar-nav">
           {navItems.map((item) => (
-            <div 
-              key={item.name} 
+            <div
+              key={item.name}
               className={`nav-item ${item.active ? 'active' : ''}`}
               onClick={() => handleModuloClick(item)}
               style={{ cursor: 'pointer' }}
@@ -251,7 +265,7 @@ const Sidebar = () => {
           <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.9rem', color: '#E8F5E9', lineHeight: '1.2' }}>{usuarioLogueado.nombre}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
             <p style={{ margin: 0, fontSize: '0.8rem', color: '#A0B8B0' }}>{usuarioLogueado.rol}</p>
-            <button 
+            <button
               onClick={() => {
                 authService.logout();
                 sessionStorage.removeItem('healthgrid_logged_in');

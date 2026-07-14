@@ -19,6 +19,9 @@ const valoresVacios = {
   fechaNacimiento: '',
   genero: '',
   obraSocial: '',
+  idObraSocial: '',
+  idPlan: '',
+  numeroAfiliado: '',
 };
 
 const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePatient = null }) => {
@@ -30,6 +33,9 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
         fechaNacimiento: datosIniciales.fechaNacimiento || datosIniciales.fecha_nacimiento || corePatient?.fechaNacimiento || corePatient?.fecha_nacimiento || '',
         genero: datosIniciales.genero || datosIniciales.sexo || corePatient?.genero || corePatient?.sexo || '',
         obraSocial: datosIniciales.obraSocial || datosIniciales.obra_social || corePatient?.obraSocial || corePatient?.obra_social || '',
+        idObraSocial: datosIniciales.idObraSocial || datosIniciales.id_obra_social_entidad || '',
+        idPlan: datosIniciales.idPlan || datosIniciales.id_plan || '',
+        numeroAfiliado: datosIniciales.numeroAfiliado || datosIniciales.numero_afiliado || '',
         // Asegurar que siempre haya al menos una fila en los arrays
         consideraciones: datosIniciales.consideraciones?.length
           ? datosIniciales.consideraciones
@@ -73,7 +79,7 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
     datosIniciales?.idObraSocial || datosIniciales?.id_obra_social_entidad || ''
   );
   const [selectedPlanId, setSelectedPlanId] = useState(
-    datosIniciales?.idObraSocial || datosIniciales?.id_obra_social || ''
+    datosIniciales?.idPlan || datosIniciales?.id_plan || ''
   );
   const [cargandoOS, setCargandoOS] = useState(false);
   const [cargandoPlanes, setCargandoPlanes] = useState(false);

@@ -867,16 +867,13 @@ function App() {
       const recetas = [...(episodio.recetasData || [])];
       
       const current = (recetas[recetaIdx].estado || '').toLowerCase();
-      let nextState = 'Activa';
-      if (current === 'activa' || current === 'vigente') {
-        nextState = 'Dispensada';
-      } else if (current === 'dispensada') {
-        nextState = 'Suspendida';
-      } else if (current === 'suspendida') {
-        nextState = 'Vencida';
-      } else {
-        nextState = 'Activa';
-      }
+      const nextState = current === 'activa' || current === 'vigente'
+        ? 'Dispensada'
+        : current === 'dispensada'
+        ? 'Suspendida'
+        : current === 'suspendida'
+        ? 'Vencida'
+        : 'Activa';
 
       recetas[recetaIdx] = {
         ...recetas[recetaIdx],
@@ -899,10 +896,11 @@ function App() {
     let id_orden = Date.now();
     let tipo_estudio = null;
     const id_episodio = paciente.episodios?.[episodioIdx]?.id_episodio || null;
+    const id_evolucion = estudioData.id_evolucion || null;
 
     if (!useMocks) {
       try {
-        const res = await ordenService.crearOrden(paciente.core_patient_id, estudioData, id_episodio);
+        const res = await ordenService.crearOrden(paciente.core_patient_id, estudioData, id_episodio, id_evolucion);
         if (res) {
           id_orden = res.id_orden || id_orden;
           tipo_estudio = res.tipo_estudio || null;
@@ -926,17 +924,15 @@ function App() {
 
       const nuevoEstudio = {
         ...estudioData,
+        descripcion: estudioData.descripcion_pedido || estudioData.descripcion || '',
+        prioridad: estudioData.prioridad || 'Normal',
+        id_evolucion,
+        estado: 'pendiente',
         id: id_orden,
         id_orden,
         tipo_estudio,
         numero: (episodio.estudiosData?.length || 0) + 1,
-        resultado: estudioData.estado === 'completado' ? {
-          codigoExterno: '',
-          profesionalFirmante: '',
-          fechaResultado: '',
-          informe: '',
-          archivosAdjuntos: [],
-        } : null,
+        resultado: null,
       };
 
       episodio.estudiosData = [...(episodio.estudiosData || []), nuevoEstudio];

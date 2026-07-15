@@ -2,6 +2,8 @@
 import api from './api';
 
 const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
+let catalogoLaboratorioCache = null;
+const analitosLaboratorioCache = new Map();
 
 // Limpia el prefijo "core-" y ceros a la izquierda (ej: "core-001" -> "1")
 const cleanCoreId = (core_patient_id) =>
@@ -22,32 +24,95 @@ const mapTipoEstudioBackToFront = (tipo) => {
   return mapa[tipo] || 'otro';
 };
 
-// Catálogo mock de determinaciones bioquímicas (Módulo 4)
-export const CATALOGO_LABORATORIO_MOCK = [
-  { id: 101, nombre: "Hemograma Completo" },
-  { id: 102, nombre: "Glucemia / Glucosa" },
-  { id: 103, nombre: "Perfil Lipídico (Colesterol/Triglicéridos)" },
-  { id: 104, nombre: "Función Renal (Urea/Creatinina)" },
-  { id: 105, nombre: "Hepatograma" },
-  { id: 106, nombre: "Orina Completa" },
-  { id: 107, nombre: "Coagulograma" },
-  { id: 108, nombre: "Ionograma Plasmático" }
+const CATALOGO_LABORATORIO_MOCK = [
+  { id: 101, nombre: 'Hemograma Completo', categoria: 'Hematologia' },
+  { id: 102, nombre: 'Glucemia / Glucosa', categoria: 'Quimica' },
+  { id: 103, nombre: 'Perfil Lipídico (Colesterol/Triglicéridos)', categoria: 'Quimica' },
+  { id: 104, nombre: 'Función Renal (Urea/Creatinina)', categoria: 'Quimica' },
+  { id: 105, nombre: 'Hepatograma', categoria: 'Quimica' },
+  { id: 106, nombre: 'Orina Completa', categoria: 'Uroanalisis' },
+  { id: 107, nombre: 'Coagulograma', categoria: 'Hematologia' },
+  { id: 108, nombre: 'Ionograma Plasmático', categoria: 'Quimica' },
 ];
+
+const extractArrayPayload = (response) => {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.items)) return response.items;
+  if (Array.isArray(response?.results)) return response.results;
+  return [];
+};
+
+const normalizarCatalogoLaboratorio = (item) => ({
+  id: item?.id_estudio ?? item?.id ?? item?.estudio_id ?? item?.codigo ?? item?.value ?? null,
+  nombre: item?.nombre ?? item?.descripcion ?? item?.titulo ?? item?.label ?? 'Sin nombre',
+  categoria: item?.categoria ?? item?.categoria_nombre ?? item?.grupo ?? item?.subcategoria ?? null,
+  codigo: item?.codigo ?? item?.codigo_nomenclador ?? null,
+  descripcion: item?.descripcion ?? item?.detalle ?? null,
+});
+
+const normalizarAnalito = (item) => ({
+  id: item?.id ?? item?.id_analito ?? item?.codigo ?? null,
+  nombre: item?.nombre ?? item?.descripcion ?? item?.label ?? 'Analito',
+  categoria: item?.categoria ?? item?.grupo ?? null,
+  unidad: item?.unidad ?? item?.unidad_medida ?? null,
+  descripcion: item?.descripcion ?? item?.detalle ?? null,
+});
 
 export const ordenService = {
   /**
-   * Obtiene el catálogo bioquímico de Módulo 4
+   * Obtiene el catálogo bioquímico desde HCE.
    */
   obtenerCatalogoLaboratorio: async () => {
-    // Si estuviéramos en producción real, haríamos fetch a Módulo 4.
-    // Devolvemos el mock local de forma robusta.
-    return CATALOGO_LABORATORIO_MOCK;
+    if (catalogoLaboratorioCache) return catalogoLaboratorioCache;
+
+    if (useMocks) {
+      catalogoLaboratorioCache = CATALOGO_LABORATORIO_MOCK.map(normalizarCatalogoLaboratorio);
+      return catalogoLaboratorioCache;
+    }
+
+    try {
+      const response = await api.get('/m4/estudios');
+      catalogoLaboratorioCache = extractArrayPayload(response).map(normalizarCatalogoLaboratorio);
+      return catalogoLaboratorioCache;
+    } catch (error) {
+      console.error('[OrdenService] Error al obtener catálogo de laboratorio:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtiene analitos complementarios por categoría desde HCE.
+   */
+  obtenerAnalitosLaboratorio: async (categoria) => {
+    if (!categoria) return [];
+    if (analitosLaboratorioCache.has(categoria)) {
+      return analitosLaboratorioCache.get(categoria);
+    }
+
+    if (useMocks) {
+      const analitosMock = [
+        { id: 1, nombre: `Detalle clínico ${categoria}`, unidad: null, categoria },
+      ];
+      analitosLaboratorioCache.set(categoria, analitosMock);
+      return analitosMock;
+    }
+
+    try {
+      const response = await api.get('/m4/analitos', { params: { categoria } });
+      const analitos = extractArrayPayload(response).map(normalizarAnalito);
+      analitosLaboratorioCache.set(categoria, analitos);
+      return analitos;
+    } catch (error) {
+      console.error(`[OrdenService] Error al obtener analitos para categoría ${categoria}:`, error);
+      throw error;
+    }
   },
 
   /**
    * Crea una orden de estudio en el backend de HCE especializando por tipo.
    */
-  crearOrden: async (core_patient_id, estudioData, id_episodio = null) => {
+  crearOrden: async (core_patient_id, estudioData, id_episodio = null, id_evolucion = null) => {
     const cleanId = cleanCoreId(core_patient_id);
     const tipo = (estudioData.tipoEstudio || '').toLowerCase();
 
@@ -59,11 +124,11 @@ export const ordenService = {
     try {
       if (tipo === 'laboratorio') {
         const payload = {
-          estudio_ids: estudioData.estudio_ids || [101], // IDs seleccionados del catálogo
-          descripcion_pedido: estudioData.descripcion || 'Muestras bioquímicas',
+          estudio_ids: estudioData.estudio_ids || [],
+          descripcion_pedido: estudioData.descripcion_pedido || estudioData.descripcion || '',
           prioridad: mapPrioridadOrden(estudioData.prioridad),
           id_episodio: id_episodio || null,
-          origen: estudioData.origen || 'Ambulatorio',
+          id_evolucion: id_evolucion || estudioData.id_evolucion || null,
         };
         const response = await api.post(`/pacientes/${cleanId}/ordenes/laboratorio`, payload);
         return { id_orden: response?.id_orden, tipo_estudio: 'Laboratorio' };
@@ -71,10 +136,10 @@ export const ordenService = {
         // Imágenes u otros
         const payload = {
           subtipo: estudioData.subtipo || 'RADIOLOGY', // Modalidad de imágenes (RESONANCE, RADIOLOGY, etc.)
-          descripcion_pedido: estudioData.descripcion || 'Estudio de imágenes',
+          descripcion_pedido: estudioData.descripcion_pedido || estudioData.descripcion || 'Estudio de imágenes',
           prioridad: mapPrioridadOrden(estudioData.prioridad),
           id_episodio: id_episodio || null,
-          origen: estudioData.origen || 'Ambulatorio',
+          id_evolucion: id_evolucion || estudioData.id_evolucion || null,
         };
         const response = await api.post(`/pacientes/${cleanId}/ordenes/imagenes`, payload);
         return { id_orden: response?.id_orden, tipo_estudio: 'Imagen' };
@@ -165,7 +230,7 @@ export const ordenService = {
     if (useMocks) return [];
     try {
       const response = await api.get('/ordenes', { params: { tipo_estudio } });
-      return Array.isArray(response?.data) ? response.data : [];
+      return extractArrayPayload(response);
     } catch (error) {
       console.error('[OrdenService] Error al listar órdenes:', error);
       throw error;

@@ -193,8 +193,8 @@ Cuando el frontend corre en modo real, el backend requiere autenticación por to
 
 Se ha reestructurado la lógica de órdenes y resultados médicos. La tabla genérica de resultados se ha dividido en dos tablas PostgreSQL específicas (`resultados_laboratorio` y `resultados_imagenes`) para mantener la coherencia clínica, y el endpoint de creación de órdenes se ha especializado por tipo.
 
-#### 1. Crear Orden de Laboratorio (Módulo 4)
-Este endpoint crea una orden vinculando un conjunto de IDs de estudios del catálogo bioquímico de M4.
+#### 1. Crear Orden de Laboratorio (HCE → Módulo 4)
+El frontend debe crear la orden contra HCE. HCE se encarga de integrar con M4 por detrás, por lo que no debe hacerse ninguna llamada directa a M4 desde la UI.
 - **Método**: `POST`
 - **Ruta**: `/api/v1/pacientes/{id_paciente}/ordenes/laboratorio`
 - **Headers**: `Authorization: Bearer <JWT_TOKEN>`
@@ -208,6 +208,11 @@ Este endpoint crea una orden vinculando un conjunto de IDs de estudios del catá
     "id_evolucion": 34     // Opcional
   }
   ```
+
+##### Catálogo y detalle complementario
+- **Catálogo de estudios**: `GET /api/v1/m4/estudios`
+- **Analitos por categoría**: `GET /api/v1/m4/analitos?categoria=...`
+- El flujo principal de selección sigue siendo por `estudio_ids`; los analitos son opcionales y solo sirven como detalle complementario o filtro visual.
 
 #### 2. Crear Orden de Imágenes (Módulo 5)
 Este endpoint crea una orden de imágenes indicando la modalidad específica (`subtipo`).

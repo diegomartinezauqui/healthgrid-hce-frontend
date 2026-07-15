@@ -207,15 +207,24 @@ Se utiliza **react-icons** con dos familias:
 
 ### Integración Backend (Prioridad Alta)
 - [ ] Conectar con API FastAPI mediante `axios` o `fetch`
-- [ ] Reemplazar funciones de estado local por llamadas HTTP
-- [ ] Implementar autenticación JWT
+- [ ] Reemplazar funciones de estado local por llamadas HTTP en el flujo de laboratorio
+- [ ] Consumir solo HCE para laboratorio, sin llamadas directas a M4
+- [ ] Implementar autenticación JWT con `Authorization: Bearer <token>` en requests protegidas
+- [ ] Cargar catálogos de laboratorio desde `GET /api/v1/m4/estudios`
+- [ ] Consultar analitos solo como detalle complementario desde `GET /api/v1/m4/analitos?categoria=...`
+- [ ] Crear órdenes de laboratorio con `POST /api/v1/pacientes/{id_paciente}/ordenes/laboratorio`
+- [ ] Listar órdenes del paciente con `GET /api/v1/pacientes/{id_paciente}/ordenes`
+- [ ] Ver resultados puntuales con `GET /api/v1/ordenes/{id_orden}/resultado?tipo_estudio=Laboratorio`
+- [ ] Consultar historial cronológico con `GET /api/v1/pacientes/{id_paciente}/historial/resultados`
 - [ ] Persistir datos en PostgreSQL
 
 ### Mejoras UI/UX
 - [ ] Implementar React Router para navegación con URLs
 - [ ] Agregar loading states y skeleton screens
 - [ ] Manejo de errores global
-- [ ] Upload de archivos en Pedidos de Estudios
+- [ ] Selector de estudios de laboratorio con detalle de analitos opcional
+- [ ] Lista de órdenes del paciente con estado y vista de resultado
+- [ ] Historial cronológico de resultados de laboratorio
 
 ### Testing
 - [ ] Tests unitarios con Vitest

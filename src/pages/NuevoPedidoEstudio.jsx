@@ -1,28 +1,118 @@
 // src/pages/NuevoPedidoEstudio.jsx
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import ModalWrapper from '../components/ModalWrapper';
-import { CATALOGO_LABORATORIO_MOCK } from '../services/ordenService';
+import { ordenService } from '../services/ordenService';
 import '../styles/NuevoPedidoEstudio.css';
 import { tipoConsultaLabel, formatearFechaCorta } from '../utils/helpers';
 
 const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evoluciones }) => {
+  const [catalogoLaboratorio, setCatalogoLaboratorio] = useState([]);
+  const [catalogoLoading, setCatalogoLoading] = useState(false);
+  const [catalogoError, setCatalogoError] = useState('');
+  const [categoriaAnalitos, setCategoriaAnalitos] = useState('');
+  const [analitos, setAnalitos] = useState([]);
+  const [analitosLoading, setAnalitosLoading] = useState(false);
+  const [analitosError, setAnalitosError] = useState('');
+
   const { register, handleSubmit, watch } = useForm({
     defaultValues: {
       tipoEstudio: 'laboratorio',
       fechaSolicitud: new Date().toISOString().slice(0, 16),
       evolucionAsociada: '',
       descripcion: '',
-      estado: 'pendiente',
+      prioridad: 'Normal',
       subtipo: 'RADIOLOGY',
       estudio_ids: []
     }
   });
 
   const tipoEstudio = watch('tipoEstudio');
+  const estudioIdsSeleccionados = watch('estudio_ids') || [];
+
+  useEffect(() => {
+    if (tipoEstudio !== 'laboratorio') return;
+
+    let activo = true;
+    const cargarCatalogo = async () => {
+      setCatalogoLoading(true);
+      setCatalogoError('');
+
+      try {
+        const catalogo = await ordenService.obtenerCatalogoLaboratorio();
+        if (!activo) return;
+
+        setCatalogoLaboratorio(catalogo || []);
+        setCategoriaAnalitos((actual) => actual || catalogo?.[0]?.categoria || '');
+      } catch (error) {
+        if (!activo) return;
+
+        setCatalogoLaboratorio([]);
+        setCatalogoError('No se pudo cargar el catálogo de estudios de laboratorio.');
+      } finally {
+        if (activo) setCatalogoLoading(false);
+      }
+    };
+
+    cargarCatalogo();
+
+    return () => {
+      activo = false;
+    };
+  }, [tipoEstudio]);
+
+  useEffect(() => {
+    if (!categoriaAnalitos || tipoEstudio !== 'laboratorio') {
+      setAnalitos([]);
+      return;
+    }
+
+    let activo = true;
+    const cargarAnalitos = async () => {
+      setAnalitosLoading(true);
+      setAnalitosError('');
+
+      try {
+        const resultado = await ordenService.obtenerAnalitosLaboratorio(categoriaAnalitos);
+        if (activo) setAnalitos(resultado || []);
+      } catch (error) {
+        if (!activo) return;
+
+        setAnalitos([]);
+        setAnalitosError('No se pudieron cargar los analitos complementarios.');
+      } finally {
+        if (activo) setAnalitosLoading(false);
+      }
+    };
+
+    cargarAnalitos();
+
+    return () => {
+      activo = false;
+    };
+  }, [categoriaAnalitos, tipoEstudio]);
+
+  const evolucionesOptions = useMemo(() => (
+    (evoluciones || []).map((ev, index) => ({
+      id: ev?.id ?? ev?.id_evolucion ?? index,
+      label: `Evolución #${ev?.numero ?? index + 1} — ${tipoConsultaLabel(ev?.tipoConsulta)} (${formatearFechaCorta(ev?.fechaHora)})`
+    }))
+  ), [evoluciones]);
+
+  const catalogoCategorias = useMemo(() => (
+    Array.from(new Set(catalogoLaboratorio.map((estudio) => estudio.categoria).filter(Boolean)))
+  ), [catalogoLaboratorio]);
+
+  const estudiosSeleccionadosDetalle = useMemo(() => {
+    const ids = new Set((estudioIdsSeleccionados || []).map((id) => Number(id)));
+    return catalogoLaboratorio.filter((estudio) => ids.has(Number(estudio.id)));
+  }, [catalogoLaboratorio, estudioIdsSeleccionados]);
 
   const onSubmit = (data) => {
     const estudio_ids_ints = (data.estudio_ids || []).map(id => parseInt(id, 10));
+    const evolucionIdx = parseInt(data.evolucionAsociada, 10);
+    const evolucionSeleccionada = Number.isNaN(evolucionIdx) ? null : (evoluciones || [])[evolucionIdx];
 
     if (data.tipoEstudio === 'laboratorio' && estudio_ids_ints.length === 0) {
       Swal.fire({
@@ -36,7 +126,10 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
 
     onGuardar({
       ...data,
-      estudio_ids: estudio_ids_ints
+      descripcion_pedido: data.descripcion,
+      estudio_ids: estudio_ids_ints,
+      id_evolucion: evolucionSeleccionada?.id ?? evolucionSeleccionada?.id_evolucion ?? null,
+      estado: 'pendiente',
     });
 
     Swal.fire({
@@ -88,23 +181,95 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
             </div>
           </div>
 
+          <div className="pedido-form__row">
+            <div className="pedido-form__field">
+              <label className="pedido-form__label">Prioridad</label>
+              <select className="pedido-form__input pedido-form__select" {...register('prioridad')}>
+                <option value="Normal">Normal</option>
+                <option value="Urgente">Urgente</option>
+                <option value="Emergencia">Emergencia</option>
+              </select>
+            </div>
+            <div className="pedido-form__field">
+              <label className="pedido-form__label">Evolución asociada</label>
+              <select className="pedido-form__input pedido-form__select" {...register('evolucionAsociada')}>
+                <option value="">— Sin vincular —</option>
+                {evolucionesOptions.map((ev, index) => (
+                  <option key={ev.id ?? index} value={index}>
+                    {ev.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {/* Catálogo de Laboratorio Bioquímico M4 (Solo si es laboratorio) */}
           {tipoEstudio === 'laboratorio' && (
             <div className="pedido-form__field">
               <label className="pedido-form__label" style={{ marginBottom: '8px', color: '#11352A' }}>
-                Catálogo de Estudios Bioquímicos (M4)
+                Catálogo de Estudios Bioquímicos
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', padding: '10px 14px', backgroundColor: '#FAFBFA', border: '1px solid #E8ECE9', borderRadius: '8px' }}>
-                {CATALOGO_LABORATORIO_MOCK.map((est) => (
-                  <label key={est.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer', color: '#444', fontWeight: '500' }}>
-                    <input
-                      type="checkbox"
-                      value={est.id}
-                      {...register('estudio_ids')}
-                    />
-                    {est.nombre}
-                  </label>
-                ))}
+              <div className="pedido-form__catalogo">
+                {catalogoLoading ? (
+                  <p className="pedido-form__hint">Cargando catálogo de estudios...</p>
+                ) : catalogoError ? (
+                  <p className="pedido-form__error">{catalogoError}</p>
+                ) : catalogoLaboratorio.length > 0 ? (
+                  <div className="pedido-form__catalogo-grid">
+                    {catalogoLaboratorio.map((est) => (
+                      <label key={est.id} className="pedido-form__catalogo-item">
+                        <input
+                          type="checkbox"
+                          value={est.id}
+                          {...register('estudio_ids')}
+                        />
+                        <span className="pedido-form__catalogo-item-text">
+                          <strong>{est.nombre}</strong>
+                          {est.categoria && <small>{est.categoria}</small>}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="pedido-form__hint">No hay estudios disponibles para mostrar.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {tipoEstudio === 'laboratorio' && catalogoCategorias.length > 0 && (
+            <div className="pedido-form__field">
+              <label className="pedido-form__label">Detalle complementario de analitos</label>
+              <div className="pedido-form__catalogo-extra">
+                <div className="pedido-form__field">
+                  <select
+                    className="pedido-form__input pedido-form__select"
+                    value={categoriaAnalitos}
+                    onChange={(event) => setCategoriaAnalitos(event.target.value)}
+                  >
+                    {catalogoCategorias.map((categoria) => (
+                      <option key={categoria} value={categoria}>
+                        {categoria}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {analitosLoading ? (
+                  <p className="pedido-form__hint">Cargando analitos complementarios...</p>
+                ) : analitosError ? (
+                  <p className="pedido-form__error">{analitosError}</p>
+                ) : analitos.length > 0 ? (
+                  <div className="pedido-form__analitos-lista">
+                    {analitos.map((analito) => (
+                      <span key={analito.id ?? analito.nombre} className="pedido-form__analito-chip">
+                        {analito.nombre}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="pedido-form__hint">No hay analitos adicionales para esta categoría.</p>
+                )}
               </div>
             </div>
           )}
@@ -125,19 +290,6 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
               </select>
             </div>
           )}
-
-          {/* Evolución asociada */}
-          <div className="pedido-form__field">
-            <label className="pedido-form__label">Evolución asociada</label>
-            <select className="pedido-form__input pedido-form__select" {...register('evolucionAsociada')}>
-              <option value="">— Sin vincular —</option>
-              {(evoluciones || []).map((ev, i) => (
-                <option key={ev.id || i} value={i}>
-                  Evolución #{ev.numero} — {tipoConsultaLabel(ev.tipoConsulta)} ({formatearFechaCorta(ev.fechaHora)})
-                </option>
-              ))}
-            </select>
-          </div>
 
           {/* Origen Clínico (Ambulatorio, Internacion, Turno) */}
           <div className="pedido-form__field">
@@ -160,14 +312,14 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
             />
           </div>
 
-          {/* Estado */}
-          <div className="pedido-form__field">
-            <label className="pedido-form__label">Estado</label>
-            <select className="pedido-form__input pedido-form__select" {...register('estado')}>
-              <option value="pendiente">Pendiente</option>
-              <option value="completado">Completado</option>
-            </select>
-          </div>
+          {estudiosSeleccionadosDetalle.length > 0 && (
+            <div className="pedido-form__summary">
+              <span className="pedido-form__summary-label">Seleccionados</span>
+              <span className="pedido-form__summary-value">
+                {estudiosSeleccionadosDetalle.map((est) => est.nombre).join(', ')}
+              </span>
+            </div>
+          )}
 
           {/* Botones */}
           <div className="pedido-form__actions">

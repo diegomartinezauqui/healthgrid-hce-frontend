@@ -1,10 +1,13 @@
 // src/pages/NuevoPedidoEstudio.jsx
 import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import ModalWrapper from '../components/ModalWrapper';
-import { CATALOGO_LABORATORIO_MOCK } from '../services/ordenService';
+import { ordenService } from '../services/ordenService';
 import '../styles/NuevoPedidoEstudio.css';
 import { tipoConsultaLabel, formatearFechaCorta } from '../utils/helpers';
+
+const CATEGORIAS = ['Todos', 'Hematologia', 'Bioquimica', 'Orina'];
 
 const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, evoluciones }) => {
   const { register, handleSubmit, watch } = useForm({
@@ -21,13 +24,33 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
 
   const tipoEstudio = watch('tipoEstudio');
 
+  // Catálogo de analitos desde M4 vía backend
+  const [catalogo, setCatalogo] = useState([]);
+  const [catalogoLoading, setCatalogoLoading] = useState(false);
+  const [categoriaActiva, setCategoriaActiva] = useState('Todos');
+
+  useEffect(() => {
+    if (tipoEstudio !== 'laboratorio') return;
+    const cargar = async () => {
+      setCatalogoLoading(true);
+      try {
+        const categoria = categoriaActiva === 'Todos' ? null : categoriaActiva;
+        const lista = await ordenService.obtenerCatalogoLaboratorio(categoria);
+        setCatalogo(lista);
+      } finally {
+        setCatalogoLoading(false);
+      }
+    };
+    cargar();
+  }, [tipoEstudio, categoriaActiva]);
+
   const onSubmit = (data) => {
     const estudio_ids_ints = (data.estudio_ids || []).map(id => parseInt(id, 10));
 
     if (data.tipoEstudio === 'laboratorio' && estudio_ids_ints.length === 0) {
       Swal.fire({
         title: 'Selección requerida',
-        text: 'Por favor, selecciona al menos un estudio bioquímico del catálogo.',
+        text: 'Por favor, seleccioná al menos un analito del catálogo.',
         icon: 'warning',
         confirmButtonColor: '#259A5E'
       });
@@ -88,24 +111,70 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
             </div>
           </div>
 
-          {/* Catálogo de Laboratorio Bioquímico M4 (Solo si es laboratorio) */}
+          {/* Catálogo de Analitos M4 (Solo si es laboratorio) */}
           {tipoEstudio === 'laboratorio' && (
             <div className="pedido-form__field">
               <label className="pedido-form__label" style={{ marginBottom: '8px', color: '#11352A' }}>
-                Catálogo de Estudios Bioquímicos (M4)
+                Analitos — Catálogo M4
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', padding: '10px 14px', backgroundColor: '#FAFBFA', border: '1px solid #E8ECE9', borderRadius: '8px' }}>
-                {CATALOGO_LABORATORIO_MOCK.map((est) => (
-                  <label key={est.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer', color: '#444', fontWeight: '500' }}>
-                    <input
-                      type="checkbox"
-                      value={est.id}
-                      {...register('estudio_ids')}
-                    />
-                    {est.nombre}
-                  </label>
+
+              {/* Tabs de categoría */}
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                {CATEGORIAS.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategoriaActiva(cat)}
+                    style={{
+                      padding: '4px 14px',
+                      borderRadius: '20px',
+                      border: '1px solid',
+                      fontSize: '0.78rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      borderColor: categoriaActiva === cat ? '#259A5E' : '#D0D9D4',
+                      backgroundColor: categoriaActiva === cat ? '#259A5E' : 'transparent',
+                      color: categoriaActiva === cat ? '#fff' : '#555',
+                    }}
+                  >
+                    {cat}
+                  </button>
                 ))}
               </div>
+
+              {/* Lista de analitos */}
+              {catalogoLoading ? (
+                <div style={{ padding: '16px', textAlign: 'center', color: '#888', fontSize: '0.85rem' }}>
+                  Cargando analitos desde M4...
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px', padding: '10px 14px', backgroundColor: '#FAFBFA', border: '1px solid #E8ECE9', borderRadius: '8px' }}>
+                  {catalogo.length === 0 ? (
+                    <p style={{ gridColumn: '1 / -1', color: '#aaa', fontSize: '0.85rem', margin: 0 }}>
+                      No hay analitos disponibles para esta categoría.
+                    </p>
+                  ) : (
+                    catalogo.map((analito) => (
+                      <label key={analito.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer', color: '#444', fontWeight: '500' }}>
+                        <input
+                          type="checkbox"
+                          value={analito.id}
+                          {...register('estudio_ids')}
+                        />
+                        <span>
+                          {analito.nombre}
+                          {analito.unidadMedida && (
+                            <span style={{ color: '#888', fontWeight: '400', marginLeft: '4px' }}>
+                              ({analito.unidadMedida})
+                            </span>
+                          )}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -158,15 +227,6 @@ const NuevoPedidoEstudio = ({ onCerrar, onGuardar, pacienteNombre, pacienteHC, e
               rows={4}
               {...register('descripcion')}
             />
-          </div>
-
-          {/* Estado */}
-          <div className="pedido-form__field">
-            <label className="pedido-form__label">Estado</label>
-            <select className="pedido-form__input pedido-form__select" {...register('estado')}>
-              <option value="pendiente">Pendiente</option>
-              <option value="completado">Completado</option>
-            </select>
           </div>
 
           {/* Botones */}

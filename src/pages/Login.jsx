@@ -1,29 +1,23 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
-import { FiUser, FiLock, FiEye, FiEyeOff, FiBriefcase, FiShield, FiAlertCircle, FiLoader } from 'react-icons/fi';
-import { RiStethoscopeLine } from 'react-icons/ri';
+import { FiLock, FiEye, FiEyeOff, FiShield, FiAlertCircle, FiLoader, FiMail } from 'react-icons/fi';
 import { authService } from '../services/authService';
 import Swal from 'sweetalert2';
 import '../styles/Login.css';
 
 function Login({ onLogin }) {
-  const [dni, setDni] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  const handleQuickAccess = (role) => {
-    // Acceso rápido demo: sin token real, solo marca la sesión de UI
-    onLogin({ role, nombre: role === 'Paciente' ? 'Paciente Demo' : role === 'Profesional' ? 'Dr. García' : 'Admin Demo' });
-  };
-
   const handleForgotOrRegister = async (e, action) => {
     e.preventDefault();
     const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
     if (useMocks) {
-      handleQuickAccess('Profesional');
+      onLogin({ role: 'Profesional', nombre: 'Dr. García' });
       return;
     }
 
@@ -144,7 +138,11 @@ function Login({ onLogin }) {
     setLoginError('');
     const newErrors = {};
 
-    if (!dni.trim()) newErrors.dni = 'Ingresá tu DNI o CUIL';
+    if (!email.trim()) {
+      newErrors.email = 'Ingresá tu correo electrónico';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Ingresá un correo electrónico válido';
+    }
     if (!password.trim()) newErrors.password = 'Ingresá tu contraseña';
 
     if (Object.keys(newErrors).length > 0) {
@@ -155,19 +153,19 @@ function Login({ onLogin }) {
     setLoading(true);
     try {
       // Intentar login real contra el Core (M10)
-      const { access_token, user } = await authService.loginCore(dni.trim(), password);
-      onLogin({ role: user?.role || 'Profesional', nombre: user?.username || 'Dr. García', dni, access_token, user });
+      const { access_token, user } = await authService.loginCore(email.trim(), password);
+      onLogin({ role: user?.role || 'Profesional', nombre: user?.username || 'Dr. García', email, access_token, user });
     } catch (err) {
       console.error('[Login] Fallo el login contra el Core:', err);
       const status = err?.response?.status;
       if (status === 401 || status === 403) {
-        setLoginError('Credenciales incorrectas. Verificá tu DNI y contraseña.');
+        setLoginError('Credenciales incorrectas. Verificá tu correo electrónico y contraseña.');
       } else if (!status) {
         // Sin respuesta del Core: modo dev (solo si no es producción)
         const isProd = import.meta.env.VITE_APP_ENV === 'production';
         if (!isProd) {
           console.warn('[Login] Core no disponible. Usando acceso demo de desarrollo.');
-          onLogin({ role: 'Profesional', nombre: 'Dr. García', dni });
+          onLogin({ role: 'Profesional', nombre: 'Dr. García', email });
         } else {
           setLoginError('No se pudo conectar con el servidor de autenticación. Intente más tarde.');
         }
@@ -234,66 +232,28 @@ function Login({ onLogin }) {
         <div className="login-form-container">
           <div className="login-form-header">
             <h2>Iniciar sesión</h2>
-            <p>Accedé al portal con tu DNI.</p>
-          </div>
-
-          {/* Acceso rápido demo */}
-          <div className="login-quick-access">
-            <span className="login-quick-label">ACCESO RÁPIDO · DEMO</span>
-            <div className="login-quick-buttons">
-              <button
-                type="button"
-                className="login-quick-btn"
-                onClick={() => handleQuickAccess('Paciente')}
-                id="quick-access-paciente"
-              >
-                <FiUser size={20} />
-                <span>Paciente</span>
-              </button>
-              <button
-                type="button"
-                className="login-quick-btn"
-                onClick={() => handleQuickAccess('Profesional')}
-                id="quick-access-profesional"
-              >
-                <RiStethoscopeLine size={20} />
-                <span>Profesional</span>
-              </button>
-              <button
-                type="button"
-                className="login-quick-btn"
-                onClick={() => handleQuickAccess('Administrativo')}
-                id="quick-access-administrativo"
-              >
-                <FiBriefcase size={20} />
-                <span>Administrativo</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="login-divider">
-            <span>o ingresá con tus credenciales</span>
+            <p>Accedé al portal con tu cuenta.</p>
           </div>
 
           {/* Formulario */}
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             <div className="login-field">
-              <label htmlFor="login-dni">DNI / CUIL</label>
-              <div className={`login-input-wrapper ${errors.dni ? 'login-input-error' : ''}`}>
-                <FiUser className="login-input-icon" size={18} />
+              <label htmlFor="login-email">CORREO ELECTRÓNICO</label>
+              <div className={`login-input-wrapper ${errors.email ? 'login-input-error' : ''}`}>
+                <FiMail className="login-input-icon" size={18} />
                 <input
-                  id="login-dni"
-                  type="text"
-                  placeholder="DNI o CUIL"
-                  value={dni}
+                  id="login-email"
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  value={email}
                   onChange={(e) => {
-                    setDni(e.target.value);
-                    if (errors.dni) setErrors(prev => ({ ...prev, dni: '' }));
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
                   }}
                   autoComplete="username"
                 />
               </div>
-              {errors.dni && <span className="login-error-msg">{errors.dni}</span>}
+              {errors.email && <span className="login-error-msg">{errors.email}</span>}
             </div>
 
             <div className="login-field">

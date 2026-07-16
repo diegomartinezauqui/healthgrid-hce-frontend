@@ -22,26 +22,40 @@ const mapTipoEstudioBackToFront = (tipo) => {
   return mapa[tipo] || 'otro';
 };
 
-// Catálogo mock de determinaciones bioquímicas (Módulo 4)
+// Catálogo mock de determinaciones bioquímicas (Módulo 4) — fallback offline
 export const CATALOGO_LABORATORIO_MOCK = [
-  { id: 101, nombre: "Hemograma Completo" },
-  { id: 102, nombre: "Glucemia / Glucosa" },
-  { id: 103, nombre: "Perfil Lipídico (Colesterol/Triglicéridos)" },
-  { id: 104, nombre: "Función Renal (Urea/Creatinina)" },
-  { id: 105, nombre: "Hepatograma" },
-  { id: 106, nombre: "Orina Completa" },
-  { id: 107, nombre: "Coagulograma" },
-  { id: 108, nombre: "Ionograma Plasmático" }
+  { id: 101, codigo: 'HB',  nombre: 'Hemograma Completo',                    unidadMedida: '',      categoria: 'Hematologia', metodo: '' },
+  { id: 102, codigo: 'GLU', nombre: 'Glucemia / Glucosa',                    unidadMedida: 'mg/dL', categoria: 'Bioquimica',  metodo: 'Enzimático colorimétrico' },
+  { id: 103, codigo: 'LIP', nombre: 'Perfil Lipídico (Colesterol/Triglicéridos)', unidadMedida: 'mg/dL', categoria: 'Bioquimica',  metodo: '' },
+  { id: 104, codigo: 'REN', nombre: 'Función Renal (Urea/Creatinina)',       unidadMedida: 'mg/dL', categoria: 'Bioquimica',  metodo: '' },
+  { id: 105, codigo: 'HEP', nombre: 'Hepatograma',                           unidadMedida: '',      categoria: 'Bioquimica',  metodo: '' },
+  { id: 106, codigo: 'ORI', nombre: 'Orina Completa',                        unidadMedida: '',      categoria: 'Orina',       metodo: '' },
+  { id: 107, codigo: 'COA', nombre: 'Coagulograma',                          unidadMedida: '',      categoria: 'Hematologia', metodo: '' },
+  { id: 108, codigo: 'ION', nombre: 'Ionograma Plasmático',                  unidadMedida: 'mEq/L',categoria: 'Bioquimica',  metodo: '' },
 ];
 
 export const ordenService = {
   /**
-   * Obtiene el catálogo bioquímico de Módulo 4
+   * Obtiene el catálogo de analitos desde el backend de HCE (que a su vez los obtiene de M4).
+   * @param {string|null} categoria - Filtro opcional: 'Hematologia' | 'Bioquimica' | 'Orina'
+   * @returns {Promise<Array>} Lista de analitos disponibles.
    */
-  obtenerCatalogoLaboratorio: async () => {
-    // Si estuviéramos en producción real, haríamos fetch a Módulo 4.
-    // Devolvemos el mock local de forma robusta.
-    return CATALOGO_LABORATORIO_MOCK;
+  obtenerCatalogoLaboratorio: async (categoria = null) => {
+    if (useMocks) return CATALOGO_LABORATORIO_MOCK;
+    try {
+      const params = categoria ? { categoria } : {};
+      const response = await api.get('/analitos/laboratorio', { params });
+      // El backend devuelve { status, cantidad, data: [...] }
+      const lista = Array.isArray(response?.data) ? response.data : (Array.isArray(response) ? response : []);
+      if (lista.length === 0) throw new Error('Catálogo vacío');
+      return lista;
+    } catch (err) {
+      console.warn('[OrdenService] No se pudo obtener el catálogo de M4, usando fallback local:', err?.message);
+      if (categoria) {
+        return CATALOGO_LABORATORIO_MOCK.filter(a => a.categoria === categoria);
+      }
+      return CATALOGO_LABORATORIO_MOCK;
+    }
   },
 
   /**

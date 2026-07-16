@@ -29,8 +29,7 @@ function App() {
 
   /**
    * handleLogin — llamado por Login.jsx al autenticarse.
-   * Si viene un access_token real (del Core), lo persiste en el contexto.
-   * Si es acceso rápido demo (sin token), solo marca la sesión de UI.
+   * Si viene un access_token del Core, lo persiste en el contexto y localStorage.
    */
   const handleLogin = (userData) => {
     sessionStorage.setItem('healthgrid_logged_in', 'true');

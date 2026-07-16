@@ -1098,6 +1098,7 @@ function App() {
             telefono: dp.telefono || pacienteObj.telefono,
             direccion: dp.direccion || pacienteObj.direccion,
             obraSocial: dp.obraSocial || pacienteObj.obraSocial,
+            email: dp.email || pacienteObj.email,
             numeroHistoriaClinica: pacienteObj.id || pacienteObj.core_patient_id.replace('core-', '').replace(/^0+/, '')
           };
         } else {
@@ -1116,7 +1117,17 @@ function App() {
             antecedentes: ficha.antecedentes || [],
             consideraciones: ficha.alertas_clinicas || [],
             episodios: ficha.episodios || [],
-            tieneFichaClinica: true
+            tieneFichaClinica: true,
+            // Cobertura M7
+            nombre_obra_social: ficha.nombre_obra_social || null,
+            nombre_plan: ficha.nombre_plan || null,
+            entidadFinanciadoraId: ficha.entidadFinanciadoraId || null,
+            planId: ficha.planId || null,
+            numero_afiliado: ficha.numero_afiliado || null,
+            // Contacto
+            telefono: ficha.telefono || pacienteObj.telefono || null,
+            domicilio: ficha.domicilio || pacienteObj.direccion || pacienteObj.domicilio || null,
+            correo: ficha.correo || pacienteObj.email || pacienteObj.correo || null
           };
         } else {
           pacienteObj.tieneFichaClinica = false;

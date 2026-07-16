@@ -20,15 +20,17 @@ export const pacienteService = {
       // La ficha es la fuente de existencia. Si 404 -> el paciente aún no tiene ficha.
       const ficha = await api.get(`/pacientes/${cleanId}/ficha-medica`);
 
-      // Antecedentes y alertas viven en endpoints separados (el backend no los
-      // anida en la ficha). Los traemos en paralelo y los mapeamos a la forma de la UI.
-      const [antRes, alertRes] = await Promise.allSettled([
+      // Antecedentes, alertas y cobertura de seguro viven en endpoints separados.
+      // Los traemos en paralelo y los mapeamos a la forma de la UI.
+      const [antRes, alertRes, insRes] = await Promise.allSettled([
         api.get(`/pacientes/${cleanId}/antecedentes`),
         api.get(`/pacientes/${cleanId}/alertas`),
+        api.get(`/patients/${cleanId}/insurance`),
       ]);
 
       const antRaw = antRes.status === 'fulfilled' && Array.isArray(antRes.value) ? antRes.value : [];
       const alertRaw = alertRes.status === 'fulfilled' && Array.isArray(alertRes.value) ? alertRes.value : [];
+      const insRaw = insRes.status === 'fulfilled' ? insRes.value : null;
 
       const lower = (s) => (s || '').toString().toLowerCase();
 
@@ -43,12 +45,26 @@ export const pacienteService = {
           observaciones: a.observaciones || '',
         })),
         // UI espera tipo en minúscula y `descripcion`
-        alertas_clinicas: alertRaw.map(c => ({
-          id: c.id,
-          tipo: lower(c.tipo),
-          descripcion: c.descripcion,
-          severidad: c.severidad,
-        })),
+        alertas_clinicas: alertRaw.map(c => {
+          let tipoUI = lower(c.tipo);
+          if (tipoUI === 'dispositivo_implantado') {
+            tipoUI = 'implante';
+          } else if (tipoUI === 'condicion_critica') {
+            tipoUI = 'condicion';
+          }
+          return {
+            id: c.id,
+            tipo: tipoUI,
+            descripcion: c.descripcion,
+            severidad: c.severidad,
+          };
+        }),
+        // Datos de cobertura de seguro M7
+        nombre_obra_social: insRaw?.nombre_obra_social || null,
+        nombre_plan: insRaw?.nombre_plan || null,
+        entidadFinanciadoraId: insRaw?.entidadFinanciadoraId || null,
+        planId: insRaw?.planId || null,
+        numero_afiliado: insRaw?.numero_afiliado || null
       };
 
       console.log(`[PacienteService] Ficha médica recuperada del backend para paciente ${core_patient_id}:`, JSON.stringify(data, null, 2));
@@ -85,11 +101,23 @@ export const pacienteService = {
         }));
 
       // Formatear alertas_clinicas (filtrando las vacías)
+      const mapearTipoAlerta = (tipo) => {
+        if (!tipo) return 'Alergia';
+        switch (tipo.toLowerCase()) {
+          case 'alergia': return 'Alergia';
+          case 'implante': return 'Dispositivo_Implantado';
+          case 'condicion': return 'Condicion_Critica';
+          case 'riesgo_infeccioso': return 'Riesgo_Infeccioso';
+          case 'contraindicacion': return 'Contraindicacion';
+          default: return 'Alergia';
+        }
+      };
+
       const alertas_clinicas = (data.consideraciones || [])
         .filter(c => c.tipo || c.descripcion)
         .map(c => ({
-          tipo: capitalize(c.tipo),
-          severidad: 'Media',
+          tipo: mapearTipoAlerta(c.tipo),
+          severidad: c.severidad || 'Moderada',
           descripcion: c.descripcion + (c.detalleReaccion ? ` (Reacción: ${c.detalleReaccion})` : '')
         }));
 
@@ -106,10 +134,15 @@ export const pacienteService = {
         dni: data.dni || null,
         fecha_nacimiento: data.fechaNacimiento || data.fecha_nacimiento || null,
         genero: data.genero || data.sexo || null,
-        obra_social: data.obraSocial || data.obra_social || null,
-        id_obra_social: data.idObraSocial ? parseInt(data.idObraSocial) : (data.id_obra_social ? parseInt(data.id_obra_social) : null),
-        id_plan: data.idPlan ? parseInt(data.idPlan) : (data.id_plan ? parseInt(data.id_plan) : null),
-        numero_afiliado: data.numeroAfiliado || data.numero_afiliado || null
+        telefono: data.telefono || null,
+        direccion: data.domicilio || data.direccion || null,
+
+        // --- Campos de Cobertura Actualizados (M7) ---
+        nombre_obra_social: data.nombre_obra_social || data.obraSocial || data.obra_social || null,
+        nombre_plan: data.nombre_plan || null,
+        entidadFinanciadoraId: data.entidadFinanciadoraId ? parseInt(data.entidadFinanciadoraId) : (data.idObraSocial ? parseInt(data.idObraSocial) : null),
+        planId: data.planId ? parseInt(data.planId) : (data.idPlan ? parseInt(data.idPlan) : null),
+        numero_afiliado: data.numero_afiliado || data.numeroAfiliado || null
       };
 
       const response = await api.post(`/pacientes/${cleanId}/ficha-completa`, payload);
@@ -423,7 +456,8 @@ export const pacienteService = {
           sexo: dp.genero || '—',
           telefono: dp.telefono || '—',
           direccion: dp.direccion || '—',
-          obraSocial: dp.obra_social || 'Particular'
+          obraSocial: dp.obra_social || 'Particular',
+          email: dp.email || ''
         };
       }
       return null;
@@ -456,6 +490,7 @@ export const pacienteService = {
             telefono: dp.telefono || '—',
             direccion: dp.direccion || '—',
             obraSocial: dp.obra_social || 'Particular',
+            email: dp.email || '',
             consideraciones: [], // Datos clínicos se cargarán desde /ficha-medica
             antecedentes: [],
             episodios: []

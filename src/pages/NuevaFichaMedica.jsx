@@ -12,7 +12,7 @@ const valoresVacios = {
   numeroHistoriaClinica: '',
   grupoSanguineo: '',
   contactoEmergencia: '',
-  consideraciones: [{ tipo: '', descripcion: '', detalleReaccion: '' }],
+  consideraciones: [{ tipo: '', severidad: 'Moderada', descripcion: '', detalleReaccion: '' }],
   antecedentes: [{ tipo: '', nombreDescripcion: '', fecha: '', observaciones: '' }],
   observaciones: '',
   dni: '',
@@ -22,24 +22,30 @@ const valoresVacios = {
   idObraSocial: '',
   idPlan: '',
   numeroAfiliado: '',
+  telefono: '',
+  domicilio: '',
+  correo: '',
 };
 
 const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePatient = null }) => {
-  // Si hay datos iniciales (modo edición), usarlos; sino, usar valores vacíos y pre-cargar con datos del Core
+  // Si hay datos iniciales (modo edición), usarlos; sino, usar valores vacíos y pre-cargar con datos del Core o de la ficha
   const defaultValues = datosIniciales
     ? {
         ...datosIniciales,
         dni: datosIniciales.dni || corePatient?.dni || '',
         fechaNacimiento: datosIniciales.fechaNacimiento || datosIniciales.fecha_nacimiento || corePatient?.fechaNacimiento || corePatient?.fecha_nacimiento || '',
         genero: datosIniciales.genero || datosIniciales.sexo || corePatient?.genero || corePatient?.sexo || '',
-        obraSocial: datosIniciales.obraSocial || datosIniciales.obra_social || corePatient?.obraSocial || corePatient?.obra_social || '',
-        idObraSocial: datosIniciales.idObraSocial || datosIniciales.id_obra_social_entidad || '',
-        idPlan: datosIniciales.idPlan || datosIniciales.id_plan || '',
-        numeroAfiliado: datosIniciales.numeroAfiliado || datosIniciales.numero_afiliado || '',
+        obraSocial: datosIniciales.nombre_obra_social || datosIniciales.obraSocial || datosIniciales.obra_social || corePatient?.nombre_obra_social || corePatient?.obraSocial || corePatient?.obra_social || '',
+        idObraSocial: datosIniciales.entidadFinanciadoraId || datosIniciales.idObraSocial || datosIniciales.id_obra_social_entidad || '',
+        idPlan: datosIniciales.planId || datosIniciales.idPlan || datosIniciales.id_plan || '',
+        numeroAfiliado: datosIniciales.numero_afiliado || datosIniciales.numeroAfiliado || datosIniciales.numero_afiliado || '',
+        telefono: datosIniciales.telefono || corePatient?.telefono || '',
+        domicilio: datosIniciales.domicilio || corePatient?.direccion || corePatient?.domicilio || '',
+        correo: datosIniciales.correo || datosIniciales.email || corePatient?.email || corePatient?.correo || '',
         // Asegurar que siempre haya al menos una fila en los arrays
         consideraciones: datosIniciales.consideraciones?.length
           ? datosIniciales.consideraciones
-          : [{ tipo: '', descripcion: '', detalleReaccion: '' }],
+          : [{ tipo: '', severidad: 'Moderada', descripcion: '', detalleReaccion: '' }],
         antecedentes: datosIniciales.antecedentes?.length
           ? datosIniciales.antecedentes
           : [{ tipo: '', nombreDescripcion: '', fecha: '', observaciones: '' }],
@@ -49,7 +55,13 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
         dni: corePatient?.dni || '',
         fechaNacimiento: corePatient?.fechaNacimiento || corePatient?.fecha_nacimiento || '',
         genero: corePatient?.genero || corePatient?.sexo || '',
-        obraSocial: corePatient?.obraSocial || corePatient?.obra_social || '',
+        obraSocial: corePatient?.nombre_obra_social || corePatient?.obraSocial || corePatient?.obra_social || '',
+        idObraSocial: corePatient?.entidadFinanciadoraId || '',
+        idPlan: corePatient?.planId || '',
+        numeroAfiliado: corePatient?.numero_afiliado || '',
+        telefono: corePatient?.telefono || '',
+        domicilio: corePatient?.direccion || corePatient?.domicilio || '',
+        correo: corePatient?.email || corePatient?.correo || '',
       };
 
   const esEdicion = !!datosIniciales;
@@ -76,10 +88,10 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
   const [obrasSociales, setObrasSociales] = useState([]);
   const [planes, setPlanes] = useState([]);
   const [selectedObraSocialId, setSelectedObraSocialId] = useState(
-    datosIniciales?.idObraSocial || datosIniciales?.id_obra_social_entidad || ''
+    datosIniciales?.entidadFinanciadoraId || datosIniciales?.idObraSocial || datosIniciales?.id_obra_social_entidad || ''
   );
   const [selectedPlanId, setSelectedPlanId] = useState(
-    datosIniciales?.idPlan || datosIniciales?.id_plan || ''
+    datosIniciales?.planId || datosIniciales?.idPlan || datosIniciales?.id_plan || ''
   );
   const [cargandoOS, setCargandoOS] = useState(false);
   const [cargandoPlanes, setCargandoPlanes] = useState(false);
@@ -164,9 +176,16 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
     const obraSocialSeleccionada = obrasSociales.find(os => String(os.id) === String(selectedObraSocialId));
     const datosConCobertura = {
       ...data,
+      // Claves anteriores (para compatibilidad de renderizado legacy si hay)
       obraSocial: planSeleccionado?.nombre || obraSocialSeleccionada?.nombre || data.obraSocial || '',
       idObraSocial: selectedObraSocialId ? parseInt(selectedObraSocialId) : null,
       idPlan: selectedPlanId ? parseInt(selectedPlanId) : null,
+      // Nuevos campos unificados M7
+      nombre_obra_social: obraSocialSeleccionada?.nombre || null,
+      nombre_plan: planSeleccionado?.nombre || null,
+      entidadFinanciadoraId: selectedObraSocialId ? parseInt(selectedObraSocialId) : null,
+      planId: selectedPlanId ? parseInt(selectedPlanId) : null,
+      numero_afiliado: data.numeroAfiliado || data.numero_afiliado || null
     };
 
     if (onGuardar) {
@@ -228,9 +247,11 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
                   type="number"
                   placeholder="Ej: 482"
                   className="ficha-input"
+                  readOnly={true}
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed', color: '#666' }}
                   {...register('numeroHistoriaClinica')}
                 />
-                <span className="ficha-hint">Tipo: selector numérico.</span>
+                <span className="ficha-hint">Bloqueado: Generado automáticamente.</span>
               </div>
               <div className="ficha-field">
                 <label className="ficha-label">Nombre y Apellido</label>
@@ -314,19 +335,36 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
               </div>
             </div>
 
-            {/* Fila 3: Teléfono, Domicilio (Estáticos del Core) */}
-            <div className="ficha-row ficha-row--2cols">
+            {/* Fila 3: Teléfono, Domicilio, Correo (Editables) */}
+            <div className="ficha-row ficha-row--3cols">
               <div className="ficha-field">
-                <label className="ficha-label">Teléfono (Core)</label>
-                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666' }}>
-                  {corePatient?.telefono || '—'}
-                </div>
+                <label className="ficha-label">Teléfono</label>
+                <input
+                  type="text"
+                  placeholder="Ej: 11-1234-5678"
+                  className="ficha-input"
+                  {...register('telefono')}
+                />
               </div>
               <div className="ficha-field">
-                <label className="ficha-label">Domicilio (Core)</label>
-                <div style={{ padding: '10px 15px', backgroundColor: '#f5f5f5', borderRadius: '8px', border: '1px solid #e0e0e0', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={corePatient?.direccion}>
-                  {corePatient?.direccion || '—'}
-                </div>
+                <label className="ficha-label">Domicilio</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Av. Rivadavia 1234, CABA"
+                  className="ficha-input"
+                  {...register('domicilio')}
+                />
+              </div>
+              <div className="ficha-field">
+                <label className="ficha-label">Correo Electrónico (Core)</label>
+                <input
+                  type="email"
+                  placeholder="Ej: paciente@correo.com"
+                  className="ficha-input"
+                  readOnly={true}
+                  style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed', color: '#666' }}
+                  {...register('correo')}
+                />
               </div>
             </div>
           </section>
@@ -397,6 +435,17 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
                     <option value="otro">Otro</option>
                   </select>
                 </div>
+                <div className="ficha-field ficha-field--dynamic-item">
+                  <select
+                    className="ficha-input ficha-select"
+                    {...register(`consideraciones.${index}.severidad`)}
+                  >
+                    <option value="Leve">Leve</option>
+                    <option value="Moderada">Moderada</option>
+                    <option value="Severa">Severa</option>
+                    <option value="Critica">Crítica</option>
+                  </select>
+                </div>
                 <div className="ficha-field ficha-field--dynamic-item ficha-field--grow">
                   <input
                     type="text"
@@ -426,7 +475,7 @@ const NuevaFichaMedica = ({ onCerrar, onGuardar, datosIniciales = null, corePati
             <button
               type="button"
               className="ficha-btn-agregar"
-              onClick={() => appendConsideracion({ tipo: '', descripcion: '', detalleReaccion: '' })}
+              onClick={() => appendConsideracion({ tipo: '', severidad: 'Moderada', descripcion: '', detalleReaccion: '' })}
             >
               + Agregar Consideración
             </button>

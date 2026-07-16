@@ -94,7 +94,17 @@ const Home = ({
           antecedentes: ficha.antecedentes || [],
           consideraciones: ficha.alertas_clinicas || [],
           episodios: ficha.episodios || [],
-          tieneFichaClinica: true
+          tieneFichaClinica: true,
+          // Cobertura M7
+          nombre_obra_social: ficha.nombre_obra_social || null,
+          nombre_plan: ficha.nombre_plan || null,
+          entidadFinanciadoraId: ficha.entidadFinanciadoraId || null,
+          planId: ficha.planId || null,
+          numero_afiliado: ficha.numero_afiliado || null,
+          // Datos de contacto
+          telefono: ficha.telefono || cp.telefono || null,
+          domicilio: ficha.domicilio || cp.direccion || cp.domicilio || null,
+          correo: ficha.correo || cp.email || cp.correo || null
         });
         onSeleccionarPaciente(cp);
       } else {

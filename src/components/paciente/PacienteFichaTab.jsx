@@ -69,12 +69,36 @@ const PacienteFichaTab = ({ paciente }) => {
             </div>
             <div className="detalle-dato">
               <span className="detalle-dato__label">Correo</span>
-              <span className="detalle-dato__valor">{paciente.correo || '—'}</span>
+              <span className="detalle-dato__valor">{paciente.correo || paciente.email || '—'}</span>
             </div>
             <div className="detalle-dato">
               <span className="detalle-dato__label">Domicilio</span>
-              <span className="detalle-dato__valor">{paciente.domicilio || '—'}</span>
+              <span className="detalle-dato__valor">{paciente.domicilio || paciente.direccion || '—'}</span>
             </div>
+            
+            {/* Cobertura Médica (M7 / Facturación) */}
+            {(paciente.nombre_obra_social || (paciente.obraSocial && paciente.obraSocial !== 'Particular')) && (
+              <>
+                <div className="detalle-dato">
+                  <span className="detalle-dato__label">Obra Social / Prepaga</span>
+                  <span className="detalle-dato__valor" style={{ color: '#259A5E', fontWeight: 600 }}>
+                    {paciente.nombre_obra_social || paciente.obraSocial}
+                  </span>
+                </div>
+                <div className="detalle-dato">
+                  <span className="detalle-dato__label">Plan de Cobertura</span>
+                  <span className="detalle-dato__valor">
+                    {paciente.nombre_plan || '—'}
+                  </span>
+                </div>
+                <div className="detalle-dato">
+                  <span className="detalle-dato__label">Nro. de Afiliado</span>
+                  <span className="detalle-dato__valor">
+                    {paciente.numero_afiliado || paciente.numeroAfiliado || '—'}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </section>
 

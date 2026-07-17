@@ -493,7 +493,12 @@ function App() {
               ...localEp,
               ...backendEp,
               evolucionesData: localEp.evolucionesData?.length ? localEp.evolucionesData : backendEp.evolucionesData,
-              recetasData: localEp.recetasData?.length ? localEp.recetasData : backendEp.recetasData
+              recetasData: localEp.recetasData?.length ? localEp.recetasData : backendEp.recetasData,
+              // Preservar el estado de camas (M6) del estado local para que una recarga
+              // silenciosa de episodios no borre las camas ya aceptadas/rechazadas.
+              solicitudesCamaData: localEp.solicitudesCamaData?.length ? localEp.solicitudesCamaData : (backendEp.solicitudesCamaData || localEp.solicitudesCamaData),
+              camaActual: localEp.camaActual || backendEp.camaActual || null,
+              tipoEpisodio: localEp.tipoEpisodio || backendEp.tipoEpisodio,
             };
           }
           return backendEp;

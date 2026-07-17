@@ -7,6 +7,27 @@ const useMocks = import.meta.env.VITE_USE_MOCKS === 'true';
 const cleanCoreId = (core_patient_id) =>
   String(core_patient_id).replace('core-', '').replace(/^0+/, '');
 
+const extractReportId = (resultado) => {
+  if (!resultado) return null;
+  const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  
+  const fields = [
+    resultado.codigoExterno,
+    resultado.url_detalle,
+    resultado.link_imagen,
+    resultado.id_externo_estudio,
+    resultado.id_resultado
+  ];
+  
+  for (const field of fields) {
+    if (field && typeof field === 'string') {
+      const match = field.match(uuidRegex);
+      if (match) return match[0];
+    }
+  }
+  return null;
+};
+
 const mapPrioridadOrden = (p) => {
   const mapa = { normal: 'Normal', urgente: 'Urgente', emergencia: 'Emergencia' };
   return mapa[(p || '').toLowerCase()] || 'Normal';
@@ -136,6 +157,7 @@ export const ordenService = {
         const resObj = resultadosMap[o.id_orden];
         const esCompletado = (o.estado || '').toLowerCase() === 'finalizado' || !!resObj;
         
+        const mappedReportId = extractReportId(resObj) || resObj?.id_externo_estudio || null;
         const ordenMapeada = {
           id: o.id_orden,
           id_orden: o.id_orden,
@@ -157,6 +179,7 @@ export const ordenService = {
                 link_imagen: resObj.link_imagen, // Enlace DICOM/PACS
                 url_detalle: resObj.url_detalle, // Enlace al informe completo en M5
                 analitos: resObj.analitos, // Lista de determinaciones detalladas
+                report_id: mappedReportId,
                 archivosAdjuntos: [],
               }
             : null,
@@ -245,6 +268,64 @@ export const ordenService = {
     } catch (error) {
       console.error(`[OrdenService] Error al obtener resultado para la orden ${id_orden}:`, error);
       throw error;
+    }
+  },
+
+  /**
+   * Obtiene el informe técnico detallado de un estudio de imágenes en M5.
+   */
+  obtenerDetalleImagenM5: async (report_id) => {
+    try {
+      if (useMocks) throw new Error("Mock mode enabled");
+      return await api.get(`/resultados/imagenes/${report_id}/detalle`);
+    } catch (error) {
+      console.warn(`[OrdenService] Falló obtenerDetalleImagenM5 (${report_id}), usando mock como fallback:`, error);
+      return {
+        reportId: report_id,
+        patientId: "22",
+        title: "Ecografía Renal Bilateral (Mock)",
+        patientName: "Juan Roman Upamecano",
+        date: "2025-09-05",
+        status: "INTERNACION",
+        techniqueDetail: "Ecografía renal bilateral en proyección PA y lateral izquierda (Técnica Mock).",
+        observations: "Se observa leve opacidad pulmonar difusa bilateral sin derrames (Mock).",
+        conclusion: "Estudio de tórax con infiltrado leve en resolución (Mock).",
+        doctorName: "Dr. Gómez (Radiología Mock)",
+        pacs_url: "https://pacs.cantero.ar/viewer/1.2.840.113619.2.55"
+      };
+    }
+  },
+
+  /**
+   * Obtiene el listado de archivos/imágenes del estudio de imágenes en M5.
+   */
+  obtenerImagenesM5: async (report_id) => {
+    try {
+      if (useMocks) throw new Error("Mock mode enabled");
+      return await api.get(`/resultados/imagenes/${report_id}/imagenes`);
+    } catch (error) {
+      console.warn(`[OrdenService] Falló obtenerImagenesM5 (${report_id}), usando mock como fallback:`, error);
+      return {
+        reportId: report_id,
+        images: [
+          {
+            imageId: "838e5688-0c0f-460e-8cb6-86621730da5e",
+            title: "RMN Columna Lumbar (Mock 1)",
+            creatorName: "Dr. Nicolas Garcia",
+            date: "2025-02-22",
+            path: "https://loremflickr.com/400/400?lock=3355484607829747",
+            image: "https://loremflickr.com/400/400?lock=3355484607829747"
+          },
+          {
+            imageId: "ad6746cb-56f7-4ff1-9eb2-3fa4ad3b2359",
+            title: "Radiografía Lumbar (Mock 2)",
+            creatorName: "Dr. Nicolas Garcia",
+            date: "2025-04-10",
+            path: "https://loremflickr.com/400/400?lock=5699819858316477",
+            image: "https://loremflickr.com/400/400?lock=5699819858316477"
+          }
+        ]
+      };
     }
   },
 };

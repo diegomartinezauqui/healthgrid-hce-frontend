@@ -14,6 +14,7 @@ const EpisodioHeaderCard = ({
   onDarDeAlta,
   onSolicitudCamaClick,
   labelSolicitudCama = 'Solicitar Internación',
+  onSolicitarCirugiaClick,
   esTurnoActivo,
   onTerminarConsultaClick,
 }) => {
@@ -86,6 +87,16 @@ const EpisodioHeaderCard = ({
                 style={{ marginRight: '6px', verticalAlign: 'middle', fontSize: '1.1rem' }}
               />{' '}
               {labelSolicitudCama}
+            </button>
+            <button
+              className="ep-detalle__btn ep-detalle__btn--solicitar"
+              style={{ backgroundColor: '#b91c1c', borderColor: '#b91c1c' }}
+              onClick={onSolicitarCirugiaClick}
+            >
+              <FaBed
+                style={{ marginRight: '6px', verticalAlign: 'middle', fontSize: '1.1rem' }}
+              />{' '}
+              Solicitar Cirugía Urgente
             </button>
           </>
         )}

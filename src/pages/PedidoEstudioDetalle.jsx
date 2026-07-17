@@ -1,7 +1,30 @@
 // src/pages/PedidoEstudioDetalle.jsx
+import { useState, useEffect } from 'react';
 import '../styles/PedidoEstudioDetalle.css';
 import { formatearFechaLarga } from '../utils/helpers';
 import { FiClock, FiCalendar, FiFileText } from 'react-icons/fi';
+import { ordenService } from '../services/ordenService';
+
+const extractReportId = (resultado) => {
+  if (!resultado) return null;
+  const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+  
+  const fields = [
+    resultado.codigoExterno,
+    resultado.url_detalle,
+    resultado.link_imagen,
+    resultado.id_externo_estudio,
+    resultado.id_resultado
+  ];
+  
+  for (const field of fields) {
+    if (field && typeof field === 'string') {
+      const match = field.match(uuidRegex);
+      if (match) return match[0];
+    }
+  }
+  return null;
+};
 
 const tipoEstudioLabel = (tipo) => {
   const mapa = {
@@ -46,6 +69,53 @@ const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
   const color = tipoEstudioColor(estudio.tipoEstudio);
   const esCompletado = estudio.estado === 'completado';
   const resultado = estudio.resultado || {};
+
+  const [detalleM5, setDetalleM5] = useState(null);
+  const [imagenesM5, setImagenesM5] = useState([]);
+  const [loadingM5, setLoadingM5] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [filterType, setFilterType] = useState('normal');
+
+  const reportId = resultado.report_id || extractReportId(resultado) || (import.meta.env.DEV ? "338d03cb-e245-45b4-b2e0-e2a947e1d6c4" : null);
+
+  console.log('[PedidoEstudioDetalle] estudio:', estudio);
+  console.log('[PedidoEstudioDetalle] reportId:', reportId);
+
+  useEffect(() => {
+    if (estudio.tipoEstudio !== 'imagenes' || !reportId) return;
+
+    const cargarM5 = async () => {
+      setLoadingM5(true);
+      try {
+        const [det, imgs] = await Promise.allSettled([
+          ordenService.obtenerDetalleImagenM5(reportId),
+          ordenService.obtenerImagenesM5(reportId)
+        ]);
+
+        if (det.status === 'fulfilled' && det.value) {
+          setDetalleM5(det.value);
+        }
+        if (imgs.status === 'fulfilled' && imgs.value) {
+          const rawImgs = imgs.value;
+          let list = [];
+          if (Array.isArray(rawImgs)) {
+            list = rawImgs;
+          } else if (rawImgs && Array.isArray(rawImgs.images)) {
+            list = rawImgs.images;
+          }
+          setImagenesM5(list);
+        }
+      } catch (err) {
+        console.error('Error al cargar datos de M5:', err);
+      } finally {
+        setLoadingM5(false);
+      }
+    };
+
+    cargarM5();
+  }, [estudio, reportId]);
 
   return (
     <div className="ped-detalle">
@@ -164,34 +234,205 @@ const PedidoEstudioDetalle = ({ estudio, onVolver }) => {
             </div>
           )}
 
-          {/* Botones de PACS y Detalle de Informe (Módulo 5) */}
-          {estudio.tipoEstudio === 'imagenes' && (resultado.link_imagen || resultado.url_detalle) && (
-            <div className="ped-detalle__seccion" style={{ marginTop: 16 }}>
-              <h3 className="ped-detalle__seccion-label">Estudio de Imágenes digitalizadas (Módulo 5)</h3>
-              <div className="ped-detalle__pacs-container" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                {resultado.link_imagen && (
+          {/* Visor PACS / DICOM Integrado (Módulo 5) */}
+          {estudio.tipoEstudio === 'imagenes' && reportId && (
+            <div className="ped-detalle__dicom-section">
+              <h3 className="ped-detalle__dicom-title">
+                <span className="ped-detalle__pacs-icon">🏥</span>
+                Visor PACS / DICOM Integrado
+              </h3>
+
+              {loadingM5 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 0' }}>
+                  <div style={{ width: '30px', height: '30px', border: '3px solid rgba(59, 130, 246, 0.1)', borderTop: '3px solid #3B82F6', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '10px' }} />
+                  <p style={{ color: '#9CA3AF', fontSize: '0.85rem' }}>Recuperando imágenes y reporte técnico de M5...</p>
+                  <style dangerouslySetInnerHTML={{__html: `
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                  `}} />
+                </div>
+              ) : (
+                <div className="ped-detalle__dicom-grid">
+                  {/* Columna Principal: Display de la Imagen + Controles */}
+                  <div className="ped-detalle__dicom-main">
+                    <div className="ped-detalle__dicom-frame">
+                      {imagenesM5.length > 0 ? (
+                        <img
+                          src={
+                            imagenesM5[activeImageIndex]?.url_archivo ||
+                            imagenesM5[activeImageIndex]?.image ||
+                            imagenesM5[activeImageIndex]?.path
+                          }
+                          alt={imagenesM5[activeImageIndex]?.title || 'Estudio de Imagen'}
+                          className="ped-detalle__dicom-img"
+                          style={{
+                            filter: `brightness(${brightness}%) contrast(${contrast}%) ${
+                              filterType === 'inverted'
+                                ? 'invert(100%)'
+                                : filterType === 'grayscale'
+                                ? 'grayscale(100%)'
+                                : filterType === 'sepia'
+                                ? 'sepia(100%)'
+                                : ''
+                            }`,
+                          }}
+                        />
+                      ) : (
+                        <p style={{ color: '#9CA3AF', fontSize: '0.85rem' }}>No hay imágenes asociadas a este estudio.</p>
+                      )}
+                    </div>
+
+                    {/* Controles de visualización DICOM */}
+                    {imagenesM5.length > 0 && (
+                      <div className="ped-detalle__dicom-controls">
+                        <div className="ped-detalle__dicom-control-item">
+                          <span className="ped-detalle__dicom-control-label">Brillo:</span>
+                          <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            value={brightness}
+                            onChange={(e) => setBrightness(Number(e.target.value))}
+                            className="ped-detalle__dicom-control-input"
+                          />
+                          <span style={{ minWidth: '35px', textAlign: 'right' }}>{brightness}%</span>
+                        </div>
+
+                        <div className="ped-detalle__dicom-control-item">
+                          <span className="ped-detalle__dicom-control-label">Contraste:</span>
+                          <input
+                            type="range"
+                            min="50"
+                            max="200"
+                            value={contrast}
+                            onChange={(e) => setContrast(Number(e.target.value))}
+                            className="ped-detalle__dicom-control-input"
+                          />
+                          <span style={{ minWidth: '35px', textAlign: 'right' }}>{contrast}%</span>
+                        </div>
+
+                        <div className="ped-detalle__dicom-control-item">
+                          <span className="ped-detalle__dicom-control-label">Filtro:</span>
+                          <select
+                            value={filterType}
+                            onChange={(e) => setFilterType(e.target.value)}
+                            className="ped-detalle__dicom-control-select"
+                          >
+                            <option value="normal">Normal</option>
+                            <option value="inverted">Negativo (Invertido)</option>
+                            <option value="grayscale">Escala de Grises</option>
+                            <option value="sepia">Sepia</option>
+                          </select>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBrightness(100);
+                            setContrast(100);
+                            setFilterType('normal');
+                          }}
+                          style={{
+                            marginLeft: 'auto',
+                            backgroundColor: '#374151',
+                            border: 'none',
+                            color: '#F9FAFB',
+                            padding: '4px 10px',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Restablecer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Columna Lateral: Galería de Miniaturas */}
+                  <div className="ped-detalle__dicom-sidebar">
+                    <span className="ped-detalle__dicom-sidebar-title">Placas / Series ({imagenesM5.length})</span>
+                    <div className="ped-detalle__dicom-thumbnails">
+                      {imagenesM5.map((img, idx) => {
+                        const url = img.url_archivo || img.image || img.path;
+                        const title = img.title || `Placa #${idx + 1}`;
+                        const dateText = img.created_at || img.date || '—';
+                        return (
+                          <div
+                            key={img.id || img.imageId || idx}
+                            className={`ped-detalle__dicom-thumb ${
+                              idx === activeImageIndex ? 'ped-detalle__dicom-thumb--active' : ''
+                            }`}
+                            onClick={() => setActiveImageIndex(idx)}
+                          >
+                            <img src={url} alt={title} className="ped-detalle__dicom-thumb-img" />
+                            <div className="ped-detalle__dicom-thumb-info">
+                              <span className="ped-detalle__dicom-thumb-title">{title}</span>
+                              <span className="ped-detalle__dicom-thumb-meta">
+                                {dateText.includes('T') ? new Date(dateText).toLocaleDateString() : dateText}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Detalle Técnico del Reporte de M5 */}
+              {detalleM5 && (
+                <div className="ped-detalle__dicom-report">
+                  {detalleM5.observations && (
+                    <div className="ped-detalle__dicom-report-section">
+                      <span className="ped-detalle__dicom-report-label">Observaciones del Radiólogo</span>
+                      <div className="ped-detalle__dicom-report-text">{detalleM5.observations}</div>
+                    </div>
+                  )}
+                  {(detalleM5.conclusion || detalleM5.conclusiones) && (
+                    <div className="ped-detalle__dicom-report-section">
+                      <span className="ped-detalle__dicom-report-label">Conclusión Diagnóstica</span>
+                      <div className="ped-detalle__dicom-report-text">
+                        {detalleM5.conclusion || detalleM5.conclusiones}
+                      </div>
+                    </div>
+                  )}
+                  {detalleM5.techniqueDetail && (
+                    <div className="ped-detalle__dicom-report-section">
+                      <span className="ped-detalle__dicom-report-label">Técnica Utilizada</span>
+                      <div className="ped-detalle__dicom-report-text">{detalleM5.techniqueDetail}</div>
+                    </div>
+                  )}
+
+                  <div className="ped-detalle__dicom-report-meta">
+                    <span>
+                      ✍️ <strong>Firmado por:</strong> {detalleM5.doctorName || `Profesional M5 (ID: ${detalleM5.medico_firmante_id})`}
+                    </span>
+                    <span>
+                      📅 <strong>Fecha de Informe:</strong>{' '}
+                      {new Date(detalleM5.fecha_informe || detalleM5.date || Date.now()).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Botón PACS Externo */}
+              {(resultado.link_imagen || detalleM5?.pacs_url) && (
+                <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
                   <a
-                    href={resultado.link_imagen}
+                    href={detalleM5?.pacs_url || resultado.link_imagen}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="ped-detalle__pacs-btn"
+                    style={{ fontSize: '0.78rem', padding: '8px 14px' }}
                   >
                     <span className="ped-detalle__pacs-icon">🌐</span>
-                    Ver placa DICOM / PACS
+                    Abrir en Visor Web PACS Externo (DICOM Full)
                   </a>
-                )}
-                {resultado.url_detalle && (
-                  <a
-                    href={resultado.url_detalle}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ped-detalle__pacs-btn ped-detalle__pacs-btn--informe"
-                  >
-                    <span className="ped-detalle__pacs-icon">📄</span>
-                    Ver informe completo
-                  </a>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 

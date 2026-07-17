@@ -8,6 +8,7 @@ import NuevaReceta from './NuevaReceta';
 import NuevoPedidoEstudio from './NuevoPedidoEstudio';
 import SolicitarInternacion from './SolicitarInternacion';
 import NuevaSolicitudPase from './NuevaSolicitudPase';
+import SolicitarCirugiaUrgente from './SolicitarCirugiaUrgente';
 import CargarResultadoEstudio from './CargarResultadoEstudio';
 import EpisodioHeaderCard from '../components/episodio/EpisodioHeaderCard';
 import EvolucionesTab from '../components/episodio/EvolucionesTab';
@@ -48,6 +49,7 @@ const EpisodioDetalle = ({
   const [mostrarModalEstudio, setMostrarModalEstudio] = useState(false);
   const [mostrarModalInternacion, setMostrarModalInternacion] = useState(false);
   const [mostrarModalSolicitudPase, setMostrarModalSolicitudPase] = useState(false);
+  const [mostrarModalCirugia, setMostrarModalCirugia] = useState(false);
   const [mostrarModalCargarResultado, setMostrarModalCargarResultado] = useState(false);
   const [estudioSeleccionadoIndex, setEstudioSeleccionadoIndex] = useState(null);
   const [notificacion, setNotificacion] = useState(null);
@@ -201,6 +203,61 @@ const EpisodioDetalle = ({
     } catch (err) {
       console.error('[EpisodioDetalle] Error al crear solicitud de pase:', err);
       Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo registrar la solicitud de pase.' });
+    }
+  };
+
+  // Solicita una cirugía urgente al Módulo 6 (REST Proxy) de forma síncrona
+  const handleEnviarCirugiaUrgente = async (data) => {
+    try {
+      Swal.fire({
+        title: 'Solicitando Quirófano...',
+        text: 'Conectando con M6 de forma síncrona.',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const res = await solicitudCamaService.crearCirugiaUrgente(paciente.core_patient_id, episodio.id_episodio, data);
+      
+      setMostrarModalCirugia(false);
+      await cargarDetalle();
+
+      Swal.fire({
+        title: '¡Cirugía Urgente Confirmada!',
+        html: `
+          <div style="text-align: left; font-size: 0.9rem; line-height: 1.5;">
+            <p style="margin-bottom: 8px; font-weight: 600; color: #15803d;">✅ ${res.mensaje || 'Reserva urgente creada con éxito.'}</p>
+            <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 8px 0;"/>
+            <p><strong>Reserva ID:</strong> #${res.reserva?.id || '—'}</p>
+            <p><strong>Quirófano Asignado:</strong> #${res.reserva?.cama_id || '—'}</p>
+            <p><strong>Prioridad:</strong> <span style="background-color: #fef2f2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">${res.reserva?.prioridad || 'URGENTE'}</span></p>
+            <p><strong>Fecha/Hora de Inicio:</strong> ${res.reserva?.fecha_hora_inicio ? new Date(res.reserva.fecha_hora_inicio).toLocaleString() : '—'}</p>
+            <p><strong>Fin Estimado:</strong> ${res.reserva?.fecha_hora_fin_estimada ? new Date(res.reserva.fecha_hora_fin_estimada).toLocaleString() : '—'}</p>
+            ${res.reservas_desplazadas?.length ? `
+              <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 8px 0;"/>
+              <p style="color: #b91c1c; font-weight: bold; margin-bottom: 4px;">⚠️ Reservas Desplazadas:</p>
+              <ul style="margin: 0; padding-left: 20px;">
+                ${res.reservas_desplazadas.map(rd => `
+                  <li>
+                    Reserva <strong>#${rd.reserva_id}</strong> (Prioridad original: ${rd.prioridad_original}) 
+                    reprogramada en Quirófano #${rd.cama_id}
+                  </li>
+                `).join('')}
+              </ul>
+            ` : ''}
+          </div>
+        `,
+        icon: 'success',
+        confirmButtonColor: '#259A5E'
+      });
+    } catch (err) {
+      console.error('[EpisodioDetalle] Error al crear solicitud de cirugía urgente:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de Conexión',
+        text: err?.response?.data?.message || 'No se pudo comunicar con el Módulo 6 para agendar la cirugía urgente.'
+      });
     }
   };
 
@@ -377,6 +434,7 @@ const EpisodioDetalle = ({
         onDarDeAlta={handleDarDeAlta}
         onSolicitudCamaClick={handleSolicitudCamaClick}
         labelSolicitudCama={labelSolicitudCama}
+        onSolicitarCirugiaClick={() => setMostrarModalCirugia(true)}
         esTurnoActivo={esTurnoActivo}
         onTerminarConsultaClick={handleTerminarConsulta}
       />
@@ -525,6 +583,15 @@ const EpisodioDetalle = ({
         <SolicitarInternacion
           onCerrar={() => setMostrarModalInternacion(false)}
           onEnviar={handleEnviarInternacion}
+          pacienteNombre={paciente?.nombreApellido || 'Paciente'}
+          pacienteHC={paciente?.numeroHistoriaClinica || '—'}
+        />
+      )}
+      {/* Modal Solicitar Cirugía Urgente */}
+      {mostrarModalCirugia && (
+        <SolicitarCirugiaUrgente
+          onCerrar={() => setMostrarModalCirugia(false)}
+          onEnviar={handleEnviarCirugiaUrgente}
           pacienteNombre={paciente?.nombreApellido || 'Paciente'}
           pacienteHC={paciente?.numeroHistoriaClinica || '—'}
         />

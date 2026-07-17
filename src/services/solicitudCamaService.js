@@ -20,13 +20,62 @@ export const solicitudCamaService = {
       return { id_solicitud: Date.now(), estado: 'pendiente', ...data };
     }
     const cleanId = cleanCoreId(core_patient_id);
+
+    // Mapear sector al enum exacto del backend (UTI / Guardia_Observacion / Sala_Comun)
+    const sec = String(data.sector || '').toLowerCase();
+    let mappedSector = 'Sala_Comun';
+    if (sec.includes('uti') || sec.includes('uci') || sec === 'uti') {
+      mappedSector = 'UTI';
+    } else if (sec.includes('guardia') || sec === 'guardia_observacion') {
+      mappedSector = 'Guardia_Observacion';
+    } else if (sec === 'sala_comun') {
+      mappedSector = 'Sala_Comun';
+    }
+
     return await api.post(
       `/patients/${cleanId}/episodes/${id_episodio}/solicitudes-cama`,
       {
         tipo: data.tipo || 'internacion',
         prioridad: data.prioridad || 'Media',
-        sector: data.sector || null,
+        sector: mappedSector,
         motivo: data.motivo || null,
+        cama_solicitada_id: data.cama_solicitada_id || null,
+        cama_destino_solicitada_id: data.cama_destino_solicitada_id || null
+      }
+    );
+  },
+
+  /**
+   * Crea una reserva de cirugía urgente de forma síncrona pasando por el Proxy de HCE (M1).
+   */
+  crearCirugiaUrgente: async (core_patient_id, id_episodio, data) => {
+    if (useMocks) {
+      return {
+        mensaje: "Reserva urgente creada (Mock)",
+        reserva: {
+          id: 999,
+          cama_id: 12,
+          paciente_id: 10500,
+          prioridad: "URGENTE",
+          estado: "RESERVADA",
+          fecha_hora_inicio: new Date(data.fecha_hora_inicio).toISOString(),
+          fecha_hora_fin_estimada: new Date(data.fecha_hora_fin_estimada).toISOString(),
+          observaciones: data.diagnostico || "Urgencia quirúrgica",
+          created_at: new Date().toISOString()
+        },
+        reservas_desplazadas: []
+      };
+    }
+    const cleanId = cleanCoreId(core_patient_id);
+    return await api.post(
+      `/patients/${cleanId}/episodes/${id_episodio}/cirugias-urgentes`,
+      {
+        medico_cirujano_id: parseInt(data.medico_cirujano_id, 10) || 45,
+        fecha_hora_inicio: new Date(data.fecha_hora_inicio).toISOString(),
+        fecha_hora_fin_estimada: new Date(data.fecha_hora_fin_estimada).toISOString(),
+        diagnostico: data.diagnostico || '',
+        hospital_id: data.hospital_id || "1",
+        specialty_id: parseInt(data.specialty_id, 10) || 3
       }
     );
   },

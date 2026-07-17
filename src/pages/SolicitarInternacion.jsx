@@ -78,6 +78,7 @@ const SolicitarInternacion = ({ onCerrar, onEnviar, pacienteNombre, pacienteHC }
               <option value="Baja">Baja</option>
               <option value="Media">Media</option>
               <option value="Alta">Alta</option>
+              <option value="Emergencia">Emergencia</option>
             </select>
           </div>
 
